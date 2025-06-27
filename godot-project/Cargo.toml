@@ -1,0 +1,33 @@
+[package]
+name = "smac_reimplementation"
+version = "0.1.0"
+edition = "2021"
+authors = ["kelon5212001"]
+description = "Open-source reimplementation of Sid Meier's Alpha Centauri"
+license = "MIT"
+
+[dependencies]
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# File I/O and parsing
+regex = "1.10"
+clap = { version = "4.4", features = ["derive"] }
+
+# Error handling
+anyhow = "1.0"
+
+# Date/time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Game-specific libraries
+rand = "0.8"
+
+[[bin]]
+name = "extract_glsmac"
+path = "src/extraction/main.rs"
+
+[[bin]]
+name = "smac_game"
+path = "src/main.rs"

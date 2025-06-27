@@ -1,0 +1,21 @@
+[package]
+name = "glsmac_extraction"
+version = "0.1.0"
+edition = "2021"
+authors = ["Your Name <your.email@example.com>"]
+description = "Tool to extract SMAC game data from GLSMAC project"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+regex = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+lazy_static = "1.4"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[[bin]]
+name = "glsmac_extraction"
+path = "src/extraction/main.rs"

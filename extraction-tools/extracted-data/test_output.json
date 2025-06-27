@@ -1,0 +1,271 @@
+{
+  "factions": [
+    {
+      "key": "GAIANS",
+      "name": "Gaians",
+      "filename": "gaians",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "HIVE",
+      "name": "Hive",
+      "filename": "hive",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "UNIVERSITY",
+      "name": "University",
+      "filename": "univ",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "MORGANITES",
+      "name": "Morganites",
+      "filename": "morgan",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "SPARTANS",
+      "name": "Spartans",
+      "filename": "spartans",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "BELIEVERS",
+      "name": "Believers",
+      "filename": "believe",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "PEACEKEEPERS",
+      "name": "Peacekeepers",
+      "filename": "peace",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "CONSCIOUSNESS",
+      "name": "Consciousness",
+      "filename": "cyborg",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "PIRATES",
+      "name": "Pirates",
+      "filename": "pirates",
+      "is_naval": true,
+      "is_progenitor": false
+    },
+    {
+      "key": "DRONES",
+      "name": "Drones",
+      "filename": "drone",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "ANGELS",
+      "name": "Angels",
+      "filename": "angels",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "PLANETCULT",
+      "name": "Planetcult",
+      "filename": "fungboy",
+      "is_naval": false,
+      "is_progenitor": false
+    },
+    {
+      "key": "CARETAKERS",
+      "name": "Caretakers",
+      "filename": "caretake",
+      "is_naval": false,
+      "is_progenitor": true
+    },
+    {
+      "key": "USURPERS",
+      "name": "Usurpers",
+      "filename": "usurper",
+      "is_naval": false,
+      "is_progenitor": true
+    }
+  ],
+  "units": [
+    {
+      "key": "FungalTower",
+      "name": "Fungal Tower",
+      "sprite_x": 2,
+      "sprite_y": 79,
+      "movement_per_turn": 0,
+      "unit_type": "immovable"
+    },
+    {
+      "key": "MindWorms",
+      "name": "Mind Worms",
+      "sprite_x": 2,
+      "sprite_y": 233,
+      "movement_per_turn": 1,
+      "unit_type": "land"
+    },
+    {
+      "key": "SeaLurk",
+      "name": "Sea Lurk",
+      "sprite_x": 2,
+      "sprite_y": 310,
+      "movement_per_turn": 4,
+      "unit_type": "water"
+    },
+    {
+      "key": "SporeLauncher",
+      "name": "Spore Launcher",
+      "sprite_x": 2,
+      "sprite_y": 387,
+      "movement_per_turn": 1,
+      "unit_type": "land"
+    }
+  ],
+  "population_types": [
+    {
+      "key": "Worker",
+      "name": "Worker",
+      "category": "tile_worker",
+      "is_tile_worker": true,
+      "is_specialist": false,
+      "is_drone": false,
+      "human_sprite_x": 79,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 40,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Talent",
+      "name": "Talent",
+      "category": "tile_worker",
+      "is_tile_worker": true,
+      "is_specialist": false,
+      "is_drone": false,
+      "human_sprite_x": 1,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 1,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Doctor",
+      "name": "Doctor",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 352,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 196,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Technician",
+      "name": "Technician",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 313,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 157,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Librarian",
+      "name": "Librarian",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 391,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 235,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Engineer",
+      "name": "Engineer",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 430,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 274,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Empath",
+      "name": "Empath",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 469,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 313,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Thinker",
+      "name": "Thinker",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 508,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 352,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Transcend",
+      "name": "Transcend",
+      "category": "specialist",
+      "is_tile_worker": false,
+      "is_specialist": true,
+      "is_drone": false,
+      "human_sprite_x": 547,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 391,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "Drone",
+      "name": "Drone",
+      "category": "drone",
+      "is_tile_worker": false,
+      "is_specialist": false,
+      "is_drone": true,
+      "human_sprite_x": 157,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 79,
+      "progenitor_sprite_y": 41
+    },
+    {
+      "key": "DronePlus",
+      "name": "Drone",
+      "category": "drone",
+      "is_tile_worker": false,
+      "is_specialist": false,
+      "is_drone": true,
+      "human_sprite_x": 235,
+      "human_sprite_y": 501,
+      "progenitor_sprite_x": 118,
+      "progenitor_sprite_y": 41
+    }
+  ],
+  "technologies": []
+}
