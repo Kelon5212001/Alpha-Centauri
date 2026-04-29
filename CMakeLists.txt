@@ -1,8 +1,6 @@
-SUBDIR( sdl2 )
-
 SET( SRC ${SRC}
 
-	${PWD}/Input.cpp
-	${PWD}/Event.cpp
+	${PWD}/RR.cpp
+	${PWD}/Capture.cpp
 
 	PARENT_SCOPE )

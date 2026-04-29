@@ -1,0 +1,77 @@
+#include <algorithm>
+
+#include "Scene.h"
+#include "graphics/Graphics.h"
+#include "Camera.h"
+#include "actor/Actor.h"
+
+namespace scene {
+
+Scene::~Scene() {
+	if ( m_local_camera ) {
+		DELETE( m_local_camera );
+	}
+	{
+		std::lock_guard guard( m_actors_mutex );
+		for ( const auto& actor : m_actors ) {
+			actor->SetScene( nullptr );
+		}
+	}
+}
+
+void Scene::AddActor( actor::Actor* actor ) {
+	std::lock_guard guard( m_actors_mutex );
+	//Log( "Adding actor [" + actor->GetName() + "]" );
+	actor->SetScene( this );
+	actor->UpdatePosition();
+	m_actors.push_back( actor );
+}
+
+void Scene::RemoveActor( actor::Actor* actor ) {
+	std::lock_guard guard( m_actors_mutex );
+	auto it = std::find( m_actors.begin(), m_actors.end(), actor );
+	if ( it != m_actors.end() ) {
+		//Log( "Removing actor [" + actor->GetName() + "]" );
+		actor->SetScene( NULL );
+		m_actors.erase( it, it + 1 );
+	}
+}
+
+void Scene::WithActors( const std::function< void( const std::vector< actor::Actor* >& actors ) >& f ) {
+	std::lock_guard guard( m_actors_mutex );
+	f( m_actors );
+}
+
+void Scene::SetCamera( Camera* camera ) {
+	ASSERT( m_camera == NULL || camera == NULL, "camera overlap" );
+	camera->SetScene( this );
+	m_camera = camera;
+}
+
+Camera* Scene::GetCamera() const {
+	return m_camera;
+}
+
+void Scene::AddLight( Light* light ) {
+	ASSERT( m_lights.find( light ) == m_lights.end(), "light overlap" );
+	ASSERT( m_lights.size() < graphics::Graphics::MAX_WORLD_LIGHTS, "maximum light count exceeded" );
+	m_lights.insert( light );
+}
+
+std::unordered_set< Light* >* Scene::GetLights() {
+	return &m_lights;
+}
+
+void Scene::SetWorldInstancePositions( const instance_positions_t& world_instance_positions ) {
+	Log( "Setting " + std::to_string( world_instance_positions.size() ) + " world instances" );
+	m_game_instance_positions = world_instance_positions;
+	for ( auto& actor : m_actors ) {
+		actor->UpdatePosition();
+	}
+}
+
+const instance_positions_t& Scene::GetWorldInstancePositions() const {
+	return m_game_instance_positions;
+}
+
+}

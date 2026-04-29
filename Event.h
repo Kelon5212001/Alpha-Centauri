@@ -1,58 +1,44 @@
 #pragma once
 
-#include "env/Env.h"
-
-#include <string>
-#include <cstdint>
+#include "common/Common.h"
 
 #include "Types.h"
 
-namespace input {
+namespace network {
 
-class Event {
-public:
+CLASS( Event, common::Class )
 
-	typedef union {
-		struct {
-			ssize_t x;
-			ssize_t y;
-			mouse_button_t button;
-			ssize_t scroll_y;
-		} mouse;
-		struct {
-			bool is_printable;
-			key_code_t code;
-			char key;
-			key_modifier_t modifiers;
-		} key;
-		union {
-			struct {
-				bool is_scrolling;
-				float percentage;
-			} scroll;
-			struct {
-				size_t id_num;
-				const std::string* id_str;
-				const std::string* text;
-			} change_select;
-		} value;
-	} event_data_t;
+	enum event_type_t {
+		ET_NONE,
+		ET_ERROR,
+		ET_LISTEN,
+		ET_CLIENT_CONNECT,
+		ET_DISCONNECT,
+		ET_CLIENT_DISCONNECT,
+		ET_PACKET,
+	};
 
-	event_data_t data = {};
+	cid_t cid = 0; // 'client id', linked to network connection (usually to socket fd)
 
-	void SetType( const event_type_t type );
+	event_type_t type = ET_NONE;
+	struct {
+		std::string remote_address;
+		std::string packet_data;
+	} data;
 
-	const std::string& GetKeyCodeStr() const;
-	const std::string& GetTypeStr() const;
-	const std::string ToString() const;
+	void operator=( const Event& other ) {
+		cid = other.cid;
+		type = other.type;
+		data.remote_address = other.data.remote_address;
+		data.packet_data = other.data.packet_data;
+	}
 
-private:
-	event_type_t m_type = EV_NONE;
-	event_flag_t m_flags = EF_NONE;
-
-public:
-	const event_type_t& type = m_type;
-	const event_flag_t& flags = m_flags;
+	void Clear() {
+		cid = 0;
+		type = ET_NONE;
+		data.remote_address.clear();
+		data.packet_data.clear();
+	}
 
 };
 
