@@ -1,5 +1,7 @@
 //! Core engine crate for the Rust migration.
 
+pub mod ai;
+
 pub fn version() -> &'static str {
-    "0.1.0"
+    "0.2.0"
 }
