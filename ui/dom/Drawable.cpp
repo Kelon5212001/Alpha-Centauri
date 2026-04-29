@@ -1,0 +1,135 @@
+#include "Drawable.h"
+
+#include "Container.h"
+#include "ui/geometry/Rectangle.h"
+#include "input/Event.h"
+#include "util/String.h"
+#include "gse/value/Int.h"
+#include "gse/value/Float.h"
+
+namespace ui {
+namespace dom {
+
+static const std::unordered_map< std::string, geometry::Geometry::align_t > s_align_strs = {
+	{
+		"left",
+		geometry::Geometry::ALIGN_LEFT
+	},
+	{
+		"right",
+		geometry::Geometry::ALIGN_RIGHT
+	},
+	{
+		"top",
+		geometry::Geometry::ALIGN_TOP
+	},
+	{
+		"bottom",
+		geometry::Geometry::ALIGN_BOTTOM
+	},
+	{
+		"center",
+		geometry::Geometry::ALIGN_CENTER
+	},
+};
+
+Drawable::Drawable( DOM_ARGS_T, geometry::Geometry* const geometry )
+	: Object( DOM_ARGS_PASS_T )
+	, m_geometry( geometry ) {
+
+#define GEOMSETTER( _key, _type ) \
+    Property( \
+        GSE_CALL, _key, _type, nullptr, PF_NONE, [ this ]( GSE_CALLABLE, gse::Value* const v )
+
+#define GEOMPROP( _key, _method, _type ) \
+    GEOMSETTER( _key, gse::value::_type::GetType() ) { \
+        m_geometry->_method( ( (gse::value::_type*)v )->value ); \
+        if ( m_parent ) { \
+            m_parent->UpdateMouseOver( GSE_CALL ); \
+        } \
+    } )
+	GEOMPROP( "left", SetLeft, Int );
+	GEOMPROP( "top", SetTop, Int );
+	GEOMPROP( "right", SetRight, Int );
+	GEOMPROP( "bottom", SetBottom, Int );
+#undef GEOMPROP
+
+	GEOMSETTER( "zindex", gse::VT_FLOAT ) {
+		const auto old_zindex = m_geometry->GetZIndex();
+		const auto new_zindex = ( (gse::value::Float*)v )->value;
+		m_geometry->SetZIndex( new_zindex );
+		if ( m_parent ) {
+			m_parent->UpdateMouseOver( GSE_CALL );
+			m_parent->UpdateChildZIndex( m_dom_id, old_zindex, new_zindex );
+		}
+	} );
+
+	GEOMSETTER( "align", gse::VT_STRING ) {
+		const auto strs = util::String::Split( ( (gse::value::String*)v )->value, ' ' );
+		uint8_t align = geometry::Geometry::ALIGN_NONE;
+		for ( const auto& str : strs ) {
+			const auto& it = s_align_strs.find( str );
+			if ( it == s_align_strs.end() ) {
+				GSE_ERROR( gse::EC.UI_ERROR, "Invalid align value: " + str );
+			}
+			auto a = it->second;
+			if ( a == geometry::Geometry::ALIGN_CENTER ) {
+				if ( ( ( align & geometry::Geometry::ALIGN_VCENTER ) != geometry::Geometry::ALIGN_VCENTER ) && ( ( align & geometry::Geometry::ALIGN_TOP ) || ( align & geometry::Geometry::ALIGN_BOTTOM ) ) ) {
+					a = geometry::Geometry::ALIGN_HCENTER;
+				}
+				if ( ( ( align & geometry::Geometry::ALIGN_HCENTER ) != geometry::Geometry::ALIGN_HCENTER ) && ( ( align & geometry::Geometry::ALIGN_LEFT ) || ( align & geometry::Geometry::ALIGN_RIGHT ) ) ) {
+					a = geometry::Geometry::ALIGN_VCENTER;
+				}
+			}
+			else if ( a == geometry::Geometry::ALIGN_LEFT ) {
+				align &= ~geometry::Geometry::ALIGN_RIGHT;
+			}
+			else if ( a == geometry::Geometry::ALIGN_RIGHT ) {
+				align &= ~geometry::Geometry::ALIGN_LEFT;
+			}
+			else if ( a == geometry::Geometry::ALIGN_TOP ) {
+				align &= ~geometry::Geometry::ALIGN_BOTTOM;
+			}
+			else if ( a == geometry::Geometry::ALIGN_BOTTOM ) {
+				align &= ~geometry::Geometry::ALIGN_TOP;
+			}
+			align |= a;
+		}
+		m_geometry->SetAlign( (geometry::Geometry::align_t)align );
+		if ( m_parent ) {
+			m_parent->UpdateMouseOver( GSE_CALL );
+		}
+	} );
+}
+
+Drawable::~Drawable() {
+	for ( const auto& id : m_geometry_handler_ids ) {
+		m_geometry->RemoveHandler( id );
+	}
+	delete m_geometry;
+}
+
+geometry::Geometry* const Drawable::GetGeometry() const {
+	return m_geometry;
+}
+
+void Drawable::GeometryHandler( const geometry_handler_type_t type, const std::function< void() >& f ) {
+	m_geometry_handler_ids.push_back( m_geometry->AddHandler( type, f ) );
+}
+
+void Drawable::Show() {
+	if ( !m_is_visible ) {
+		Object::Show();
+		m_geometry->Show();
+	}
+}
+
+void Drawable::Hide() {
+	if ( m_is_visible ) {
+		m_geometry->Hide();
+		Object::Hide();
+	}
+}
+
+}
+}
