@@ -506,3 +506,9 @@ A special, grand scale game mode.
 - number of AIs will be kept at minimum, only to compensate low online when it's low
 - turns will need to be fragmented instead of global, which means world will be split into regions where turns will move separately from each other. So time may flow differently in different regions, depending on how fast players there make turns. This will give small boost to new players since turns are very fast at start of the game, then later turns will slowdown if player gets more cities and stuff. There is no way to have global turns because if ~1000 players are playing then 999 may need to wait for 1 player that just went afk or is just very slow (a nightmare even with parallel turns mode). 
 
+
+
+## Migration status
+
+- Legacy C++ sources are being staged under `legacy/cpp/`.
+- New Linux-native Rust rewrite workspace lives in `rust-native/`.

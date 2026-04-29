@@ -1,0 +1,41 @@
+name: Rust Native Ubuntu Build
+
+on:
+  push:
+    paths:
+      - 'rust-native/**'
+      - '.github/workflows/rust-native-ubuntu.yml'
+  pull_request:
+    paths:
+      - 'rust-native/**'
+      - '.github/workflows/rust-native-ubuntu.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: rust-native
+
+      - name: Build release executable
+        run: |
+          cd rust-native
+          ./scripts/build-ubuntu.sh
+
+      - name: Verify executable bit
+        run: test -x rust-native/dist/ubuntu/alpha-centauri
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-centauri-ubuntu
+          path: rust-native/dist/ubuntu/alpha-centauri

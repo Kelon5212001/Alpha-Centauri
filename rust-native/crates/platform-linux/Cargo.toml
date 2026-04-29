@@ -1,0 +1,11 @@
+[package]
+name = "alpha_centauri_platform_linux"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "alpha-centauri"
+path = "src/main.rs"
+
+[dependencies]
+alpha_centauri_engine = { path = "../engine" }
