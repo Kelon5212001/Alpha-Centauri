@@ -1,0 +1,6 @@
+[workspace]
+members = [
+  "crates/engine",
+  "crates/platform-linux",
+]
+resolver = "2"
