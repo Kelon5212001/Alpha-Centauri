@@ -1,9 +1,25 @@
-SUBDIR( backend )
-SUBDIR( frontend )
+SUBDIR( context )
+SUBDIR( value )
+SUBDIR( callable )
+SUBDIR( parser )
+SUBDIR( program )
+SUBDIR( runner )
+SUBDIR( builtins )
+
+IF ( CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "FastDebug" )
+	SUBDIR( tests )
+ENDIF ()
 
 SET( SRC ${SRC}
 
-	${PWD}/FrontendRequest.cpp
-	${PWD}/BackendRequest.cpp
+	${PWD}/GSE.cpp
+	${PWD}/Value.cpp
+	${PWD}/ExecutionPointer.cpp
+	${PWD}/Exception.cpp
+	${PWD}/Wrappable.cpp
+	${PWD}/GCWrappable.cpp
+	${PWD}/Async.cpp
 
-	PARENT_SCOPE )
+)
+
+SET( SRC ${SRC} PARENT_SCOPE )

@@ -1,0 +1,22 @@
+#pragma once
+
+#include "gse/tests/Types.h"
+
+namespace gc {
+class Space;
+}
+
+namespace gse {
+
+namespace context {
+class GlobalContext;
+}
+
+namespace tests {
+namespace mocks {
+
+void AddMocks( gc::Space* const gc_space, context::GlobalContext* ctx, const test_info_t& test_info );
+
+}
+}
+}
