@@ -1858,6 +1858,7 @@ enum AiObjective {
     SupportColony(usize),
     BoardTransport(usize),
     NavalInvasion(usize),
+    LaunchPlanetBuster(usize, usize),
 }
 
 struct AiBattleGroup {
@@ -2037,7 +2038,25 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         }
     }
 
-    // g. Remaining units Assemble at a border base
+    // g. Planet Buster 'Vaporization Group' Logic
+    let pb_ids: Vec<usize> = combat_unit_ids
+        .iter()
+        .filter(|&&id| matches!(state.unit_weapon(id), Some(Weapon::PlanetBuster(_))))
+        .cloned()
+        .collect();
+
+    for pb_id in pb_ids {
+        let Some(pb_unit) = state.unit(pb_id) else { continue };
+        if let Some((tx, ty)) = choose_ai_planet_buster_target(state, pb_unit) {
+            combat_unit_ids.retain(|&id| id != pb_id);
+            battle_groups.push(AiBattleGroup {
+                objective: AiObjective::LaunchPlanetBuster(tx, ty),
+                unit_ids: vec![pb_id],
+            });
+        }
+    }
+
+    // h. Remaining units Assemble at a border base
     if !combat_unit_ids.is_empty() {
         let rival = rival_owner(state, owner);
         let owned_bases = state.bases_for(owner);
@@ -2075,6 +2094,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 let unit = &state.units[unit_id];
                 (unit.x, unit.y)
             }
+            AiObjective::LaunchPlanetBuster(tx, ty) => (tx, ty),
         };
 
         let is_attacking = matches!(group.objective, AiObjective::AttackBase(_));
@@ -2087,6 +2107,14 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 if let AiObjective::BoardTransport(transport_id) = group.objective {
                     if unit.x == tx && unit.y == ty {
                         let _ = state.apply_action(GameAction::LoadUnit { unit_id, transport_id });
+                        continue;
+                    }
+                }
+
+                // Planet Buster logic
+                if let AiObjective::LaunchPlanetBuster(tx, ty) = group.objective {
+                    if state.distance(unit.x, unit.y, tx, ty) <= 1 {
+                        let _ = state.apply_action(GameAction::MoveUnit { unit_id, target_x: tx, target_y: ty });
                         continue;
                     }
                 }
@@ -2103,7 +2131,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 }
 
                 // Air Patrol logic
-                if state.unit_is_aircraft(unit.id) && state.tile(unit.x, unit.y).and_then(|t| t.base).is_some() {
+                if state.unit_is_aircraft(unit.id) && state.tile(unit.x, unit.y).and_then(|t| t.base).is_some() && unit.moves_left == 1 {
                     let _ = state.apply_action(GameAction::SetUnitActivity { unit_id: unit.id, activity: crate::model::UnitActivity::Patrol });
                     continue;
                 }
@@ -2259,6 +2287,28 @@ fn is_ai_colony_site_acceptable(state: &GameState, owner: usize, x: usize, y: us
     nearest_friendly_base
         .map(|distance| distance as i32 >= minimum_spacing)
         .unwrap_or(true)
+}
+
+fn choose_ai_planet_buster_target(state: &GameState, unit: &crate::Unit) -> Option<(usize, usize)> {
+    let rival = rival_owner(state, unit.owner);
+    let mut best_target = None;
+    let mut best_score = 0;
+
+    for base in state.bases.iter().filter(|b| b.owner == rival) {
+        let dist = state.distance(unit.x, unit.y, base.x, base.y);
+        if dist > 20 {
+            continue;
+        }
+
+        // Score based on population and facilities
+        let score = (base.population as i32 * 10) + (base.facilities.len() as i32 * 5);
+        if score > best_score {
+            best_score = score;
+            best_target = Some((base.x, base.y));
+        }
+    }
+
+    best_target
 }
 
 fn choose_ai_colony_target(state: &GameState, unit: &crate::Unit) -> Option<(usize, usize)> {
