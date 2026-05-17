@@ -18,7 +18,7 @@ Verification notes in this shell:
 
 - The default workspace test path is now green because `smac_bevy` desktop/audio dependencies are feature-gated off the default test path.
 - The interactive Bevy desktop client still requires the `desktop` feature and host windowing/audio packages.
-- The current full-workspace test count is `281` passing tests.
+- The current full-workspace test count is `283` passing tests.
 
 ## Sprint A: Cleanup And Workspace Recovery
 
@@ -367,34 +367,38 @@ Next-sprint handoff that should happen now:
 - move to council-aware AI behavior now that expansion/survival outliers are no longer dominating the proving harness
 - start making the midgame more dramatic instead of only more stable
 
+## Sprint R: Council-Aware AI Strategy
+
+Scope:
+
+- added council-aware AI strategy inside `update_ai_diplomacy`
+- taught factions to call the Planetary Council only when they have a realistic self-election coalition
+- taught factions to vote for governor candidates based on relations, diplomatic status, faction weight, and current governorship
+- added council vote logging with explicit voter, target, and weighted vote text
+- fixed the council/transcendence rules conflict by requiring Planetary Governorship in addition to `Secrets of Planet` and `Empath Guild`
+- added regressions for AI council calling, AI ally voting, and transcendence requiring governorship
+
+Key outcomes:
+
+- the Planetary Council is now an active strategic layer instead of only persisted mechanics
+- council activation no longer short-circuits directly into transcendence victory
+- the clean `10`-seed proving baseline survived intact:
+  - `terminal 0 / 10`
+  - `famines 0`
+  - `starvation 0`
+  - `support 0`
+  - `player low-expansion 0`
+  - `ai low-expansion 0`
+
+Next-sprint handoff that should happen now:
+
+- keep the clean proving baseline intact
+- shift from political plumbing to making the midgame more active
+- only revisit broader council outcome resolution after the conflict layer is stronger
+
 ## Immediate Gemini Handoff
 
 Use this exact sprint order next.
-
-### Sprint R: Council-Aware AI Strategy
-
-Goal:
-
-- make AI factions proactively use the new Planetary Council instead of merely supporting the mechanics
-
-Where to work:
-
-- `smac_core/src/ai.rs`
-- `smac_core/src/game_state.rs`
-- `smac_core/src/model.rs`
-- council-related autoplay output in `smac_core/src/bin/autoplay_demo.rs` and `autoplay_sweep.rs`
-
-What to add:
-
-- AI logic for when to call council
-- AI vote targeting based on relations, power, and victory posture
-- strategic value for `Empath Guild` tied to council leverage
-
-Acceptance criteria:
-
-- autoplay logs show factions making non-random council choices
-- new council decisions do not break save/load or 100-turn sim stability
-- the `10`-seed sweep stays at `0/10` terminal, famine, starvation, support, and low-expansion failures
 
 ### Sprint S: Midgame Conflict Pressure
 
@@ -458,4 +462,28 @@ Acceptance criteria:
 
 - terrain edges read more cleanly at gameplay zoom levels
 - presentation work does not destabilize the current simulation baseline
+
+### Sprint V: Council Outcome Expansion
+
+Goal:
+
+- make the council system resolve into broader campaign stakes once the conflict layer is active enough to support it
+
+Where to work:
+
+- `smac_core/src/game_state.rs`
+- `smac_core/src/model.rs`
+- autoplay reporting in `smac_core/src/bin/autoplay_demo.rs` and `autoplay_sweep.rs`
+- docs in `README.md` and `ROADMAP.md`
+
+What to investigate:
+
+- whether `VoteForSupremeLeader` should become a real late-game council path
+- whether existing council-related `GameOver` variants should become active outcomes instead of placeholders
+- how to keep those outcomes from truncating the proving harness too early
+
+Acceptance criteria:
+
+- council outcomes are no longer partially implemented placeholders
+- any new outcome still preserves the proving baseline when those conditions are not met
 - visuals improve readability without coupling new rules into presentation code

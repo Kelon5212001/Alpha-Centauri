@@ -6056,7 +6056,7 @@ fn victory_transcendence_requires_empath_guild_project() {
 }
 
 #[test]
-fn victory_transcendence_attained_with_tech_and_empath_guild() {
+fn victory_transcendence_requires_council_governorship() {
     let mut game = GameState::new_game(16, 16, 7);
     let roles = runtime_roles();
     let owner = roles.player;
@@ -6079,6 +6079,12 @@ fn victory_transcendence_attained_with_tech_and_empath_guild() {
         .push(smac_core::Tech::SecretsOfPlanet);
     game.built_secret_projects
         .push((smac_core::SecretProject::EmpathGuild, owner));
+
+    game.end_turn();
+    assert!(game.game_over.is_none());
+
+    game.council.is_active = true;
+    game.council.governor_id = Some(owner);
     game.end_turn();
     assert_eq!(
         game.game_over,

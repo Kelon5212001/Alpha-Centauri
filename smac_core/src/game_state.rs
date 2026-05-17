@@ -12164,6 +12164,7 @@ impl GameState {
             // a. Transcendence Victory (late tech plus a dedicated project)
             if faction.known_techs.contains(&Tech::SecretsOfPlanet)
                 && self.has_secret_project(faction_id, SecretProject::EmpathGuild)
+                && self.council.governor_id == Some(faction_id)
             {
                 if faction_id == player_owner {
                     self.game_over = Some(GameOver::PlayerWonTranscendence);
@@ -12377,12 +12378,32 @@ impl GameState {
         if !self.council.is_active {
             return Err("Council not active.".to_string());
         }
+        if voter_id == crate::model::NATIVE_ID || candidate_id == crate::model::NATIVE_ID {
+            return Err("Native life cannot participate in council votes.".to_string());
+        }
+        if self
+            .council
+            .pending_votes
+            .iter()
+            .any(|vote| vote.faction_id == voter_id)
+        {
+            return Err("Faction has already voted in this council session.".to_string());
+        }
         let weight = self.calculate_vote_weight(voter_id);
         self.council.pending_votes.push(crate::model::CouncilVote {
             faction_id: voter_id,
             candidate_id,
             weight,
         });
+        self.push_event_log(
+            EventCategory::Diplomacy,
+            format!(
+                "PLANETARY COUNCIL: {} cast a {}-weight governor vote for {}.",
+                self.faction_name(voter_id),
+                weight,
+                self.faction_name(candidate_id)
+            ),
+        );
 
         if self.council.pending_votes.len() >= self.factions.len() - 1 {
             self.resolve_council_votes();
@@ -12398,12 +12419,32 @@ impl GameState {
         if !self.council.is_active {
             return Err("Council not active.".to_string());
         }
+        if voter_id == crate::model::NATIVE_ID || candidate_id == crate::model::NATIVE_ID {
+            return Err("Native life cannot participate in council votes.".to_string());
+        }
+        if self
+            .council
+            .pending_votes
+            .iter()
+            .any(|vote| vote.faction_id == voter_id)
+        {
+            return Err("Faction has already voted in this council session.".to_string());
+        }
         let weight = self.calculate_vote_weight(voter_id);
         self.council.pending_votes.push(crate::model::CouncilVote {
             faction_id: voter_id,
             candidate_id,
             weight,
         });
+        self.push_event_log(
+            EventCategory::Diplomacy,
+            format!(
+                "PLANETARY COUNCIL: {} cast a {}-weight supreme-leader vote for {}.",
+                self.faction_name(voter_id),
+                weight,
+                self.faction_name(candidate_id)
+            ),
+        );
 
         if self.council.pending_votes.len() >= self.factions.len() - 1 {
             self.resolve_council_votes();

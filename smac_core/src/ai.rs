@@ -291,7 +291,215 @@ fn update_ai_social_engineering(state: &mut GameState, owner: usize) {
     let _ = state.apply_action(action);
 }
 
+fn update_ai_council_strategy(state: &mut GameState, owner: usize) {
+    if owner == crate::model::NATIVE_ID || !state.council.is_active {
+        return;
+    }
+
+    let is_alive = !state.bases_for(owner).is_empty() || !state.live_units_for(owner).is_empty();
+    if !is_alive {
+        return;
+    }
+
+    if state
+        .council
+        .pending_votes
+        .iter()
+        .any(|vote| vote.faction_id == owner)
+    {
+        return;
+    }
+
+    if !state.council.pending_votes.is_empty() {
+        cast_ai_council_vote(state, owner);
+        return;
+    }
+
+    if !should_ai_call_council(state, owner) {
+        return;
+    }
+
+    let caller_name = state.faction_name(owner).to_string();
+    if state.apply_action(GameAction::CallCouncil).is_ok() {
+        state.push_event_log(
+            crate::EventCategory::Diplomacy,
+            format!("PLANETARY COUNCIL: {caller_name} has called for a governor election."),
+        );
+        cast_ai_council_vote(state, owner);
+    }
+}
+
+fn should_ai_call_council(state: &GameState, owner: usize) -> bool {
+    if !state.council.is_active
+        || !state.council.pending_votes.is_empty()
+        || state.turn < state.council.last_meeting_turn + 20
+    {
+        return false;
+    }
+
+    let Some(faction) = state.faction(owner) else {
+        return false;
+    };
+
+    let our_weight = council_vote_weight_for_faction(state, owner);
+    if our_weight <= 0 {
+        return false;
+    }
+
+    let total_weight = council_total_weight(state);
+    if total_weight <= 0 {
+        return false;
+    }
+
+    let supportive_weight = council_supportive_weight_for_candidate(state, owner, owner);
+    if supportive_weight * 3 <= total_weight * 2 {
+        return false;
+    }
+
+    if choose_ai_council_candidate(state, owner) != owner {
+        return false;
+    }
+
+    let governor_needs_replacing = match state.council.governor_id {
+        None => true,
+        Some(current) if current == owner => false,
+        Some(current) => {
+            let relation = &state.relations[owner][current];
+            let current_weight = council_vote_weight_for_faction(state, current);
+            relation.attitude < 40 || current_weight <= our_weight
+        }
+    };
+
+    governor_needs_replacing
+        && (state.has_secret_project(owner, crate::SecretProject::EmpathGuild)
+            || faction.personality.diplomatic_tone >= 5
+            || faction.personality.aggression >= 7
+            || our_weight * 3 >= total_weight)
+}
+
+fn cast_ai_council_vote(state: &mut GameState, owner: usize) {
+    let candidate_id = choose_ai_council_candidate(state, owner);
+    let _ = state.apply_action(GameAction::VoteForGovernor {
+        voter_id: owner,
+        candidate_id,
+    });
+}
+
+fn choose_ai_council_candidate(state: &GameState, owner: usize) -> usize {
+    let alive_factions: Vec<usize> = state
+        .factions
+        .iter()
+        .filter(|faction| faction.id != crate::model::NATIVE_ID)
+        .filter(|faction| {
+            !state.bases_for(faction.id).is_empty() || !state.live_units_for(faction.id).is_empty()
+        })
+        .map(|faction| faction.id)
+        .collect();
+
+    alive_factions
+        .into_iter()
+        .max_by_key(|&candidate_id| score_ai_council_candidate(state, owner, candidate_id))
+        .unwrap_or(owner)
+}
+
+fn score_ai_council_candidate(state: &GameState, owner: usize, candidate_id: usize) -> i32 {
+    let candidate_weight = council_vote_weight_for_faction(state, candidate_id);
+    let our_weight = council_vote_weight_for_faction(state, owner);
+    let mut score = candidate_weight * 2;
+
+    if candidate_id == owner {
+        score += 55;
+        if state.council.governor_id != Some(owner) {
+            score += 20;
+        }
+        if state.has_secret_project(owner, crate::SecretProject::EmpathGuild) {
+            score += 50;
+        }
+        return score;
+    }
+
+    let relation = &state.relations[owner][candidate_id];
+    score += relation.attitude;
+    score += match relation.status {
+        crate::DiplomacyStatus::Pact => 35,
+        crate::DiplomacyStatus::Treaty => 15,
+        crate::DiplomacyStatus::Truce => 0,
+        crate::DiplomacyStatus::War => -80,
+    };
+
+    if state.council.governor_id == Some(candidate_id) {
+        score += if relation.attitude >= 0 { 10 } else { -15 };
+    }
+
+    if state.has_secret_project(candidate_id, crate::SecretProject::EmpathGuild) {
+        score += 8;
+    }
+
+    let Some(owner_faction) = state.faction(owner) else {
+        return score;
+    };
+    if owner_faction.personality.aggression >= 7 && relation.attitude < 20 {
+        score -= 20;
+    }
+    if candidate_weight > our_weight * 2 && relation.attitude < 40 {
+        score -= 25;
+    }
+
+    score
+}
+
+fn council_vote_weight_for_faction(state: &GameState, faction_id: usize) -> i32 {
+    let Some(faction) = state.faction(faction_id) else {
+        return 0;
+    };
+    let base_weight = faction.total_population(state);
+    if state.has_secret_project(faction_id, crate::SecretProject::EmpathGuild) {
+        base_weight * 2
+    } else {
+        base_weight
+    }
+}
+
+fn council_total_weight(state: &GameState) -> i32 {
+    state
+        .factions
+        .iter()
+        .filter(|faction| faction.id != crate::model::NATIVE_ID)
+        .filter(|faction| {
+            !state.bases_for(faction.id).is_empty() || !state.live_units_for(faction.id).is_empty()
+        })
+        .map(|faction| council_vote_weight_for_faction(state, faction.id))
+        .sum()
+}
+
+fn council_supportive_weight_for_candidate(
+    state: &GameState,
+    caller_id: usize,
+    candidate_id: usize,
+) -> i32 {
+    state
+        .factions
+        .iter()
+        .filter(|faction| faction.id != crate::model::NATIVE_ID)
+        .filter(|faction| {
+            !state.bases_for(faction.id).is_empty() || !state.live_units_for(faction.id).is_empty()
+        })
+        .filter(|faction| {
+            if faction.id == candidate_id {
+                return true;
+            }
+            let relation = &state.relations[faction.id][candidate_id];
+            relation.status == crate::DiplomacyStatus::Pact
+                || relation.attitude >= 50
+                || (faction.id == caller_id && candidate_id == caller_id)
+        })
+        .map(|faction| council_vote_weight_for_faction(state, faction.id))
+        .sum()
+}
+
 fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
+    update_ai_council_strategy(state, owner);
+
     if state.turn % 5 != 0 {
         return;
     }
@@ -3609,13 +3817,15 @@ fn score_unexplored_tile_target(
 #[cfg(test)]
 mod tests {
     use super::{
-        best_scored_target, choose_ai_colony_target, choose_ai_production_for_base,
-        choose_ai_raider_target, desired_ai_base_spacing, desired_ai_expansion_target,
-        economy_signals_for_base, exploratory_target, is_ai_colony_site_acceptable, manhattan,
-        maybe_assign_ai_convoy_route, run_ai_economy_for_owner, run_ai_tactics_for_owner,
-        score_player_base_target, score_player_unit_target, score_raider_base_target,
-        score_unexplored_tile_target, tactical_signals, try_ai_move_toward, update_ai_research,
-        update_ai_social_engineering, update_ai_unit_designs, AiTacticalSignals,
+        best_scored_target, choose_ai_colony_target, choose_ai_council_candidate,
+        choose_ai_production_for_base, choose_ai_raider_target, desired_ai_base_spacing,
+        desired_ai_expansion_target, economy_signals_for_base, exploratory_target,
+        is_ai_colony_site_acceptable, manhattan, maybe_assign_ai_convoy_route,
+        run_ai_economy_for_owner, run_ai_tactics_for_owner, score_player_base_target,
+        score_player_unit_target, score_raider_base_target, score_unexplored_tile_target,
+        should_ai_call_council, tactical_signals, try_ai_move_toward, update_ai_diplomacy,
+        update_ai_research, update_ai_social_engineering, update_ai_unit_designs,
+        AiTacticalSignals,
     };
     use crate::{
         Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
@@ -5519,6 +5729,140 @@ mod tests {
         let choice = choose_ai_production_for_base(&game, 1, owner);
 
         assert_eq!(choice, ProductionItem::ColonyPod);
+    }
+
+    #[test]
+    fn ai_calls_council_when_its_self_coalition_can_win() {
+        let mut game = GameState::new_game(20, 20, 7);
+        let owner = game.ai_owner();
+        let ally = game.player_owner();
+        game.turn = 25;
+        game.units.clear();
+        game.bases.clear();
+        game.council.is_active = true;
+        game.council.last_meeting_turn = 0;
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Sparta Command".to_string(),
+            x: 15,
+            y: 15,
+            population: 8,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[15 * game.width + 15].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner: ally,
+            name: "Landing Point".to_string(),
+            x: 3,
+            y: 3,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[3 * game.width + 3].base = Some(1);
+
+        game.relations[owner][ally].status = crate::DiplomacyStatus::Pact;
+        game.relations[owner][ally].attitude = 80;
+        game.relations[ally][owner].status = crate::DiplomacyStatus::Pact;
+        game.relations[ally][owner].attitude = 80;
+        game.built_secret_projects
+            .push((crate::SecretProject::EmpathGuild, owner));
+
+        assert!(should_ai_call_council(&game, owner));
+
+        update_ai_diplomacy(&mut game, owner);
+
+        let self_vote_pending = game
+            .council
+            .pending_votes
+            .iter()
+            .any(|vote| vote.faction_id == owner && vote.candidate_id == owner);
+        assert!(self_vote_pending || game.council.governor_id == Some(owner));
+    }
+
+    #[test]
+    fn ai_votes_for_friendly_council_candidate_when_session_is_open() {
+        let mut game = GameState::new_game(20, 20, 7);
+        let owner = game.ai_owner();
+        let ally = game.player_owner();
+        game.turn = 26;
+        game.units.clear();
+        game.bases.clear();
+        game.council.is_active = true;
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner: ally,
+            name: "Landing Point".to_string(),
+            x: 3,
+            y: 3,
+            population: 8,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[3 * game.width + 3].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner,
+            name: "Sparta Command".to_string(),
+            x: 15,
+            y: 15,
+            population: 3,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[15 * game.width + 15].base = Some(1);
+
+        game.relations[owner][ally].status = crate::DiplomacyStatus::Pact;
+        game.relations[owner][ally].attitude = 85;
+        game.relations[ally][owner].status = crate::DiplomacyStatus::Pact;
+        game.relations[ally][owner].attitude = 85;
+
+        let ally_candidate = choose_ai_council_candidate(&game, owner);
+        assert_eq!(ally_candidate, ally);
+
+        game.council.pending_votes.push(crate::model::CouncilVote {
+            faction_id: ally,
+            candidate_id: ally,
+            weight: 8,
+        });
+
+        update_ai_diplomacy(&mut game, owner);
+
+        assert_eq!(game.council.governor_id, Some(ally));
+        assert!(game.council.pending_votes.is_empty());
     }
 
     #[test]

@@ -2,7 +2,7 @@
 
 This repository is a Rust-first SMAC-inspired strategy project with a playable `egui` front end, a large deterministic core crate, bundled JSON game content, and an embedded `glsmac/` reference codebase.
 
-This README reflects the current repository state as of 2026-05-17 after the simulation-stabilization work, the Bevy client transition, advanced-warfare AI, the planetary-council diplomacy foundation, Sprint O stability hardening, Sprint P sweep recovery, and Sprint Q expansion-outlier elimination.
+This README reflects the current repository state as of 2026-05-17 after the simulation-stabilization work, the Bevy client transition, advanced-warfare AI, the planetary-council diplomacy foundation, Sprint O stability hardening, Sprint P sweep recovery, Sprint Q expansion-outlier elimination, and Sprint R council-aware AI strategy.
 
 ## Current State
 
@@ -116,7 +116,14 @@ Current transcendence pacing rule:
 
 - `Secrets of Planet` is no longer an instant-win tech by itself
 - the tech now unlocks `Empath Guild`
-- transcendence requires both `Secrets of Planet` and the `Empath Guild` secret project
+- `Empath Guild` now activates the Planetary Council instead of ending the sim immediately
+- transcendence now requires `Secrets of Planet`, `Empath Guild`, and Planetary Governorship
+
+Current council strategy state:
+
+- AI factions now decide when to call the Planetary Council based on coalition strength and governorship value
+- AI factions now cast governor votes based on relations, status, faction weight, and existing governorship
+- autoplay logs now record council votes with explicit voter, target, and vote weight
 
 About the current viewers:
 
@@ -212,7 +219,7 @@ Using the local toolchain in `.rustup-local/`:
 
 Current verified workspace test count:
 
-- 281 tests passed
+- 283 tests passed
 
 Current Bevy build notes:
 
@@ -249,9 +256,9 @@ The visual-transition work is established, and the repo is now in `Phase 4: Adva
 Immediate next sprint:
 
 1. Preserve the restored `0/10` sweep baseline across terminal, famine, starvation, support, and low-expansion metrics.
-2. Make the Planetary Council an active strategic layer by teaching AI factions when to call and how to vote.
-3. Increase midgame conflict pressure so the sim produces more border tension, raids, and strategic reversals instead of mostly economic churn.
-4. Keep `smac_bevy` verification lightweight while continuing terrain-transition and presentation work behind that stable gameplay baseline.
+2. Increase midgame conflict pressure so the sim produces more border tension, raids, and strategic reversals instead of mostly economic churn.
+3. Keep `smac_bevy` verification lightweight while continuing terrain-transition and presentation work behind that stable gameplay baseline.
+4. Expand council outcomes later into stronger diplomatic victory/campaign-resolution mechanics once the conflict layer is more active.
 
 Detailed sprint history and the Gemini handoff live in:
 
@@ -261,19 +268,19 @@ Detailed sprint history and the Gemini handoff live in:
 
 What is true now:
 
-- the workspace is green and currently verifies `281` passing tests
+- the workspace is green and currently verifies `283` passing tests
 - this shell locally reverified the full workspace, including the default `smac_bevy` test path, on 2026-05-17
 - the 100-turn seed-`7` demo still completes without a terminal outcome
-- Sprint O fixed the seed-`7` Sparta collapse, Sprint P restored the no-famine/no-support baseline, and Sprint Q removed the remaining sampled AI low-expansion outliers
+- Sprint O fixed the seed-`7` Sparta collapse, Sprint P restored the no-famine/no-support baseline, Sprint Q removed the remaining sampled AI low-expansion outliers, and Sprint R made council behavior strategically active
 - the 10-seed proving sweep now reaches turn `100` without premature terminal outcomes
 - multi-seed diagnostics now show `0/10` famine/support-collapse outcomes on the verified sweep
 - multi-seed diagnostics now show `0/10` AI low-expansion outcomes on the verified sweep
 - `Stockpile Energy` no longer risks a zero-cost production-loop hang in the core economy pass
-- transcendence now requires both `Secrets of Planet` and `Empath Guild`
+- transcendence now requires `Secrets of Planet`, `Empath Guild`, and Planetary Governorship
 - rich factions can now bridge mineral support shortfalls from energy reserves instead of immediately disbanding units
 - support pressure ends in a healthier state on the verified seed than it did before this sprint
 - deep systems coverage remains intact across AI, logistics, saves, research, diplomacy, workshop, crises, and tactical heuristics
-- the Planetary Council foundation is now in place, including council state, weighted votes, save persistence, and autoplay/reporting integration
+- the Planetary Council now has active AI behavior, including coalition-aware call logic, relation-weighted governor voting, weighted vote logging, save persistence, and autoplay/reporting integration
 - **Repeatable Diagnostics**: Autoplay demo and multi-seed sweep binaries for continuous engine verification.
 
 What is still not true:

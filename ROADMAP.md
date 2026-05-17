@@ -8,7 +8,7 @@ This file is the live status tracker for the active Rust workspace.
 
 Current phase: `Phase 4: Advanced Strategy And World Mechanics`
 
-The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the now-clean multi-seed simulation baseline from Sprint Q, then broaden strategy through council-aware AI and stronger midgame conflict generation.
+The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the now-clean multi-seed simulation baseline from Sprint Q and Sprint R, then broaden strategy through stronger midgame conflict generation.
 
 ## Current Status
 
@@ -31,7 +31,7 @@ Locally reverified in this shell on 2026-05-17:
 
 Current workspace test count:
 
-- `281` passing tests
+- `283` passing tests
 
 Current Bevy verification notes:
 
@@ -78,32 +78,40 @@ For the detailed per-sprint breakdown, use the sprint log instead of this status
   - council-related game-over outcomes
   - council save/load persistence
   - council reporting in autoplay tools
+- council-aware AI strategy now exists:
+  - coalition-aware council-call logic
+  - relation-weighted governor candidate selection
+  - weighted vote logging in council sessions
+- transcendence now requires:
+  - `Secrets of Planet`
+  - `Empath Guild`
+  - active Planetary Governorship
 - advanced-warfare AI groundwork exists for:
   - air-superiority patrolling
   - Planet Buster deployment logic
-- the remaining measured sim weakness is no longer broad support collapse or low expansion; the next gap is turning the stable economic baseline into more active diplomacy and conflict
+- the remaining measured sim weakness is no longer broad support collapse, low expansion, or inert council mechanics; the next gap is turning the stable economic baseline into more active conflict
 
 ## Immediate Next Tasks
 
 1. Preserve the `0/10` multi-seed baseline across terminal, famine, starvation, support, and low-expansion metrics.
-2. Implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
-3. Add stronger midgame conflict triggers so the sim produces more raids, border tension, and contested expansion.
-4. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
+2. Add stronger midgame conflict triggers so the sim produces more raids, border tension, and contested expansion.
+3. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
+4. Expand council outcomes later into stronger diplomatic-victory/campaign-resolution mechanics once the conflict layer is more active.
 
 ## Recommended Near-Term Order
 
 1. Use `autoplay_sweep` as the baseline diagnostic for gameplay changes instead of tuning against one seed.
 2. Hold the current no-famine/no-support/no-low-expansion baseline while expanding strategic behavior.
-3. Teach AI factions to call and vote in council based on power, relations, and victory posture.
-4. Then add stronger conflict drivers before resuming broader terrain-transition polish and Bevy presentation work.
+3. Add stronger conflict drivers before resuming broader terrain-transition polish and Bevy presentation work.
+4. Revisit council outcome resolution after the conflict layer creates more meaningful political stakes.
 
 ## Current Milestone Slice
 
-Current slice: `Simulation Baseline Stabilized After Sprint Q`
+Current slice: `Simulation Baseline Stabilized After Sprint R`
 
 - keep the core deterministic and green
-- preserve the seed-`7` Sparta fix and the clean 10-seed proving baseline
-- deepen diplomacy and council behavior from that stable base
+- preserve the seed-`7` Sparta fix, the clean 10-seed proving baseline, and the new council-governorship gate
+- keep diplomacy and council behavior stable from that base
 - increase strategic pressure so the midgame is more eventful
 - then continue terrain-transition and presentation work without destabilizing the sim
 
