@@ -18,7 +18,7 @@ Verification notes in this shell:
 
 - The default workspace test path is now green because `smac_bevy` desktop/audio dependencies are feature-gated off the default test path.
 - The interactive Bevy desktop client still requires the `desktop` feature and host windowing/audio packages.
-- The current full-workspace test count is `276` passing tests.
+- The current full-workspace test count is `281` passing tests.
 
 ## Sprint A: Cleanup And Workspace Recovery
 
@@ -334,37 +334,42 @@ Next-sprint handoff that should happen now:
 Follow-on note:
 
 - a colony-pod local detour fix is now in `try_ai_move_toward`, so pods no longer freeze as easily when the direct one-step route is blocked by a friendly unit
-- the latest sampled low-expansion outlier seeds are now `2`, `7`, and `9`; earlier seeds `4` and `5` improved after the detour and late-frontier work
+- Sprint Q should start from the last remaining measured outlier set: `2`, `7`, and `9`
+
+## Sprint Q: Remove Remaining AI Low-Expansion Outliers
+
+Scope:
+
+- investigated the remaining low-expansion seeds individually instead of continuing to tune only against the aggregate
+- added colony-pod detour movement so settlement units can sidestep friendly blockers instead of freezing on a blocked direct step
+- increased low-base colony-target bias toward nearer viable sites
+- added a late pop-`1` two-base colony escape so safe factions can still push a third colony after slow starts
+- reserved and backfilled garrisons for empty frontier bases, then added a final tactical cleanup pass that explicitly occupies ungarrisoned friendly bases at end of turn
+- split `IsleOfTheDeep` coastal-native pressure out of the normal land-front military veto so sea fauna no longer suppresses two-base expansion forever
+- added regressions for colony detours, empty-base defense behavior, and coastal-native expansion pressure
+
+Key outcomes:
+
+- default seed `7` now reaches turn `100` with `Gaia 5 bases / 28 units` and `Sparta 4 bases / 14 units`
+- seed `2` no longer collapses to `1` base; it now reaches turn `100` with `Sparta 4 bases`
+- seed `9` no longer stalls at `2` bases; it now reaches turn `100` with `Sparta 4 bases`
+- the verified `10`-seed sweep is now:
+  - `terminal 0 / 10`
+  - `famines 0`
+  - `starvation 0`
+  - `support 0`
+  - `player low-expansion 0`
+  - `ai low-expansion 0`
+
+Next-sprint handoff that should happen now:
+
+- preserve the clean sweep baseline before broadening systems again
+- move to council-aware AI behavior now that expansion/survival outliers are no longer dominating the proving harness
+- start making the midgame more dramatic instead of only more stable
 
 ## Immediate Gemini Handoff
 
 Use this exact sprint order next.
-
-### Sprint Q: Remove Remaining AI Low-Expansion Outliers
-
-Goal:
-
-- keep the restored sweep baseline while reducing the remaining `3/10` AI low-expansion cases
-
-Where to work:
-
-- `smac_core/src/ai.rs`
-- `smac_core/src/game_state.rs`
-- `smac_core/src/bin/autoplay_demo.rs`
-- `smac_core/src/bin/autoplay_sweep.rs`
-
-What to inspect first:
-
-- the remaining low-expansion seeds in the current sampled sweep: `2`, `7`, and `9`
-- whether colony pods are failing to settle, not being built, or being vetoed by local pressure/site filters too aggressively
-- whether the remaining outliers need looser site acceptance, better escort assignment, or less conservative late frontier production
-- whether local psi/military pressure is still blocking expansion too long after the support baseline is healthy
-
-Acceptance criteria:
-
-- default seed `7` still reaches `3` Sparta bases by turn `100`
-- verified 10-seed sweep stays at `0/10` terminal, famine, starvation, and support failures
-- verified 10-seed sweep reduces AI low-expansion materially from the current `3/10`
 
 ### Sprint R: Council-Aware AI Strategy
 
@@ -389,12 +394,36 @@ Acceptance criteria:
 
 - autoplay logs show factions making non-random council choices
 - new council decisions do not break save/load or 100-turn sim stability
+- the `10`-seed sweep stays at `0/10` terminal, famine, starvation, support, and low-expansion failures
 
-### Sprint S: Bevy Build Hardening
+### Sprint S: Midgame Conflict Pressure
 
 Goal:
 
-- make `smac_bevy` easier to build in constrained environments
+- make the stable sim produce more raids, contested borders, and strategic reversals instead of mostly economic churn
+
+Where to work:
+
+- `smac_core/src/ai.rs`
+- `smac_core/src/game_state.rs`
+- autoplay diagnostics in `smac_core/src/bin/autoplay_demo.rs` and `autoplay_sweep.rs`
+
+What to investigate:
+
+- border-tension triggers that push units toward contested frontier bases
+- better valuation of enemy colony pods, undefended outposts, and secret-project races
+- war-entry or raid posture heuristics that create more interaction once the empire baseline is stable
+
+Acceptance criteria:
+
+- autoplay logs show more non-terminal conflict activity in the midgame
+- the `10`-seed sweep stays at `0/10` terminal, famine, starvation, support, and low-expansion failures
+
+### Sprint T: Bevy Build Hardening
+
+Goal:
+
+- keep `smac_bevy` easy to verify in constrained environments while documenting the richer desktop/audio path clearly
 
 Where to work:
 
@@ -411,13 +440,13 @@ What to investigate:
 Acceptance criteria:
 
 - `smac_bevy` build instructions are explicit
-- if audio remains optional, headless/client verification paths should stop failing on missing ALSA tooling
+- headless/client verification paths stay lightweight
 
-### Sprint T: Terrain Transitions And Visual Readability
+### Sprint U: Terrain Transitions And Visual Readability
 
 Goal:
 
-- improve terrain transitions and border readability after the build-hardening pass
+- improve terrain transitions and border readability once council behavior and midgame conflict are producing more interesting simulations
 
 Where to work:
 
@@ -428,4 +457,5 @@ Where to work:
 Acceptance criteria:
 
 - terrain edges read more cleanly at gameplay zoom levels
+- presentation work does not destabilize the current simulation baseline
 - visuals improve readability without coupling new rules into presentation code

@@ -8,7 +8,7 @@ This file is the live status tracker for the active Rust workspace.
 
 Current phase: `Phase 4: Advanced Strategy And World Mechanics`
 
-The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the Sprint O Sparta fix, preserve the restored sweep baseline from Sprint P, then eliminate the last AI low-expansion outliers before broadening strategy again.
+The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the now-clean multi-seed simulation baseline from Sprint Q, then broaden strategy through council-aware AI and stronger midgame conflict generation.
 
 ## Current Status
 
@@ -31,7 +31,7 @@ Locally reverified in this shell on 2026-05-17:
 
 Current workspace test count:
 
-- `276` passing tests
+- `281` passing tests
 
 Current Bevy verification notes:
 
@@ -48,7 +48,7 @@ Still true at the repo level:
   - `starvation 0`
   - `support 0`
   - `player low-expansion 0`
-  - `ai low-expansion 3`
+  - `ai low-expansion 0`
 
 ## Completed Sprint Batches
 
@@ -81,31 +81,31 @@ For the detailed per-sprint breakdown, use the sprint log instead of this status
 - advanced-warfare AI groundwork exists for:
   - air-superiority patrolling
   - Planet Buster deployment logic
-- the remaining measured sim weakness is no longer broad support collapse; Sprint P restored the no-famine/no-support baseline, and the remaining issue is a smaller set of AI low-expansion seeds
+- the remaining measured sim weakness is no longer broad support collapse or low expansion; the next gap is turning the stable economic baseline into more active diplomacy and conflict
 
 ## Immediate Next Tasks
 
-1. Preserve the new seed-`7` Sparta survival/expansion fix and the restored `0/10` famine/support baseline.
-2. Reduce AI low-expansion from the current `3/10` by targeting the remaining colony/settlement outlier seeds (`2`, `7`, and `9` in the latest sampled sweep).
-3. After the expansion baseline improves again, implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
+1. Preserve the `0/10` multi-seed baseline across terminal, famine, starvation, support, and low-expansion metrics.
+2. Implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
+3. Add stronger midgame conflict triggers so the sim produces more raids, border tension, and contested expansion.
 4. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
 
 ## Recommended Near-Term Order
 
 1. Use `autoplay_sweep` as the baseline diagnostic for gameplay changes instead of tuning against one seed.
-2. Restore and hold the multi-seed economy/support baseline while removing the last AI low-expansion outliers.
+2. Hold the current no-famine/no-support/no-low-expansion baseline while expanding strategic behavior.
 3. Teach AI factions to call and vote in council based on power, relations, and victory posture.
-4. Only then resume terrain-transition polish and broader Bevy presentation work.
+4. Then add stronger conflict drivers before resuming broader terrain-transition polish and Bevy presentation work.
 
 ## Current Milestone Slice
 
-Current slice: `Simulation Recovery After Sprint P`
+Current slice: `Simulation Baseline Stabilized After Sprint Q`
 
 - keep the core deterministic and green
-- preserve the seed-`7` Sparta fix
-- restore the no-famine/no-support-collapse sweep baseline
-- reduce the remaining AI low-expansion drift
-- then deepen diplomacy and council behavior from a stable base
+- preserve the seed-`7` Sparta fix and the clean 10-seed proving baseline
+- deepen diplomacy and council behavior from that stable base
+- increase strategic pressure so the midgame is more eventful
+- then continue terrain-transition and presentation work without destabilizing the sim
 
 ## Prior History
 
