@@ -18,7 +18,7 @@ Verification notes in this shell:
 
 - The default workspace test path is now green because `smac_bevy` desktop/audio dependencies are feature-gated off the default test path.
 - The interactive Bevy desktop client still requires the `desktop` feature and host windowing/audio packages.
-- The current full-workspace test count is `275` passing tests.
+- The current full-workspace test count is `276` passing tests.
 
 ## Sprint A: Cleanup And Workspace Recovery
 
@@ -331,6 +331,11 @@ Next-sprint handoff that should happen now:
 - target the remaining AI low-expansion seeds as colony/settlement-quality outliers
 - only move back to council policy work once the remaining expansion drift is reduced again
 
+Follow-on note:
+
+- a colony-pod local detour fix is now in `try_ai_move_toward`, so pods no longer freeze as easily when the direct one-step route is blocked by a friendly unit
+- the latest sampled low-expansion outlier seeds are now `2`, `7`, and `9`; earlier seeds `4` and `5` improved after the detour and late-frontier work
+
 ## Immediate Gemini Handoff
 
 Use this exact sprint order next.
@@ -350,7 +355,7 @@ Where to work:
 
 What to inspect first:
 
-- the remaining low-expansion seeds in the current sampled sweep: `4`, `5`, and `9`
+- the remaining low-expansion seeds in the current sampled sweep: `2`, `7`, and `9`
 - whether colony pods are failing to settle, not being built, or being vetoed by local pressure/site filters too aggressively
 - whether the remaining outliers need looser site acceptance, better escort assignment, or less conservative late frontier production
 - whether local psi/military pressure is still blocking expansion too long after the support baseline is healthy

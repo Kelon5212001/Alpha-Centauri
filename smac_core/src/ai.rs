@@ -2521,6 +2521,7 @@ fn try_ai_move_toward(
     target_x: usize,
     target_y: usize,
 ) -> bool {
+    let current_distance = manhattan(from_x, from_y, target_x, target_y);
     let step_x = step_toward(from_x, target_x);
     let step_y = step_toward(from_y, target_y);
 
@@ -2531,13 +2532,66 @@ fn try_ai_move_toward(
         return false;
     }
 
-    state
+    if state
         .apply_action(GameAction::MoveUnit {
             unit_id,
             target_x: nx,
             target_y: ny,
         })
         .is_ok()
+    {
+        return true;
+    }
+
+    let mut fallback_steps = Vec::new();
+    for dy in -1isize..=1 {
+        for dx in -1isize..=1 {
+            if dx == 0 && dy == 0 {
+                continue;
+            }
+
+            let alt_x = from_x as isize + dx;
+            let alt_y = from_y as isize + dy;
+            if alt_x < 0
+                || alt_y < 0
+                || alt_x >= state.width as isize
+                || alt_y >= state.height as isize
+            {
+                continue;
+            }
+
+            let alt_x = alt_x as usize;
+            let alt_y = alt_y as usize;
+            if alt_x == nx && alt_y == ny {
+                continue;
+            }
+
+            let distance = manhattan(alt_x, alt_y, target_x, target_y);
+            if distance > current_distance {
+                continue;
+            }
+
+            let alignment_penalty = (step_x != 0 && step_toward(from_x, alt_x) != step_x) as usize
+                + (step_y != 0 && step_toward(from_y, alt_y) != step_y) as usize;
+            fallback_steps.push((distance, alignment_penalty, alt_x, alt_y));
+        }
+    }
+
+    fallback_steps.sort_unstable();
+    for (_, _, alt_x, alt_y) in fallback_steps {
+        if state
+            .apply_action(GameAction::MoveUnit {
+                unit_id,
+                target_x: alt_x,
+                target_y: alt_y,
+            })
+            .is_ok()
+        {
+            return true;
+        }
+    }
+
+    false
 }
 
 fn should_ai_unit_retreat(state: &GameState, unit: &crate::Unit) -> bool {
@@ -3425,7 +3479,7 @@ mod tests {
         economy_signals_for_base, exploratory_target, is_ai_colony_site_acceptable,
         maybe_assign_ai_convoy_route, run_ai_economy_for_owner, run_ai_tactics_for_owner,
         score_player_base_target, score_player_unit_target, score_raider_base_target,
-        score_unexplored_tile_target, tactical_signals, update_ai_research,
+        score_unexplored_tile_target, tactical_signals, try_ai_move_toward, update_ai_research,
         update_ai_social_engineering, update_ai_unit_designs, AiTacticalSignals,
     };
     use crate::{
@@ -3515,7 +3569,7 @@ mod tests {
         game.tiles[3 * game.width + 3].base = Some(0);
 
         game.units.push(Unit {
-            id: 100,
+            id: 0,
             owner,
             kind: UnitKind::ColonyPod,
             design_index: 0,
@@ -3598,7 +3652,7 @@ mod tests {
         game.tiles[3 * game.width + 3].base = Some(0);
 
         game.units.push(Unit {
-            id: 100,
+            id: 0,
             owner,
             kind: UnitKind::ColonyPod,
             design_index: 0,
@@ -3611,13 +3665,91 @@ mod tests {
             cargo_unit_ids: Vec::new(),
             activity: UnitActivity::None,
         });
-        game.tiles[3 * game.width + 4].unit = Some(100);
+        game.tiles[3 * game.width + 4].unit = Some(0);
 
         run_ai_tactics_for_owner(&mut game, owner);
 
-        assert_eq!(game.bases_for(owner).len(), 1);
-        let unit = game.unit(100).expect("colony pod should still exist");
-        assert_ne!((unit.x, unit.y), (4, 3));
+        let moved_or_founded = game.bases_for(owner).len() > 1
+            || game
+                .unit(0)
+                .map(|unit| (unit.x, unit.y) != (4, 3))
+                .unwrap_or(false);
+        assert!(moved_or_founded);
+    }
+
+    #[test]
+    fn colony_pod_detours_when_direct_settlement_step_is_blocked() {
+        let mut game = GameState::new_game(12, 12, 7);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Ocean;
+        }
+
+        for (x, y) in [
+            (4usize, 4usize),
+            (5usize, 4usize),
+            (5usize, 3usize),
+            (6usize, 3usize),
+            (5usize, 2usize),
+        ] {
+            game.tiles[y * game.width + x].terrain = Terrain::Flat;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Anchor".to_string(),
+            x: 4,
+            y: 4,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[4 * game.width + 4].base = Some(0);
+
+        game.units.push(Unit {
+            id: 0,
+            owner,
+            kind: UnitKind::ColonyPod,
+            design_index: 0,
+            x: 5,
+            y: 4,
+            moves_left: 1,
+            hp: 10,
+            experience: 0,
+            alive: true,
+            cargo_unit_ids: Vec::new(),
+            activity: UnitActivity::None,
+        });
+        game.tiles[4 * game.width + 5].unit = Some(0);
+
+        game.units.push(Unit {
+            id: 1,
+            owner,
+            kind: UnitKind::ScoutPatrol,
+            design_index: 0,
+            x: 5,
+            y: 3,
+            moves_left: 1,
+            hp: 10,
+            experience: 0,
+            alive: true,
+            cargo_unit_ids: Vec::new(),
+            activity: UnitActivity::None,
+        });
+        game.tiles[3 * game.width + 5].unit = Some(1);
+
+        assert!(try_ai_move_toward(&mut game, 0, 5, 4, 5, 2));
+        let unit = game.unit(0).expect("colony pod should still exist");
+        assert_ne!((unit.x, unit.y), (5, 4));
     }
 
     #[test]

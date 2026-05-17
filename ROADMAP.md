@@ -31,7 +31,7 @@ Locally reverified in this shell on 2026-05-17:
 
 Current workspace test count:
 
-- `275` passing tests
+- `276` passing tests
 
 Current Bevy verification notes:
 
@@ -86,7 +86,7 @@ For the detailed per-sprint breakdown, use the sprint log instead of this status
 ## Immediate Next Tasks
 
 1. Preserve the new seed-`7` Sparta survival/expansion fix and the restored `0/10` famine/support baseline.
-2. Reduce AI low-expansion from the current `3/10` by targeting the remaining colony/settlement outlier seeds.
+2. Reduce AI low-expansion from the current `3/10` by targeting the remaining colony/settlement outlier seeds (`2`, `7`, and `9` in the latest sampled sweep).
 3. After the expansion baseline improves again, implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
 4. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
 

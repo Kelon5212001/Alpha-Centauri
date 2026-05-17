@@ -212,7 +212,7 @@ Using the local toolchain in `.rustup-local/`:
 
 Current verified workspace test count:
 
-- 275 tests passed
+- 276 tests passed
 
 Current Bevy build notes:
 
@@ -250,7 +250,7 @@ Immediate next sprint:
 
 1. Preserve the new seed-`7` Sparta survival/expansion fix.
 2. Preserve the restored `0/10` famine/support-collapse sweep baseline across the `10`-seed proving pass.
-3. Reduce AI low-expansion from the current `3/10` by attacking the remaining colony/settlement outlier seeds.
+3. Reduce AI low-expansion from the current `3/10` by attacking the remaining colony/settlement outlier seeds (`2`, `7`, and `9` in the latest sampled sweep).
 4. Only after the remaining expansion outliers are reduced further, move back to council-aware AI strategy and stronger midgame conflict generation.
 
 Detailed sprint history and the Gemini handoff live in:
@@ -261,7 +261,7 @@ Detailed sprint history and the Gemini handoff live in:
 
 What is true now:
 
-- the workspace is green and currently verifies `275` passing tests
+- the workspace is green and currently verifies `276` passing tests
 - this shell locally reverified the full workspace, including the default `smac_bevy` test path, on 2026-05-17
 - the 100-turn seed-`7` demo still completes without a terminal outcome
 - Sprint O fixed the seed-`7` Sparta collapse and Sprint P kept that fix intact
