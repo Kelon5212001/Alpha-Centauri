@@ -1474,10 +1474,7 @@ impl GameState {
                 unit_id,
                 transport_id,
             } => self.unload_unit(unit_id, transport_id),
-            GameAction::SetUnitActivity {
-                unit_id,
-                activity,
-            } => {
+            GameAction::SetUnitActivity { unit_id, activity } => {
                 self.set_unit_activity(unit_id, activity);
                 Ok(())
             }
@@ -3037,10 +3034,11 @@ impl GameState {
                     DiplomacyStatus::Treaty => 1,
                     _ => 0,
                 };
-                
+
                 if multiplier > 0 {
                     // Simple population-based commerce: (pop_a + pop_b) / 4
-                    commerce += ((base.population as i32 + other_base.population as i32) * multiplier) / 4;
+                    commerce +=
+                        ((base.population as i32 + other_base.population as i32) * multiplier) / 4;
                 }
             }
         }
@@ -9964,24 +9962,31 @@ impl GameState {
             .iter()
             .position(|u| u.id == unit_id)
             .ok_or("Unit not found")?;
-        
+
         let transport_index = self
             .units
             .iter()
             .position(|u| u.id == transport_id)
             .ok_or("Transport not found")?;
 
-        if !self.units[transport_index].cargo_unit_ids.contains(&unit_id) {
+        if !self.units[transport_index]
+            .cargo_unit_ids
+            .contains(&unit_id)
+        {
             return Err("Unit not in this transport's cargo".to_string());
         }
 
         // Move unit to map if tile is available
         let tile_index = self.tile_index(tx, ty);
-        if self.tiles[tile_index].unit.is_some() && self.tiles[tile_index].unit != Some(transport_id) {
-             return Err("Destination tile already occupied".to_string());
+        if self.tiles[tile_index].unit.is_some()
+            && self.tiles[tile_index].unit != Some(transport_id)
+        {
+            return Err("Destination tile already occupied".to_string());
         }
 
-        self.units[transport_index].cargo_unit_ids.retain(|&id| id != unit_id);
+        self.units[transport_index]
+            .cargo_unit_ids
+            .retain(|&id| id != unit_id);
         self.units[unit_index].x = tx;
         self.units[unit_index].y = ty;
         self.units[unit_index].moves_left = 0;
@@ -9990,7 +9995,8 @@ impl GameState {
         self.push_log(format!(
             "{} unloaded a unit at ({}, {}).",
             self.faction_name(owner),
-            tx, ty
+            tx,
+            ty
         ));
 
         Ok(())
@@ -10022,7 +10028,7 @@ impl GameState {
             .iter()
             .position(|u| u.id == unit_id)
             .ok_or("Unit not found")?;
-        
+
         let transport_index = self
             .units
             .iter()
@@ -10050,7 +10056,8 @@ impl GameState {
         self.push_log(format!(
             "{} loaded a unit onto a transport at ({}, {}).",
             self.faction_name(owner),
-            ux, uy
+            ux,
+            uy
         ));
 
         Ok(())
@@ -10527,59 +10534,64 @@ impl GameState {
                 // Orbital Defense Interception: Each defense pod has a 10% chance to intercept the debris
                 let interception_roll = self.sample_noise(owner as i32, self.turn, 999) % 100;
                 if interception_roll < (faction.orbital_defenses as u32 * 10).min(90) {
-                    self.push_log(format!("ORBITAL DEFENSE: {} intercepted a debris impact!", self.faction_name(owner)));
+                    self.push_log(format!(
+                        "ORBITAL DEFENSE: {} intercepted a debris impact!",
+                        self.faction_name(owner)
+                    ));
                 } else {
                     let bases = self.bases_for(owner);
                     if !bases.is_empty() {
-                    let base_idx =
-                        (self.sample_noise(owner as i32, self.turn, 111) as usize) % bases.len();
-                    let target_base_name = bases[base_idx].name.clone();
-                    let target_base_x = bases[base_idx].x;
-                    let target_base_y = bases[base_idx].y;
+                        let base_idx = (self.sample_noise(owner as i32, self.turn, 111) as usize)
+                            % bases.len();
+                        let target_base_name = bases[base_idx].name.clone();
+                        let target_base_x = bases[base_idx].x;
+                        let target_base_y = bases[base_idx].y;
 
-                    // Keep debris offsets inside the intended 5x5 impact window.
-                    let dx = (self.sample_noise(owner as i32, self.turn, 222) % 5) as i32 - 2;
-                    let dy = (self.sample_noise(owner as i32, self.turn, 333) % 5) as i32 - 2;
+                        // Keep debris offsets inside the intended 5x5 impact window.
+                        let dx = (self.sample_noise(owner as i32, self.turn, 222) % 5) as i32 - 2;
+                        let dy = (self.sample_noise(owner as i32, self.turn, 333) % 5) as i32 - 2;
 
-                    let tx = (target_base_x as i32 + dx).clamp(0, self.width as i32 - 1) as usize;
-                    let ty = (target_base_y as i32 + dy).clamp(0, self.height as i32 - 1) as usize;
+                        let tx =
+                            (target_base_x as i32 + dx).clamp(0, self.width as i32 - 1) as usize;
+                        let ty =
+                            (target_base_y as i32 + dy).clamp(0, self.height as i32 - 1) as usize;
 
-                    let mut damage_report = String::new();
-                    let target_tile_idx = self.tile_index(tx, ty);
-                    if let Some(unit_id) = self.tiles[target_tile_idx].unit {
-                        let damage =
-                            3 + (self.sample_noise(owner as i32, self.turn, 444) % 3) as i32;
-                        if let Some(unit) =
-                            self.units.iter_mut().find(|u| u.id == unit_id && u.alive)
-                        {
-                            unit.hp -= damage;
-                            damage_report = format!("Unit struck for {damage} damage.");
-                            if unit.hp <= 0 {
-                                unit.alive = false;
-                                self.tiles[target_tile_idx].unit = None;
-                                damage_report = format!("Unit destroyed by impact.");
+                        let mut damage_report = String::new();
+                        let target_tile_idx = self.tile_index(tx, ty);
+                        if let Some(unit_id) = self.tiles[target_tile_idx].unit {
+                            let damage =
+                                3 + (self.sample_noise(owner as i32, self.turn, 444) % 3) as i32;
+                            if let Some(unit) =
+                                self.units.iter_mut().find(|u| u.id == unit_id && u.alive)
+                            {
+                                unit.hp -= damage;
+                                damage_report = format!("Unit struck for {damage} damage.");
+                                if unit.hp <= 0 {
+                                    unit.alive = false;
+                                    self.tiles[target_tile_idx].unit = None;
+                                    damage_report = format!("Unit destroyed by impact.");
+                                }
+                            }
+                        } else {
+                            if let Some(imp) = self.tiles[target_tile_idx].improvement {
+                                self.tiles[target_tile_idx].improvement = None;
+                                damage_report = format!(
+                                    "{} facility destroyed.",
+                                    presentation::improvement_name(imp)
+                                );
                             }
                         }
-                    } else {
-                        if let Some(imp) = self.tiles[target_tile_idx].improvement {
-                            self.tiles[target_tile_idx].improvement = None;
-                            damage_report = format!(
-                                "{} facility destroyed.",
-                                presentation::improvement_name(imp)
+
+                        if !damage_report.is_empty() {
+                            self.push_event_log(
+                                EventCategory::Crisis,
+                                format!(
+                                    "CRISIS EVENT: Debris impact near {}! {}",
+                                    target_base_name, damage_report
+                                ),
                             );
                         }
                     }
-
-                    if !damage_report.is_empty() {
-                        self.push_event_log(
-                            EventCategory::Crisis,
-                            format!(
-                                "CRISIS EVENT: Debris impact near {}! {}",
-                                target_base_name, damage_report
-                            ),
-                        );
-                    }
-                }
                 }
             }
         }
@@ -11149,12 +11161,12 @@ impl GameState {
 
             for (tx, ty) in affected_tiles {
                 let idx = self.tile_index(tx, ty);
-                
+
                 // 1. Destroy Units
                 if let Some(uid) = self.tiles[idx].unit {
                     self.destroy_unit(uid);
                 }
-                
+
                 // 2. Destroy Bases
                 if let Some(bid) = self.tiles[idx].base {
                     if let Some(base_idx) = self.bases.iter().position(|b| b.id == bid) {
@@ -11164,7 +11176,7 @@ impl GameState {
                     }
                     self.tiles[idx].base = None;
                 }
-                
+
                 // 3. Alter Terrain
                 self.tiles[idx].terrain = Terrain::Crater;
                 self.tiles[idx].improvement = None;
@@ -11173,7 +11185,7 @@ impl GameState {
 
             // Attacker is consumed
             self.destroy_unit(attacker_id);
-            
+
             // Toxicity Reset: Planet Busters create so much pollution they actually "reset" the local ecosystem
             if let Some(f) = self.faction_mut(attacker.owner) {
                 f.planet_toxicity = (f.planet_toxicity / 2).max(0);
@@ -11416,9 +11428,10 @@ impl GameState {
 
     fn unit_repair_amount(&self, unit: &Unit) -> i32 {
         // Check for adjacent enemies
-        let has_adjacent_enemy = self.units.iter()
-            .any(|u| u.alive && u.owner != unit.owner && Self::is_adjacent(unit.x, unit.y, u.x, u.y));
-        
+        let has_adjacent_enemy = self.units.iter().any(|u| {
+            u.alive && u.owner != unit.owner && Self::is_adjacent(unit.x, unit.y, u.x, u.y)
+        });
+
         if has_adjacent_enemy {
             return 0;
         }
@@ -11514,19 +11527,32 @@ impl GameState {
 
     pub fn update_diplomatic_attitudes(&mut self) {
         let faction_count = self.factions.len();
-        
+
         // Calculate minimum distance between each pair of factions
         let mut min_distances = vec![vec![100; faction_count]; faction_count];
         for i in 0..faction_count {
-            let bases_i: Vec<(usize, usize)> = self.bases.iter().filter(|b| b.owner == i).map(|b| (b.x, b.y)).collect();
+            let bases_i: Vec<(usize, usize)> = self
+                .bases
+                .iter()
+                .filter(|b| b.owner == i)
+                .map(|b| (b.x, b.y))
+                .collect();
             for j in 0..faction_count {
-                if i == j { continue; }
-                let bases_j: Vec<(usize, usize)> = self.bases.iter().filter(|b| b.owner == j).map(|b| (b.x, b.y)).collect();
-                
+                if i == j {
+                    continue;
+                }
+                let bases_j: Vec<(usize, usize)> = self
+                    .bases
+                    .iter()
+                    .filter(|b| b.owner == j)
+                    .map(|b| (b.x, b.y))
+                    .collect();
+
                 let mut min_dist = 100;
                 for &(ix, iy) in &bases_i {
                     for &(jx, jy) in &bases_j {
-                        let dist = ((ix as i32 - jx as i32).abs() + (iy as i32 - jy as i32).abs()) as usize;
+                        let dist = ((ix as i32 - jx as i32).abs() + (iy as i32 - jy as i32).abs())
+                            as usize;
                         if dist < min_dist {
                             min_dist = dist;
                         }
@@ -11554,7 +11580,8 @@ impl GameState {
 
                 // Border friction: closer borders cause tension, especially without a Treaty
                 let dist = min_distances[i][j];
-                if dist <= 8 && status != DiplomacyStatus::Pact && status != DiplomacyStatus::Treaty {
+                if dist <= 8 && status != DiplomacyStatus::Pact && status != DiplomacyStatus::Treaty
+                {
                     change -= 1;
                     if dist <= 4 {
                         change -= 1; // High tension
@@ -11562,9 +11589,19 @@ impl GameState {
                 }
 
                 // Power disparity check (compare total populations)
-                let pop_i: i32 = self.bases.iter().filter(|b| b.owner == i).map(|b| b.population).sum();
-                let pop_j: i32 = self.bases.iter().filter(|b| b.owner == j).map(|b| b.population).sum();
-                
+                let pop_i: i32 = self
+                    .bases
+                    .iter()
+                    .filter(|b| b.owner == i)
+                    .map(|b| b.population)
+                    .sum();
+                let pop_j: i32 = self
+                    .bases
+                    .iter()
+                    .filter(|b| b.owner == j)
+                    .map(|b| b.population)
+                    .sum();
+
                 if pop_j > pop_i * 2 && status != DiplomacyStatus::Pact {
                     change -= 1; // Resentment/Fear
                 } else if pop_i > pop_j * 2 && status != DiplomacyStatus::Pact {
@@ -11783,7 +11820,12 @@ impl GameState {
                 .unwrap_or(UnitKind::ScoutPatrol);
             self.spawn_trained_unit_near(owner, kind, x, y, experience)
                 .is_some()
-        } else if matches!(item, ProductionItem::SkyHydroponics | ProductionItem::SolarTransmitter | ProductionItem::OrbitalDefense) {
+        } else if matches!(
+            item,
+            ProductionItem::SkyHydroponics
+                | ProductionItem::SolarTransmitter
+                | ProductionItem::OrbitalDefense
+        ) {
             if let Some(faction) = self.faction_mut(owner) {
                 match item {
                     ProductionItem::SkyHydroponics => faction.sky_hydroponics += 1,
@@ -12321,12 +12363,17 @@ impl GameState {
         self.council.pending_votes.clear();
         self.push_event_log(
             EventCategory::Diplomacy,
-            "PLANETARY COUNCIL: A session has been convened to elect a Planetary Governor.".to_string(),
+            "PLANETARY COUNCIL: A session has been convened to elect a Planetary Governor."
+                .to_string(),
         );
         Ok(())
     }
 
-    pub fn vote_for_governor(&mut self, voter_id: usize, candidate_id: usize) -> Result<(), String> {
+    pub fn vote_for_governor(
+        &mut self,
+        voter_id: usize,
+        candidate_id: usize,
+    ) -> Result<(), String> {
         if !self.council.is_active {
             return Err("Council not active.".to_string());
         }
@@ -12396,7 +12443,10 @@ impl GameState {
             let name = self.faction_name(winner_id);
             self.push_event_log(
                 EventCategory::Diplomacy,
-                format!("PLANETARY COUNCIL: {} has been elected Planetary Governor!", name),
+                format!(
+                    "PLANETARY COUNCIL: {} has been elected Planetary Governor!",
+                    name
+                ),
             );
         } else {
             self.push_event_log(

@@ -398,7 +398,10 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
         };
 
         // Proactive Demands: Extort weaker neighbors if aggressive
-        if personality.aggression >= 7 && state.turn % 20 == 0 && current_status != crate::DiplomacyStatus::Pact {
+        if personality.aggression >= 7
+            && state.turn % 20 == 0
+            && current_status != crate::DiplomacyStatus::Pact
+        {
             let our_pop: i32 = state
                 .bases
                 .iter()
@@ -577,7 +580,7 @@ fn update_ai_unit_designs(state: &mut GameState, owner: usize) {
 
     for chassis in chassis_types {
         let is_planet_buster = chassis == Chassis::Aircraft && best_weapon_id == "planet_buster";
-        
+
         let weapon = Weapon::from_content_id(&best_weapon_id, best_weapon_power).unwrap();
         let armor = Armor::from_content_id(&best_armor_id, best_armor_power).unwrap();
         let mut abilities = Vec::new();
@@ -676,7 +679,8 @@ fn update_ai_modernization(state: &mut GameState, owner: usize) {
             // If we can't find a standard matching production item, we assume it's a custom design
             // For custom designs we need to check weapon/armor tech requirements (which we don't strictly have right now)
             // But since all starting designs are standard, this check suffices for now.
-            let actually_available = is_available || (design.name.starts_with("Custom") /* placeholder */);
+            let actually_available =
+                is_available || (design.name.starts_with("Custom")/* placeholder */);
             if !actually_available {
                 continue;
             }
@@ -1025,7 +1029,11 @@ fn choose_ai_production_for_base(
     };
 
     // CRITICAL DEFENSE: If base has no garrison and is under threat
-    let local_units = state.units.iter().filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y).count();
+    let local_units = state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y)
+        .count();
     if local_units == 0 && signals.military_pressure >= 1 {
         if state.is_production_available(owner, crate::ProductionItem::GarrisonGuard) {
             return crate::ProductionItem::GarrisonGuard;
@@ -1315,15 +1323,23 @@ fn choose_ai_production_for_base(
         // ORBITAL ECONOMY
         if signals.military_pressure <= 1 && psi_pressure < 2 {
             // Priority 1: Food if margin is tight
-            if state.base_food_margin(base.id).unwrap_or(1) <= 1 && state.is_production_available(owner, crate::ProductionItem::SkyHydroponics) {
+            if state.base_food_margin(base.id).unwrap_or(1) <= 1
+                && state.is_production_available(owner, crate::ProductionItem::SkyHydroponics)
+            {
                 return crate::ProductionItem::SkyHydroponics;
             }
             // Priority 2: Energy if needed
-            if signals.energy_pressure && state.is_production_available(owner, crate::ProductionItem::SolarTransmitter) {
+            if signals.energy_pressure
+                && state.is_production_available(owner, crate::ProductionItem::SolarTransmitter)
+            {
                 return crate::ProductionItem::SolarTransmitter;
             }
             // Priority 3: Defense if we have satellites to protect
-            if (faction.sky_hydroponics + faction.solar_transmitters) > 3 && faction.orbital_defenses < (faction.sky_hydroponics + faction.solar_transmitters) / 2 && state.is_production_available(owner, crate::ProductionItem::OrbitalDefense) {
+            if (faction.sky_hydroponics + faction.solar_transmitters) > 3
+                && faction.orbital_defenses
+                    < (faction.sky_hydroponics + faction.solar_transmitters) / 2
+                && state.is_production_available(owner, crate::ProductionItem::OrbitalDefense)
+            {
                 return crate::ProductionItem::OrbitalDefense;
             }
         }
@@ -1868,25 +1884,33 @@ struct AiBattleGroup {
 
 fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     let mut battle_groups: Vec<AiBattleGroup> = Vec::new();
-    
+
     // 1. Identify all available combat units (excluding those in cargo)
-    let cargo_ids: std::collections::HashSet<usize> = state.units.iter().flat_map(|u| u.cargo_unit_ids.iter().cloned()).collect();
+    let cargo_ids: std::collections::HashSet<usize> = state
+        .units
+        .iter()
+        .flat_map(|u| u.cargo_unit_ids.iter().cloned())
+        .collect();
 
     let mut combat_unit_ids: Vec<usize> = state
         .units
         .iter()
         .filter(|u| {
-            u.alive && u.owner == owner && 
-            !cargo_ids.contains(&u.id) &&
-            !matches!(u.kind, UnitKind::ColonyPod | UnitKind::Former | UnitKind::ProbeTeam) &&
-            !state.unit_has_ability(u.id, crate::Ability::Probe)
+            u.alive
+                && u.owner == owner
+                && !cargo_ids.contains(&u.id)
+                && !matches!(
+                    u.kind,
+                    UnitKind::ColonyPod | UnitKind::Former | UnitKind::ProbeTeam
+                )
+                && !state.unit_has_ability(u.id, crate::Ability::Probe)
         })
         .map(|u| u.id)
         .collect();
 
     // 2. Assign objectives to combat units
     // For now, let's keep it simple: any combat unit not in a group will try to find one or start one
-    
+
     // a. Check if we need to defend any bases
     for base in state.bases_for(owner) {
         if state.base_local_military_pressure(base.id) >= 2 {
@@ -1914,15 +1938,15 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     if signals.attack_bias >= 5 && !combat_unit_ids.is_empty() {
         let rival = rival_owner(state, owner);
         if let Some(target_base) = state.bases.iter().find(|b| b.owner == rival) {
-             let mut group_units = Vec::new();
-             combat_unit_ids.retain(|&id| {
-                 group_units.push(id);
-                 false
-             });
-             battle_groups.push(AiBattleGroup {
-                 objective: AiObjective::AttackBase(target_base.id),
-                 unit_ids: group_units,
-             });
+            let mut group_units = Vec::new();
+            combat_unit_ids.retain(|&id| {
+                group_units.push(id);
+                false
+            });
+            battle_groups.push(AiBattleGroup {
+                objective: AiObjective::AttackBase(target_base.id),
+                unit_ids: group_units,
+            });
         }
     }
 
@@ -1932,32 +1956,32 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         .filter(|&&id| state.unit_has_ability(id, Ability::Transport))
         .cloned()
         .collect();
-    
+
     let mut escortable_transports = Vec::new();
 
     for transport_id in transport_ids.clone() {
         combat_unit_ids.retain(|&id| id != transport_id);
-        
+
         let transport = &state.units[transport_id];
         // If transport is empty, try to fill it
         if transport.cargo_unit_ids.is_empty() {
-             let mut boarders = Vec::new();
-             combat_unit_ids.retain(|&id| {
-                 if boarders.len() < 2 {
-                     boarders.push(id);
-                     false
-                 } else {
-                     true
-                 }
-             });
-             if !boarders.is_empty() {
-                 battle_groups.push(AiBattleGroup {
-                     objective: AiObjective::BoardTransport(transport_id),
-                     unit_ids: boarders,
-                 });
-             }
+            let mut boarders = Vec::new();
+            combat_unit_ids.retain(|&id| {
+                if boarders.len() < 2 {
+                    boarders.push(id);
+                    false
+                } else {
+                    true
+                }
+            });
+            if !boarders.is_empty() {
+                battle_groups.push(AiBattleGroup {
+                    objective: AiObjective::BoardTransport(transport_id),
+                    unit_ids: boarders,
+                });
+            }
         }
-        
+
         // If transport has cargo, find a naval invasion target
         if !transport.cargo_unit_ids.is_empty() {
             let rival = rival_owner(state, owner);
@@ -2000,7 +2024,9 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     let vulnerable_ids: Vec<usize> = state
         .units
         .iter()
-        .filter(|u| u.alive && u.owner == owner && matches!(u.kind, UnitKind::ColonyPod | UnitKind::Former))
+        .filter(|u| {
+            u.alive && u.owner == owner && matches!(u.kind, UnitKind::ColonyPod | UnitKind::Former)
+        })
         .map(|u| u.id)
         .collect();
 
@@ -2011,12 +2037,12 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         let mut group_units = Vec::new();
         // Assign 1 escort per vulnerable unit if available
         if let Some(&escort_id) = combat_unit_ids.first() {
-             group_units.push(escort_id);
-             combat_unit_ids.remove(0);
-             battle_groups.push(AiBattleGroup {
-                 objective: AiObjective::SupportColony(vuln_id),
-                 unit_ids: group_units,
-             });
+            group_units.push(escort_id);
+            combat_unit_ids.remove(0);
+            battle_groups.push(AiBattleGroup {
+                objective: AiObjective::SupportColony(vuln_id),
+                unit_ids: group_units,
+            });
         }
     }
 
@@ -2046,7 +2072,9 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         .collect();
 
     for pb_id in pb_ids {
-        let Some(pb_unit) = state.unit(pb_id) else { continue };
+        let Some(pb_unit) = state.unit(pb_id) else {
+            continue;
+        };
         if let Some((tx, ty)) = choose_ai_planet_buster_target(state, pb_unit) {
             combat_unit_ids.retain(|&id| id != pb_id);
             battle_groups.push(AiBattleGroup {
@@ -2060,15 +2088,15 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     if !combat_unit_ids.is_empty() {
         let rival = rival_owner(state, owner);
         let owned_bases = state.bases_for(owner);
-        let frontier_base = owned_bases
-            .iter()
-            .min_by_key(|b| {
-                state.bases.iter()
-                    .filter(|rb| rb.owner == rival)
-                    .map(|rb| state.distance(b.x, b.y, rb.x, rb.y))
-                    .min()
-                    .unwrap_or(99)
-            });
+        let frontier_base = owned_bases.iter().min_by_key(|b| {
+            state
+                .bases
+                .iter()
+                .filter(|rb| rb.owner == rival)
+                .map(|rb| state.distance(b.x, b.y, rb.x, rb.y))
+                .min()
+                .unwrap_or(99)
+        });
 
         if let Some(target) = frontier_base {
             battle_groups.push(AiBattleGroup {
@@ -2106,7 +2134,10 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 // Boarding logic
                 if let AiObjective::BoardTransport(transport_id) = group.objective {
                     if unit.x == tx && unit.y == ty {
-                        let _ = state.apply_action(GameAction::LoadUnit { unit_id, transport_id });
+                        let _ = state.apply_action(GameAction::LoadUnit {
+                            unit_id,
+                            transport_id,
+                        });
                         continue;
                     }
                 }
@@ -2114,25 +2145,40 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 // Planet Buster logic
                 if let AiObjective::LaunchPlanetBuster(tx, ty) = group.objective {
                     if state.distance(unit.x, unit.y, tx, ty) <= 1 {
-                        let _ = state.apply_action(GameAction::MoveUnit { unit_id, target_x: tx, target_y: ty });
+                        let _ = state.apply_action(GameAction::MoveUnit {
+                            unit_id,
+                            target_x: tx,
+                            target_y: ty,
+                        });
                         continue;
                     }
                 }
-                
+
                 // Unloading logic
                 if let AiObjective::NavalInvasion(_) = group.objective {
-                    if !unit.cargo_unit_ids.is_empty() && state.distance(unit.x, unit.y, tx, ty) <= 1 {
+                    if !unit.cargo_unit_ids.is_empty()
+                        && state.distance(unit.x, unit.y, tx, ty) <= 1
+                    {
                         let cargo_ids = unit.cargo_unit_ids.clone();
                         for cid in cargo_ids {
-                            let _ = state.apply_action(GameAction::UnloadUnit { unit_id: cid, transport_id: unit_id });
+                            let _ = state.apply_action(GameAction::UnloadUnit {
+                                unit_id: cid,
+                                transport_id: unit_id,
+                            });
                         }
                         continue;
                     }
                 }
 
                 // Air Patrol logic
-                if state.unit_is_aircraft(unit.id) && state.tile(unit.x, unit.y).and_then(|t| t.base).is_some() && unit.moves_left == 1 {
-                    let _ = state.apply_action(GameAction::SetUnitActivity { unit_id: unit.id, activity: crate::model::UnitActivity::Patrol });
+                if state.unit_is_aircraft(unit.id)
+                    && state.tile(unit.x, unit.y).and_then(|t| t.base).is_some()
+                    && unit.moves_left == 1
+                {
+                    let _ = state.apply_action(GameAction::SetUnitActivity {
+                        unit_id: unit.id,
+                        activity: crate::model::UnitActivity::Patrol,
+                    });
                     continue;
                 }
 
@@ -2150,9 +2196,12 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     // Stage nearby instead of charging in solo
                     continue;
                 }
-                
+
                 // If defending and already at base, stay put
-                if matches!(group.objective, AiObjective::DefendBase(_)) && unit.x == tx && unit.y == ty {
+                if matches!(group.objective, AiObjective::DefendBase(_))
+                    && unit.x == tx
+                    && unit.y == ty
+                {
                     continue;
                 }
 
@@ -2168,8 +2217,11 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         .filter(|u| u.alive && u.owner == owner)
         .map(|u| u.id)
         .collect();
-    
-    let grouped_ids: std::collections::HashSet<usize> = battle_groups.iter().flat_map(|g| g.unit_ids.iter().cloned()).collect();
+
+    let grouped_ids: std::collections::HashSet<usize> = battle_groups
+        .iter()
+        .flat_map(|g| g.unit_ids.iter().cloned())
+        .collect();
 
     for unit_id in remaining_units {
         if grouped_ids.contains(&unit_id) {
@@ -2449,11 +2501,13 @@ fn try_ai_retreat(state: &mut GameState, unit: &crate::Unit) -> bool {
     } else {
         // If no friendly base exists, move away from the nearest enemy
         let rival = rival_owner(state, unit.owner);
-        let nearest_enemy = state.units.iter()
+        let nearest_enemy = state
+            .units
+            .iter()
             .filter(|u| u.alive && u.owner == rival)
             .map(|u| (u.x, u.y, state.distance(unit.x, unit.y, u.x, u.y)))
             .min_by_key(|&(_, _, d)| d);
-        
+
         if let Some((ex, ey, _)) = nearest_enemy {
             // Find a step that increases distance from (ex, ey)
             let candidates = [
@@ -2462,13 +2516,14 @@ fn try_ai_retreat(state: &mut GameState, unit: &crate::Unit) -> bool {
                 (unit.x, unit.y.saturating_add(1)),
                 (unit.x, unit.y.saturating_sub(1)),
             ];
-            
-            let best_step = candidates.into_iter()
+
+            let best_step = candidates
+                .into_iter()
                 .filter(|&(cx, cy)| cx < state.width && cy < state.height)
                 .max_by_key(|&(cx, cy)| state.distance(cx, cy, ex, ey));
-            
+
             if let Some((nx, ny)) = best_step {
-                 let _ = state.apply_action(GameAction::MoveUnit {
+                let _ = state.apply_action(GameAction::MoveUnit {
                     unit_id: unit.id,
                     target_x: nx,
                     target_y: ny,
@@ -2783,9 +2838,11 @@ fn spawn_native_life(state: &mut GameState) {
                 y as i32,
                 state.turn as u32 + content::ai_native_spawn_noise_salt(),
             ) % 100;
-            
+
             // Global toxicity lowers the threshold (increases spawn rate)
-            let threshold = (crate::content::native_spawn_roll_threshold() as i32 - total_toxicity / 100).clamp(50, 99) as u32;
+            let threshold = (crate::content::native_spawn_roll_threshold() as i32
+                - total_toxicity / 100)
+                .clamp(50, 99) as u32;
 
             if roll > threshold {
                 if is_fungus {
@@ -3298,8 +3355,8 @@ mod tests {
         economy_signals_for_base, exploratory_target, is_ai_colony_site_acceptable,
         run_ai_economy_for_owner, run_ai_tactics_for_owner, score_player_base_target,
         score_player_unit_target, score_raider_base_target, score_unexplored_tile_target,
-        tactical_signals, update_ai_research, update_ai_social_engineering,
-        update_ai_unit_designs, AiTacticalSignals,
+        tactical_signals, update_ai_research, update_ai_social_engineering, update_ai_unit_designs,
+        AiTacticalSignals,
     };
     use crate::{
         Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
@@ -4487,22 +4544,22 @@ mod tests {
         if let Some(faction) = game.faction_mut(owner) {
             faction.known_techs = vec![Tech::IndustrialBase];
         }
-        
+
         update_ai_unit_designs(&mut game, owner);
-        
+
         let initial_designs = game.faction(owner).unwrap().unit_designs.len();
-        
+
         // 2. Discover Field Modulation (Resonance Laser/Armor)
         game.turn = 15; // Trigger the interval
         if let Some(faction) = game.faction_mut(owner) {
             faction.known_techs.push(Tech::FieldModulation);
         }
-        
+
         update_ai_unit_designs(&mut game, owner);
-        
+
         let new_designs = &game.faction(owner).unwrap().unit_designs;
         assert!(new_designs.len() > initial_designs);
-        
+
         // Check if any design has resonance laser (power 4)
         assert!(new_designs.iter().any(|d| d.attack_strength() == 4));
         assert!(new_designs.iter().any(|d| d.defense_strength() == 2));

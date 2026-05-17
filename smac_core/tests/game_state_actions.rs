@@ -1659,7 +1659,7 @@ fn convoy_route_disruption_blocks_yield_bonus_under_frontier_pressure() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let route_details = game.convoy_route_details_for_base(0);
     assert_eq!(game.base_convoy_security(0), 0);
     assert_eq!(game.base_local_military_pressure(0), 3);
@@ -1737,7 +1737,7 @@ fn patrol_grid_reduces_convoy_disruption_for_protected_hub() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let route_details = game.convoy_route_details_for_base(0);
     assert_eq!(route_details.len(), 1);
     assert!(!route_details[0].2);
@@ -1812,7 +1812,7 @@ fn intercepted_trade_route_costs_energy_on_end_turn() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let status = game.convoy_route_status_for_base(0);
     assert_eq!(status.len(), 1);
     assert!(status[0].2);
@@ -1898,7 +1898,7 @@ fn intercepted_freight_route_costs_minerals_on_end_turn() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let status = game.convoy_route_status_for_base(0);
     assert_eq!(status.len(), 1);
     assert!(status[0].3);
@@ -1995,7 +1995,7 @@ fn escort_speeders_secure_convoy_endpoints_against_interception() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let enemy_unit_id = 104;
     game.tiles[4 * game.width + 6].unit = Some(enemy_unit_id);
     game.units.push(Unit {
@@ -2011,7 +2011,7 @@ fn escort_speeders_secure_convoy_endpoints_against_interception() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     assert_eq!(game.base_convoy_escort_count(0), 1);
     assert_eq!(game.base_convoy_escort_count(1), 1);
     assert_eq!(game.base_convoy_security(0), 2);
@@ -2090,7 +2090,7 @@ fn repeated_convoy_interception_can_collapse_route() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     game.tiles[4 * game.width + 6].unit = Some(enemy_unit_id);
     if let Some(enemy) = game.units.iter_mut().find(|unit| unit.id == enemy_unit_id) {
         enemy.x = 6;
@@ -2168,7 +2168,7 @@ fn suggested_escort_patrol_moves_target_convoy_pressure_bases() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let enemy_unit_id = 106;
     game.tiles[4 * game.width + 6].unit = Some(enemy_unit_id);
     game.units.push(Unit {
@@ -2184,7 +2184,7 @@ fn suggested_escort_patrol_moves_target_convoy_pressure_bases() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let moves = game.suggested_escort_patrol_moves(roles.player);
     assert_eq!(moves.len(), 1);
     assert_eq!(moves[0].0, 210);
@@ -2255,7 +2255,7 @@ fn convoy_route_can_be_repaired_after_interception_damage() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     game.end_turn();
     let damaged_status = game.convoy_route_status_for_base(0);
     assert_eq!(damaged_status[0].4, 2);
@@ -2354,7 +2354,7 @@ fn faction_convoy_route_summaries_prioritize_worst_routes_first() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     let summaries = game.faction_convoy_route_summaries(roles.player);
     assert_eq!(summaries.len(), 2);
     assert_eq!(summaries[0].base_a_name, "Alpha");
@@ -2805,7 +2805,7 @@ fn recommended_governor_mode_prefers_defense_for_logistics_pressure() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     assert_eq!(
         game.recommended_governor_mode_for_base(0),
         GovernorMode::Logistics
@@ -3141,7 +3141,7 @@ fn victorious_unit_gains_experience() {
         alive: true,
         cargo_unit_ids: Vec::new(),
         activity: smac_core::UnitActivity::None,
-        });
+    });
     game.apply_action(GameAction::MoveUnit {
         unit_id: 0,
         target_x: 5,
@@ -6146,35 +6146,62 @@ fn units_can_load_and_unload_from_transports() {
     };
     let transport_design_clone = transport_design.clone();
     game.add_unit_design(owner, transport_design);
-    
+
     let design_index = game.faction(owner).unwrap().unit_designs.len() - 1;
-    let transport_id = game.spawn_unit_with_design(owner, smac_core::UnitKind::CustomUnit(transport_design_clone), design_index, 5, 5, 0).unwrap();
+    let transport_id = game
+        .spawn_unit_with_design(
+            owner,
+            smac_core::UnitKind::CustomUnit(transport_design_clone),
+            design_index,
+            5,
+            5,
+            0,
+        )
+        .unwrap();
     let passenger_id = game.spawn_unit(owner, smac_core::UnitKind::ScoutPatrol, 5, 5);
 
     // 2. Load unit
-    game.apply_action(smac_core::GameAction::LoadUnit { unit_id: passenger_id, transport_id })
-        .expect("Loading should succeed");
+    game.apply_action(smac_core::GameAction::LoadUnit {
+        unit_id: passenger_id,
+        transport_id,
+    })
+    .expect("Loading should succeed");
 
     assert!(game.unit(passenger_id).is_some());
-    assert!(game.unit(transport_id).unwrap().cargo_unit_ids.contains(&passenger_id));
+    assert!(game
+        .unit(transport_id)
+        .unwrap()
+        .cargo_unit_ids
+        .contains(&passenger_id));
     assert!(game.tiles[5 * game.width + 5].unit == Some(transport_id));
-    
+
     // 3. Move transport
-    game.apply_action(smac_core::GameAction::MoveUnit { unit_id: transport_id, target_x: 5, target_y: 6 })
-        .expect("Move should succeed");
+    game.apply_action(smac_core::GameAction::MoveUnit {
+        unit_id: transport_id,
+        target_x: 5,
+        target_y: 6,
+    })
+    .expect("Move should succeed");
 
     // 4. Unload unit at new location
     // Must clear tile first if occupied (transport is there)
     // Actually, in SMAC you can unload to adjacent or same tile.
     // My implementation unloads to same tile, but checks if occupied.
     // Transport is in (5, 6).
-    
-    // For test, move passenger out of cargo to (5, 6)
-    game.apply_action(smac_core::GameAction::UnloadUnit { unit_id: passenger_id, transport_id })
-        .expect("Unloading should succeed");
 
-    assert!(!game.unit(transport_id).unwrap().cargo_unit_ids.contains(&passenger_id));
-    // Since transport and passenger are in same tile, and passenger was just added, 
+    // For test, move passenger out of cargo to (5, 6)
+    game.apply_action(smac_core::GameAction::UnloadUnit {
+        unit_id: passenger_id,
+        transport_id,
+    })
+    .expect("Unloading should succeed");
+
+    assert!(!game
+        .unit(transport_id)
+        .unwrap()
+        .cargo_unit_ids
+        .contains(&passenger_id));
+    // Since transport and passenger are in same tile, and passenger was just added,
     // it might have displaced the transport in the tile.unit if not careful.
     // In our implementation, tile.unit = Some(unit_id) overwrites.
     assert!(game.tiles[6 * game.width + 5].unit == Some(passenger_id));
@@ -6205,7 +6232,7 @@ fn planet_buster_vaporizes_surrounding_area() {
         governor_mode: smac_core::GovernorMode::Off,
     });
     game.tiles[8 * game.width + 8].base = Some(100);
-    
+
     let defender_id = game.spawn_unit(rival, UnitKind::ScoutPatrol, 8, 8);
 
     // 2. Create Planet Buster design
@@ -6219,18 +6246,31 @@ fn planet_buster_vaporizes_surrounding_area() {
     };
     game.add_unit_design(owner, pb_design);
     let design_index = game.faction(owner).unwrap().unit_designs.len() - 1;
-    
-    let pb_id = game.spawn_unit_with_design(owner, UnitKind::CustomUnit(game.factions[owner].unit_designs[design_index].clone()), design_index, 7, 8, 0).unwrap();
+
+    let pb_id = game
+        .spawn_unit_with_design(
+            owner,
+            UnitKind::CustomUnit(game.factions[owner].unit_designs[design_index].clone()),
+            design_index,
+            7,
+            8,
+            0,
+        )
+        .unwrap();
 
     // 3. Launch Planet Buster (Attack the tile)
-    game.apply_action(smac_core::GameAction::MoveUnit { unit_id: pb_id, target_x: 8, target_y: 8 })
-        .expect("PB launch should succeed");
+    game.apply_action(smac_core::GameAction::MoveUnit {
+        unit_id: pb_id,
+        target_x: 8,
+        target_y: 8,
+    })
+    .expect("PB launch should succeed");
 
     // 4. Verify Destruction
     assert!(game.unit(pb_id).is_none()); // PB consumed
     assert!(game.unit(defender_id).is_none()); // Defender vaporized
     assert!(game.bases.iter().find(|b| b.id == 100).is_none()); // Base vaporized
-    
+
     // Check 3x3 crater field
     for dy in -1..=1 {
         for dx in -1..=1 {
@@ -6261,8 +6301,17 @@ fn air_superiority_intercepts_moving_enemy() {
     };
     game.add_unit_design(owner, air_design);
     let design_index = game.faction(owner).unwrap().unit_designs.len() - 1;
-    
-    let interceptor_id = game.spawn_unit_with_design(owner, UnitKind::CustomUnit(game.factions[owner].unit_designs[design_index].clone()), design_index, 5, 5, 0).unwrap();
+
+    let interceptor_id = game
+        .spawn_unit_with_design(
+            owner,
+            UnitKind::CustomUnit(game.factions[owner].unit_designs[design_index].clone()),
+            design_index,
+            5,
+            5,
+            0,
+        )
+        .unwrap();
     game.set_unit_activity(interceptor_id, smac_core::UnitActivity::Patrol);
 
     // 2. Spawn enemy moving through adjacent tile
@@ -6270,19 +6319,23 @@ fn air_superiority_intercepts_moving_enemy() {
 
     // 3. Move enemy: should trigger interception
     // Tile (6,5) is adjacent to interceptor at (5,5)
-    game.apply_action(smac_core::GameAction::MoveUnit { unit_id: enemy_id, target_x: 6, target_y: 5 })
-        .expect("Move should resolve (with combat)");
+    game.apply_action(smac_core::GameAction::MoveUnit {
+        unit_id: enemy_id,
+        target_x: 6,
+        target_y: 5,
+    })
+    .expect("Move should resolve (with combat)");
 
     // Interceptor or enemy should have taken damage
     // Note: resolve_combat might destroy one of them.
     let interceptor_alive = game.unit(interceptor_id).is_some();
     let enemy_alive = game.unit(enemy_id).is_some();
-    
+
     if interceptor_alive && enemy_alive {
-         let interceptor = game.unit(interceptor_id).unwrap();
-         let enemy = game.unit(enemy_id).unwrap();
-         assert!(interceptor.hp < 10 || enemy.hp < 10);
+        let interceptor = game.unit(interceptor_id).unwrap();
+        let enemy = game.unit(enemy_id).unwrap();
+        assert!(interceptor.hp < 10 || enemy.hp < 10);
     } else {
-         assert!(!interceptor_alive || !enemy_alive);
+        assert!(!interceptor_alive || !enemy_alive);
     }
 }

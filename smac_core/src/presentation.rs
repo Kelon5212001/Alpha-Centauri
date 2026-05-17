@@ -162,20 +162,19 @@ pub fn terrain_name(terrain: Terrain) -> &'static str {
         Terrain::Rocky => "Rocky",
         Terrain::Fungus => "Xenofungus",
         Terrain::Crater => "Nuclear Crater",
-        }
-        }
+    }
+}
 
-        pub fn terrain_symbol(terrain: Terrain) -> &'static str {
-        match terrain {
+pub fn terrain_symbol(terrain: Terrain) -> &'static str {
+    match terrain {
         Terrain::Ocean => "w",
         Terrain::Flat => ".",
         Terrain::Rolling => "r",
         Terrain::Rocky => "^",
         Terrain::Fungus => "F",
         Terrain::Crater => "X",
-        }
-        }
-
+    }
+}
 
 pub fn convoy_overlay_status_glyph(status: ConvoyOverlayStatus) -> Option<&'static str> {
     match status {

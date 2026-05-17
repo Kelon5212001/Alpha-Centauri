@@ -2,12 +2,13 @@
 
 This repository is a Rust-first SMAC-inspired strategy project with a playable `egui` front end, a large deterministic core crate, bundled JSON game content, and an embedded `glsmac/` reference codebase.
 
-This README reflects the current repository state verified on 2026-05-16 after cleanup, GUI observer work, and the current simulation-stabilization sprint.
+This README reflects the current repository state as of 2026-05-17 after the simulation-stabilization work, the Bevy client transition, advanced-warfare AI, and the new planetary-council diplomacy foundation.
 
 ## Current State
 
-- Active Rust workspace: `smac_core` + `smac_gui`
-- Active front end: `smac_gui` using `eframe/egui`
+- Active Rust workspace: `smac_core` + `smac_gui` + `smac_bevy`
+- Stable front end: `smac_gui` using `eframe/egui`
+- Transition front end: `smac_bevy`
 - Active gameplay authority: `smac_core`
 - Reference implementation kept in-tree: `glsmac/`
 - Archived experiments and preserved history: `_archived/`, `*.backup`, `*.bak`
@@ -68,6 +69,18 @@ The GUI remains monolithic in file layout, but the rule-heavy logic has been pus
 
 The active Rust GUI is functional, not art-complete. It renders the simulation with colored tiles, glyphs, overlays, minimap, convoy lines, and side panels rather than polished sprite/animation presentation.
 
+### `smac_bevy`
+
+`smac_bevy` is the newer presentation client. It is the active visual-transition path for the project and now carries newer rendering, UI polish, audio hooks, and terrain-presentation work while still depending on `smac_core` for deterministic gameplay rules.
+
+Current role:
+
+- newer presentation path
+- map rendering and visual polish
+- themed UI work
+- audio/narrative presentation hooks
+- future home for terrain-transition work
+
 ## Autoplay Demo And Graphics Reality
 
 The repository now has a verified watchable autoplay path:
@@ -103,12 +116,13 @@ Current transcendence pacing rule:
 - the tech now unlocks `Empath Guild`
 - transcendence requires both `Secrets of Planet` and the `Empath Guild` secret project
 
-About the "original GUI":
+About the current viewers:
 
-- `smac_gui` is the active GUI for the Rust game
+- `smac_gui` remains the most reliable watch/debug client in constrained environments
+- `smac_bevy` is the newer primary visual-transition client, but it has heavier system dependencies
 - `glsmac/` is a separate C++ reference project with its own renderer, assets, and build system
 - `glsmac/` is not wired into the Rust simulation/runtime path
-- for this repository today, the Rust GUI is the best live viewer
+- `glsmac/` is reference-only for this repository today
 
 ## Data And Content
 
@@ -135,10 +149,10 @@ Archived non-runtime JSON files now live under `data/_archived/`:
 Current validated bundled content counts:
 
 - 5 factions
-- 15 techs
+- 17 techs
 - 14 units
 - 19 facilities
-- 38 production items
+- 41 production items
 
 ## Repository Layout
 
@@ -148,10 +162,12 @@ Current validated bundled content counts:
 - `rust-toolchain.toml`: stable toolchain with `rustfmt`, `clippy`, and `rust-analyzer`
 - `smac_core/`: active gameplay crate
 - `smac_gui/`: active GUI crate
+- `smac_bevy/`: active Bevy-based client/presentation path
 - `data/`: bundled runtime content
 - `data/_archived/`: non-runtime JSON files removed from the active content root
 - `documentation/`: technical notes and status docs
 - `documentation/project_history/`: older planning and assessment documents preserved for context
+- `documentation/project_history/SPRINT_LOG_2026-05-17.md`: detailed sprint-by-sprint log and Gemini handoff
 - `documentation/technical_docs/repository_retention_policy.md`: explicit policy for what stays active, archived, generated, or in-tree as reference material
 - `documentation/technical_docs/references/`: large design/reference documents moved out of the repo root
 - `glsmac/`: separate C++ reference project
@@ -185,10 +201,17 @@ Repository notes:
 Using the local toolchain in `.rustup-local/`:
 
 - `cargo 1.95.0 (f2d3ce0bd 2026-03-21)`
-- `cargo run -p smac_core --bin validate_content --quiet`: passed
-- `cargo run -p smac_core --bin autoplay_demo --quiet -- --turns 100 --width 20 --height 20 --seed 7 --summary-every 100`: passed
-- `cargo run -p smac_core --bin autoplay_sweep --quiet -- --turns 100 --width 20 --height 20 --start-seed 1 --count 10`: passed
-- `cargo test --workspace --quiet`: passed
+- locally reverified on 2026-05-17:
+  - `cargo test -p smac_core --quiet`: passed
+  - `cargo test -p smac_gui --quiet`: passed
+  - `cargo run -p smac_core --bin validate_content --quiet`: passed
+- last reported full-workspace green state:
+  - `266` passing tests
+
+Current local verification caveats in this shell:
+
+- `cargo test --workspace --quiet` could not be re-run end-to-end because `smac_bevy` needs dependencies that are not fully cached here and this shell has no working DNS access to `crates.io`
+- `cargo test -p smac_bevy --quiet` is additionally blocked here by missing host tooling for `alsa-sys` (`pkg-config`, and likely ALSA development headers)
 
 Current verified workspace test count:
 
@@ -197,7 +220,7 @@ Current verified workspace test count:
 Observed validation result:
 
 ```text
-Content validation passed: 5 factions, 15 techs, 14 units, 19 facilities, 38 production items.
+Content validation passed: 5 factions, 17 techs, 14 units, 19 facilities, 41 production items.
 ```
 
 Observed autoplay result on the verified demo profile:
@@ -217,26 +240,24 @@ aggregate | terminal 0 / 10 | bankruptcies 0 | famines 0 | starvation 0 | suppor
 
 ## Current Focus
 
-The `Visual Transition` (Phase 3) core integration is complete. `smac_bevy` is now the primary presentation layer.
+The visual-transition work is established, and the repo is now in `Phase 4: Advanced Strategy And World Mechanics`.
 
-Current focus: `Phase 4: Advanced Strategy & World Mechanics`
+Immediate next sprint:
 
-1. **Procedural Biomes**: (Complete) Implemented coherent map generation and environmental scaling.
-2. **Native Dynamics**: (Complete) Enhanced native life spawning and oceanic threats.
-3. **Combat AI**: (Complete) Implemented Battle Groups, coordinated staging, and escort heuristics.
-4. **Economic Mastery**: (Complete) Implemented Orbital Economy, population-scaled trade, and symmetric victories.
-5. **AI Modernization**: (Complete) Implemented dynamic AI custom unit design and component-aware upgrades.
-6. **Strategic Refinement**: (Complete) Implemented diplomatic demands, ultimatums, and tech brokering.
-7. **Visual Polish**: (Complete) Implemented persistent map entities, unit facing, and themed UI.
-8. **Project Power**: (Complete) Implemented naval invasions, transports, and fleet escorts.
-9. **Sound & Narrative**: (Complete) Implemented "Voice of Planet" lore system and integrated `bevy_audio`.
-10. **Advanced Warfare**: Transition to implementing Air Superiority and mass destruction mechanics.
+1. Fix the remaining Sparta seed-`7` turtling outcome so the default 100-turn demo reaches `3` AI bases.
+2. Keep the current `0/10` famine, starvation, and support-collapse sweep result intact.
+3. Only after Sparta is fixed, move back to council-aware AI strategy and stronger midgame conflict generation.
+
+Detailed sprint history and the Gemini handoff live in:
+
+- [SPRINT_LOG_2026-05-17.md](/home/bk/Projects/SMAC_Rust_AI/documentation/project_history/SPRINT_LOG_2026-05-17.md)
 
 ## Bottom Line
 
 What is true now:
 
 - the workspace is green and currently verifies `266` passing tests
+- this shell locally reverified `smac_core`, `smac_gui`, and content validation on 2026-05-17
 - the 100-turn seed-`7` demo still completes without a terminal outcome
 - the 10-seed proving sweep now reaches turn `100` without premature terminal outcomes
 - multi-seed diagnostics now show `0/10` famine/support-collapse outcomes on the verified sweep
@@ -246,6 +267,7 @@ What is true now:
 - rich factions can now bridge mineral support shortfalls from energy reserves instead of immediately disbanding units
 - support pressure ends in a healthier state on the verified seed than it did before this sprint
 - deep systems coverage remains intact across AI, logistics, saves, research, diplomacy, workshop, crises, and tactical heuristics
+- the Planetary Council foundation is now in place, including council state, weighted votes, save persistence, and autoplay/reporting integration
 - **Repeatable Diagnostics**: Autoplay demo and multi-seed sweep binaries for continuous engine verification.
 
 What is still not true:
@@ -254,5 +276,6 @@ What is still not true:
 - preserved historical material is still intentionally present
 - archive/reference material still increases repository scope even though its boundary is now explicit
 - the Rust GUI is not yet a finished art/sprite presentation
+- the Bevy client is not yet locally turnkey in minimal shells because of missing system/audio dependencies
 - the current 100-turn demo is not yet balanced or dramatically interesting enough to count as polished gameplay
 - the default seed-`7` demo is still a turtle-heavy outlier and the sim still needs stronger midgame conflict

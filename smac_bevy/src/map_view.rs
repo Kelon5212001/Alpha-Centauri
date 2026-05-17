@@ -1,14 +1,22 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts};
-use smac_core::{Terrain, Improvement};
+use bevy_egui::{EguiContexts, egui};
+use smac_core::{Improvement, Terrain};
 
 pub struct MapViewPlugin;
 
 impl Plugin for MapViewPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MapAssets>()
-           .add_systems(Startup, load_assets)
-           .add_systems(Update, (sync_map_terrain, sync_map_units, sync_map_bases, handle_map_interaction));
+            .add_systems(Startup, load_assets)
+            .add_systems(
+                Update,
+                (
+                    sync_map_terrain,
+                    sync_map_units,
+                    sync_map_bases,
+                    handle_map_interaction,
+                ),
+            );
     }
 }
 
@@ -54,7 +62,10 @@ fn load_assets(mut assets: ResMut<MapAssets>, asset_server: Res<AssetServer>) {
 }
 
 #[derive(Component)]
-struct TileEntity { x: usize, y: usize }
+struct TileEntity {
+    x: usize,
+    y: usize,
+}
 
 #[derive(Component)]
 struct ImprovementEntity;
@@ -66,9 +77,12 @@ struct UnitId(usize);
 struct BaseId(usize);
 
 #[derive(Component)]
-struct PrevPos { x: usize, y: usize }
+struct PrevPos {
+    x: usize,
+    y: usize,
+}
 
-const HEX_RADIUS: f32 = 32.0; 
+const HEX_RADIUS: f32 = 32.0;
 
 fn sync_map_terrain(
     mut commands: Commands,
@@ -78,13 +92,13 @@ fn sync_map_terrain(
     imp_query: Query<Entity, With<ImprovementEntity>>,
 ) {
     let state = &game_state.0;
-    
+
     if tile_query.is_empty() {
         for y in 0..state.height {
             for x in 0..state.width {
                 let cx = x as f32 * HEX_RADIUS * 1.5;
                 let cy = y as f32 * HEX_RADIUS * 1.5;
-                
+
                 let texture = match state.tile(x, y).map(|t| t.terrain) {
                     Some(Terrain::Ocean) => assets.ocean.clone(),
                     Some(Terrain::Flat) => assets.flat.clone(),
@@ -94,20 +108,22 @@ fn sync_map_terrain(
                     Some(Terrain::Crater) => assets.crater.clone(),
                     _ => assets.ocean.clone(),
                 };
-                
+
                 commands.spawn((
                     SpriteBundle {
                         texture,
                         transform: Transform::from_xyz(cx, cy, 0.0),
                         ..default()
                     },
-                    TileEntity { x, y }
+                    TileEntity { x, y },
                 ));
             }
         }
     }
 
-    for entity in imp_query.iter() { commands.entity(entity).despawn(); }
+    for entity in imp_query.iter() {
+        commands.entity(entity).despawn();
+    }
     for y in 0..state.height {
         for x in 0..state.width {
             let cx = x as f32 * HEX_RADIUS * 1.5;
@@ -129,7 +145,7 @@ fn sync_map_terrain(
                         transform: Transform::from_xyz(cx, cy, 0.1),
                         ..default()
                     },
-                    ImprovementEntity
+                    ImprovementEntity,
                 ));
             }
         }
@@ -144,18 +160,18 @@ fn sync_map_units(
 ) {
     let state = &game_state.0;
     let mut processed_ids = std::collections::HashSet::new();
-    
+
     for (entity, unit_id, mut transform, mut prev_pos) in unit_query.iter_mut() {
         if let Some(unit) = state.units.iter().find(|u| u.id == unit_id.0 && u.alive) {
             let cx = unit.x as f32 * HEX_RADIUS * 1.5;
             let cy = unit.y as f32 * HEX_RADIUS * 1.5;
-            
+
             if unit.x != prev_pos.x || unit.y != prev_pos.y {
                 let dx = unit.x as f32 - prev_pos.x as f32;
                 let dy = unit.y as f32 - prev_pos.y as f32;
                 let angle = dy.atan2(dx);
                 transform.rotation = Quat::from_rotation_z(angle);
-                
+
                 prev_pos.x = unit.x;
                 prev_pos.y = unit.y;
             }
@@ -167,12 +183,18 @@ fn sync_map_units(
             commands.entity(entity).despawn();
         }
     }
-    
+
     for unit in &state.units {
-        if !unit.alive || processed_ids.contains(&unit.id) { continue; }
+        if !unit.alive || processed_ids.contains(&unit.id) {
+            continue;
+        }
         let cx = unit.x as f32 * HEX_RADIUS * 1.5;
         let cy = unit.y as f32 * HEX_RADIUS * 1.5;
-        let texture = if unit.owner == state.player_owner() { assets.unit_player.clone() } else { assets.unit_ai.clone() };
+        let texture = if unit.owner == state.player_owner() {
+            assets.unit_player.clone()
+        } else {
+            assets.unit_ai.clone()
+        };
         commands.spawn((
             SpriteBundle {
                 texture,
@@ -180,7 +202,10 @@ fn sync_map_units(
                 ..default()
             },
             UnitId(unit.id),
-            PrevPos { x: unit.x, y: unit.y },
+            PrevPos {
+                x: unit.x,
+                y: unit.y,
+            },
         ));
     }
 }
@@ -193,7 +218,7 @@ fn sync_map_bases(
 ) {
     let state = &game_state.0;
     let mut processed_ids = std::collections::HashSet::new();
-    
+
     for (entity, base_id, mut transform) in base_query.iter_mut() {
         if let Some(base) = state.bases.iter().find(|b| b.id == base_id.0) {
             let cx = base.x as f32 * HEX_RADIUS * 1.5;
@@ -205,19 +230,25 @@ fn sync_map_bases(
             commands.entity(entity).despawn();
         }
     }
-    
+
     for base in &state.bases {
-        if processed_ids.contains(&base.id) { continue; }
+        if processed_ids.contains(&base.id) {
+            continue;
+        }
         let cx = base.x as f32 * HEX_RADIUS * 1.5;
         let cy = base.y as f32 * HEX_RADIUS * 1.5;
-        let texture = if base.owner == state.player_owner() { assets.base_player.clone() } else { assets.base_ai.clone() };
+        let texture = if base.owner == state.player_owner() {
+            assets.base_player.clone()
+        } else {
+            assets.base_ai.clone()
+        };
         commands.spawn((
             SpriteBundle {
                 texture,
                 transform: Transform::from_xyz(cx, cy, 1.0),
                 ..default()
             },
-            BaseId(base.id)
+            BaseId(base.id),
         ));
     }
 }
@@ -230,9 +261,13 @@ fn handle_map_interaction(
     q_window: Query<&Window, With<bevy::window::PrimaryWindow>>,
     mut contexts: EguiContexts,
 ) {
-    let Ok((camera, camera_transform)) = q_camera.get_single() else { return; };
-    let Ok(window) = q_window.get_single() else { return; };
-    
+    let Ok((camera, camera_transform)) = q_camera.get_single() else {
+        return;
+    };
+    let Ok(window) = q_window.get_single() else {
+        return;
+    };
+
     let ctx = contexts.ctx_mut();
     if ctx.is_pointer_over_area() || ctx.is_using_pointer() {
         return;
@@ -242,12 +277,12 @@ fn handle_map_interaction(
         if let Some(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) {
             let x = (world_pos.x / (HEX_RADIUS * 1.5)).round() as isize;
             let y = (world_pos.y / (HEX_RADIUS * 1.5)).round() as isize;
-            
+
             let state = &game_state.0;
             if x >= 0 && x < state.width as isize && y >= 0 && y < state.height as isize {
                 let tx = x as usize;
                 let ty = y as usize;
-                
+
                 if mouse_input.just_pressed(MouseButton::Left) {
                     selection.selected_tile = Some((tx, ty));
                     let tile = state.tile(tx, ty);
@@ -262,10 +297,13 @@ fn handle_map_interaction(
                         if let Some(imp) = tile.improvement {
                             ui.label(format!("Improvement: {:?}", imp));
                         }
-                        
+
                         let yields = state.tile_total_yields(tx, ty);
-                        ui.label(format!("Yields: N:{} M:{} E:{}", yields.nutrients, yields.minerals, yields.energy));
-                        
+                        ui.label(format!(
+                            "Yields: N:{} M:{} E:{}",
+                            yields.nutrients, yields.minerals, yields.energy
+                        ));
+
                         if let Some(base_id) = tile.base {
                             if let Some(base) = state.base(base_id) {
                                 ui.separator();
@@ -273,7 +311,7 @@ fn handle_map_interaction(
                                 ui.label(format!("Population: {}", base.population));
                             }
                         }
-                        
+
                         if let Some(unit_id) = tile.unit {
                             if let Some(unit) = state.unit(unit_id) {
                                 ui.separator();

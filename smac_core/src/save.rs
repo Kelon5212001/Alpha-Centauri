@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -410,8 +410,7 @@ impl GameStateSnapshot {
                     triggered_narratives: BTreeSet::new(),
                     council: crate::model::CouncilState::default(),
                     game_over: legacy.game_over,
-                    }
-
+                }
             }
         }
         .repair_minor_inconsistencies();

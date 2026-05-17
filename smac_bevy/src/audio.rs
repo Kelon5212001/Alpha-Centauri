@@ -5,8 +5,8 @@ pub struct AudioPlugin;
 impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<GameAudio>()
-           .add_systems(Startup, load_audio)
-           .add_systems(Update, play_event_sounds);
+            .add_systems(Startup, load_audio)
+            .add_systems(Update, play_event_sounds);
     }
 }
 

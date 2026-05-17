@@ -1,7 +1,7 @@
-mod ui;
-mod map_view;
-mod camera;
 mod audio;
+mod camera;
+mod map_view;
+mod ui;
 
 use bevy::prelude::*;
 use smac_core::GameState;
@@ -37,8 +37,5 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn((
-        Camera2dBundle::default(),
-        camera::MainCamera,
-    ));
+    commands.spawn((Camera2dBundle::default(), camera::MainCamera));
 }

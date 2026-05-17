@@ -1,13 +1,12 @@
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use smac_core::{SelectionPanelDisplayState, UnitSelectionDisplayState, TileSelectionDisplayState};
+use bevy_egui::{EguiContexts, EguiPlugin, egui};
+use smac_core::{SelectionPanelDisplayState, TileSelectionDisplayState, UnitSelectionDisplayState};
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(EguiPlugin)
-            .add_systems(Update, render_ui);
+        app.add_plugins(EguiPlugin).add_systems(Update, render_ui);
     }
 }
 
@@ -17,16 +16,17 @@ fn render_ui(
     selection: Res<crate::SelectionState>,
 ) {
     let ctx = contexts.ctx_mut();
-    
+
     // Apply Sci-Fi Theme
     let mut visuals = egui::Visuals::dark();
     visuals.widgets.noninteractive.bg_fill = egui::Color32::from_black_alpha(200);
-    visuals.widgets.noninteractive.fg_stroke = egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 255, 255)); // Cyan glow
+    visuals.widgets.noninteractive.fg_stroke =
+        egui::Stroke::new(1.0, egui::Color32::from_rgb(0, 255, 255)); // Cyan glow
     visuals.selection.bg_fill = egui::Color32::from_rgb(255, 140, 0); // Orange accents
     ctx.set_visuals(visuals);
 
     let owner = game_state.0.player_owner();
-    
+
     if let Some(game_over) = &game_state.0.game_over {
         egui::Window::new("Mission Conclusion")
             .anchor(egui::Align2::CENTER_CENTER, egui::vec2(0.0, 0.0))
@@ -48,19 +48,19 @@ fn render_ui(
         .show(ctx, |ui| {
             ui.heading("SMAC Rust AI");
             ui.separator();
-            
+
             let turn = game_state.0.turn;
             ui.label(format!("Turn: {}", turn));
-            
+
             if ui.button("End Turn").clicked() {
                 game_state.0.end_turn();
             }
 
             ui.separator();
             ui.heading("Commander's Brief");
-            
+
             let summary = game_state.0.player_turn_summary();
-            
+
             if summary.alerts.is_empty() {
                 ui.label("No active alerts.");
             } else {
@@ -76,11 +76,25 @@ fn render_ui(
 
             ui.separator();
             ui.heading("Selection");
-            let selection_display = game_state.0.selection_panel_display_state(selection.selected_unit, selection.selected_tile, owner);
+            let selection_display = game_state.0.selection_panel_display_state(
+                selection.selected_unit,
+                selection.selected_tile,
+                owner,
+            );
             match selection_display.unit {
-                UnitSelectionDisplayState::None { message_text } => { ui.label(message_text); }
-                UnitSelectionDisplayState::Missing { message_text } => { ui.label(message_text); }
-                UnitSelectionDisplayState::Selected { label_text, owner_text, hp_text, moves_text, .. } => {
+                UnitSelectionDisplayState::None { message_text } => {
+                    ui.label(message_text);
+                }
+                UnitSelectionDisplayState::Missing { message_text } => {
+                    ui.label(message_text);
+                }
+                UnitSelectionDisplayState::Selected {
+                    label_text,
+                    owner_text,
+                    hp_text,
+                    moves_text,
+                    ..
+                } => {
                     ui.label(label_text);
                     ui.label(owner_text);
                     ui.label(hp_text);
@@ -88,12 +102,23 @@ fn render_ui(
                 }
             }
             match selection_display.tile {
-                TileSelectionDisplayState::None { message_text } => { ui.label(message_text); }
-                TileSelectionDisplayState::Unexplored { coordinates_text, message_text } => {
+                TileSelectionDisplayState::None { message_text } => {
+                    ui.label(message_text);
+                }
+                TileSelectionDisplayState::Unexplored {
+                    coordinates_text,
+                    message_text,
+                } => {
                     ui.label(coordinates_text);
                     ui.label(message_text);
                 }
-                TileSelectionDisplayState::Selected { coordinates_text, terrain_text, yield_text, improvement_text, .. } => {
+                TileSelectionDisplayState::Selected {
+                    coordinates_text,
+                    terrain_text,
+                    yield_text,
+                    improvement_text,
+                    ..
+                } => {
                     ui.label(coordinates_text);
                     ui.label(terrain_text);
                     ui.label(yield_text);

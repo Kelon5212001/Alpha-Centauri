@@ -223,10 +223,7 @@ pub(crate) fn design_from_definition(
                 })
             }
         },
-        weapon: match Weapon::from_content_id(
-            &definition.weapon_kind,
-            definition.weapon_power,
-        ) {
+        weapon: match Weapon::from_content_id(&definition.weapon_kind, definition.weapon_power) {
             Some(w) => w,
             None => {
                 return Err(UnitDesignError::UnknownWeapon {
@@ -235,10 +232,7 @@ pub(crate) fn design_from_definition(
                 })
             }
         },
-        armor: match Armor::from_content_id(
-            &definition.armor_kind,
-            definition.armor_power,
-        ) {
+        armor: match Armor::from_content_id(&definition.armor_kind, definition.armor_power) {
             Some(a) => a,
             None => {
                 return Err(UnitDesignError::UnknownArmor {

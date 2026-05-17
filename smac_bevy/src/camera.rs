@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::prelude::*;
 
 pub struct CameraPlugin;
 
@@ -21,7 +21,7 @@ fn camera_controls(
     let Ok((mut transform, mut projection)) = query.get_single_mut() else {
         return;
     };
-    
+
     let mut pan = Vec2::ZERO;
 
     if keyboard_input.pressed(KeyCode::KeyW) || keyboard_input.pressed(KeyCode::ArrowUp) {
