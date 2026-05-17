@@ -957,9 +957,15 @@ impl GameState {
             | GameOver::AiWonEconomic
             | GameOver::AiWonTranscendence
             | GameOver::AiWonSpaceTranscendence
-            | GameOver::AiWonBlackHoleHarvesting => GameOverDisplayState {
+            | GameOver::AiWonBlackHoleHarvesting
+            | GameOver::DiplomaticVictory
+            | GameOver::PlanetUnited => GameOverDisplayState {
                 message_text: "DEFEAT: A rival faction has won the game.",
                 color_hex: presentation::ui_danger_hex(),
+            },
+            GameOver::CouncilGovernorElected => GameOverDisplayState {
+                message_text: "MILESTONE: A Planetary Governor has been elected.",
+                color_hex: "#AAAAFF",
             },
             GameOver::PlayerLost => GameOverDisplayState {
                 message_text: presentation::ui_defeat_text(),
@@ -1325,6 +1331,7 @@ impl GameState {
             pending_tech_trades: Vec::new(),
             pending_demands: Vec::new(),
             triggered_narratives: BTreeSet::new(),
+            council: crate::model::CouncilState::default(),
             game_over: None,
         };
 
@@ -1492,6 +1499,15 @@ impl GameState {
                 target_y,
                 action,
             } => self.perform_probe_action(unit_id, target_x, target_y, action),
+            GameAction::CallCouncil => self.call_council(),
+            GameAction::VoteForGovernor {
+                voter_id,
+                candidate_id,
+            } => self.vote_for_governor(voter_id, candidate_id),
+            GameAction::VoteForSupremeLeader {
+                voter_id,
+                candidate_id,
+            } => self.vote_for_supreme_leader(voter_id, candidate_id),
             GameAction::EndTurn => {
                 self.end_turn();
                 Ok(())
@@ -9329,6 +9345,7 @@ impl GameState {
         self.reset_moves_for_owner(player_owner);
         self.update_player_visibility();
         self.update_diplomatic_attitudes();
+        self.check_council_activation();
         self.check_game_over();
     }
 
@@ -12291,6 +12308,128 @@ impl GameState {
         }
 
         best.map(|(nx, ny, _, _)| (nx, ny))
+    }
+
+    pub fn call_council(&mut self) -> Result<(), String> {
+        if !self.council.is_active {
+            return Err("Planetary Council is not yet active.".to_string());
+        }
+        if self.turn < self.council.last_meeting_turn + 20 {
+            return Err("Council cannot be called so soon after the last meeting.".to_string());
+        }
+
+        self.council.pending_votes.clear();
+        self.push_event_log(
+            EventCategory::Diplomacy,
+            "PLANETARY COUNCIL: A session has been convened to elect a Planetary Governor.".to_string(),
+        );
+        Ok(())
+    }
+
+    pub fn vote_for_governor(&mut self, voter_id: usize, candidate_id: usize) -> Result<(), String> {
+        if !self.council.is_active {
+            return Err("Council not active.".to_string());
+        }
+        let weight = self.calculate_vote_weight(voter_id);
+        self.council.pending_votes.push(crate::model::CouncilVote {
+            faction_id: voter_id,
+            candidate_id,
+            weight,
+        });
+
+        if self.council.pending_votes.len() >= self.factions.len() - 1 {
+            self.resolve_council_votes();
+        }
+        Ok(())
+    }
+
+    pub fn vote_for_supreme_leader(
+        &mut self,
+        voter_id: usize,
+        candidate_id: usize,
+    ) -> Result<(), String> {
+        if !self.council.is_active {
+            return Err("Council not active.".to_string());
+        }
+        let weight = self.calculate_vote_weight(voter_id);
+        self.council.pending_votes.push(crate::model::CouncilVote {
+            faction_id: voter_id,
+            candidate_id,
+            weight,
+        });
+
+        if self.council.pending_votes.len() >= self.factions.len() - 1 {
+            self.resolve_council_votes();
+        }
+        Ok(())
+    }
+
+    fn calculate_vote_weight(&self, faction_id: usize) -> i32 {
+        let Some(faction) = self.faction(faction_id) else {
+            return 0;
+        };
+        let base_weight = faction.total_population(self);
+        if self.has_secret_project(faction_id, SecretProject::EmpathGuild) {
+            base_weight * 2
+        } else {
+            base_weight
+        }
+    }
+
+    fn resolve_council_votes(&mut self) {
+        let mut tallies = std::collections::HashMap::new();
+        for vote in &self.council.pending_votes {
+            *tallies.entry(vote.candidate_id).or_insert(0) += vote.weight;
+        }
+
+        let total_weight: i32 = tallies.values().sum();
+        let mut winner = None;
+        for (&candidate, &weight) in &tallies {
+            if weight > total_weight * 2 / 3 {
+                winner = Some(candidate);
+                break;
+            }
+        }
+
+        if let Some(winner_id) = winner {
+            self.council.governor_id = Some(winner_id);
+            let name = self.faction_name(winner_id);
+            self.push_event_log(
+                EventCategory::Diplomacy,
+                format!("PLANETARY COUNCIL: {} has been elected Planetary Governor!", name),
+            );
+        } else {
+            self.push_event_log(
+                EventCategory::Diplomacy,
+                "PLANETARY COUNCIL: No candidate received the required 2/3 majority.".to_string(),
+            );
+        }
+
+        self.council.pending_votes.clear();
+        self.council.last_meeting_turn = self.turn;
+    }
+
+    fn check_council_activation(&mut self) {
+        if self.council.is_active {
+            return;
+        }
+
+        let mut has_empath = false;
+        for faction in &self.factions {
+            if self.has_secret_project(faction.id, SecretProject::EmpathGuild) {
+                has_empath = true;
+                break;
+            }
+        }
+
+        if has_empath {
+            self.council.is_active = true;
+            self.push_event_log(
+                EventCategory::Diplomacy,
+                "PLANETARY COUNCIL: The Empath Guild has established the Planetary Council."
+                    .to_string(),
+            );
+        }
     }
 
     pub fn distance(&self, ax: usize, ay: usize, bx: usize, by: usize) -> i32 {

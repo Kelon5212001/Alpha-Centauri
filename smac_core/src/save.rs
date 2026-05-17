@@ -44,6 +44,8 @@ pub struct GameStateSnapshot {
     pub pending_demands: Vec<(usize, usize, crate::model::DemandKind)>,
     #[serde(default)]
     pub triggered_narratives: BTreeSet<String>,
+    #[serde(default)]
+    pub council: crate::model::CouncilState,
     pub game_over: Option<GameOver>,
 }
 
@@ -268,6 +270,7 @@ impl From<&GameState> for GameStateSnapshot {
             pending_tech_trades: game.pending_tech_trades.clone(),
             pending_demands: game.pending_demands.clone(),
             triggered_narratives: game.triggered_narratives.clone(),
+            council: game.council.clone(),
             game_over: game.game_over,
         }
     }
@@ -294,6 +297,7 @@ impl GameStateSnapshot {
             pending_tech_trades: self.pending_tech_trades,
             pending_demands: self.pending_demands,
             triggered_narratives: self.triggered_narratives,
+            council: self.council,
             game_over: self.game_over,
         }
     }
@@ -352,6 +356,7 @@ impl GameStateSnapshot {
                         pending_tech_trades: Vec::new(),
                         pending_demands: Vec::new(),
                         triggered_narratives: BTreeSet::new(),
+                        council: crate::model::CouncilState::default(),
                         game_over: legacy.game_over,
                     }
                 }
@@ -403,8 +408,10 @@ impl GameStateSnapshot {
                     pending_tech_trades: Vec::new(),
                     pending_demands: Vec::new(),
                     triggered_narratives: BTreeSet::new(),
+                    council: crate::model::CouncilState::default(),
                     game_over: legacy.game_over,
-                }
+                    }
+
             }
         }
         .repair_minor_inconsistencies();

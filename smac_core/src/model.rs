@@ -1175,6 +1175,9 @@ pub enum GameOver {
     AiWonTranscendence,
     AiWonSpaceTranscendence,
     AiWonBlackHoleHarvesting,
+    DiplomaticVictory,
+    CouncilGovernorElected,
+    PlanetUnited,
     PlayerLost,
 }
 
@@ -1247,7 +1250,24 @@ pub struct GameState {
     pub pending_demands: Vec<(usize, usize, DemandKind)>,
     #[serde(default)]
     pub triggered_narratives: BTreeSet<String>,
+    #[serde(default)]
+    pub council: CouncilState,
     pub game_over: Option<GameOver>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CouncilVote {
+    pub faction_id: usize,
+    pub candidate_id: usize,
+    pub weight: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct CouncilState {
+    pub is_active: bool,
+    pub governor_id: Option<usize>,
+    pub last_meeting_turn: i32,
+    pub pending_votes: Vec<CouncilVote>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1351,6 +1371,15 @@ pub enum GameAction {
     UpgradeUnit {
         unit_id: usize,
         new_design: UnitDesign,
+    },
+    CallCouncil,
+    VoteForGovernor {
+        voter_id: usize,
+        candidate_id: usize,
+    },
+    VoteForSupremeLeader {
+        voter_id: usize,
+        candidate_id: usize,
     },
     ChooseSocialEngineering {
         owner: usize,

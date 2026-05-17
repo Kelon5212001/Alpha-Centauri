@@ -272,5 +272,8 @@ fn game_over_label(game_over: GameOver) -> &'static str {
         GameOver::AiWonSpaceTranscendence => "ai-space",
         GameOver::AiWonBlackHoleHarvesting => "ai-singularity",
         GameOver::PlayerLost => "player-lost",
+        GameOver::DiplomaticVictory => "diplomatic-victory",
+        GameOver::CouncilGovernorElected => "governor-elected",
+        GameOver::PlanetUnited => "planet-united",
     }
 }
