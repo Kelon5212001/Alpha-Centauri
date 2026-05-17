@@ -1,0 +1,259 @@
+// smac_core/src/technology_tree.rs
+//! Complete SMAC Technology Tree Implementation
+
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct Technology {
+    pub id: String,
+    pub name: String,
+    pub category: TechCategory,
+    pub level: u8,
+    pub prerequisites: Vec<String>,
+    pub enables: TechEnables,
+    pub quote: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum TechCategory {
+    Build,    // Blue - Industrial/Construction
+    Discover, // Green - Pure Science/Research  
+    Explore,  // Yellow - Exploration/Expansion
+    Conquer,  // Red - Military/Weapons
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct TechEnables {
+    pub units: Vec<String>,
+    pub facilities: Vec<String>,
+    pub abilities: Vec<String>,
+    pub terraforming: Vec<String>,
+    pub social_engineering: Vec<String>,
+}
+
+pub struct TechnologyTree {
+    technologies: Vec<Technology>,
+}
+
+impl TechnologyTree {
+    pub fn new() -> Self {
+        Self {
+            technologies: Self::initialize_technologies(),
+        }
+    }
+
+    fn initialize_technologies() -> Vec<Technology> {
+        vec![
+            // Starting Technologies
+            Technology {
+                id: "centauri_ecology".to_string(),
+                name: "Centauri Ecology".to_string(),
+                category: TechCategory::Explore,
+                level: 1,
+                prerequisites: vec![],
+                enables: TechEnables {
+                    units: vec!["former".to_string()],
+                    facilities: vec!["recycling_tanks".to_string()],
+                    terraforming: vec!["farm".to_string(), "solar_collector".to_string()],
+                    ..Default::default()
+                },
+                quote: Some("In the great commons at Gaia's Landing we have a tall and particularly \
+                           beautiful stand of white pine, planted at the time of the first \
+                           colonies. - Lady Deirdre Skye".to_string()),
+            },
+            Technology {
+                id: "social_psych".to_string(),
+                name: "Social Psych".to_string(),
+                category: TechCategory::Build,
+                level: 1,
+                prerequisites: vec![],
+                enables: TechEnables {
+                    facilities: vec!["recreation_commons".to_string()],
+                    ..Default::default()
+                },
+                quote: Some("If you can discover a better way of life than office-holding for \
+                           your future rulers, a well-governed city becomes a possibility. \
+                           - Plato".to_string()),
+            },
+            Technology {
+                id: "doctrine_mobility".to_string(),
+                name: "Doctrine: Mobility".to_string(),
+                category: TechCategory::Conquer,
+                level: 1,
+                prerequisites: vec![],
+                enables: TechEnables {
+                    units: vec!["speeder".to_string()],
+                    ..Default::default()
+                },
+                quote: Some("Once a man has changed the relationship between himself and his \
+                           environment, he cannot return to the blissful ignorance he left. \
+                           - Commisioner Pravin Lal".to_string()),
+            },
+            Technology {
+                id: "information_networks".to_string(),
+                name: "Information Networks".to_string(),
+                category: TechCategory::Discover,
+                level: 1,
+                prerequisites: vec![],
+                enables: TechEnables {
+                    facilities: vec!["network_node".to_string()],
+                    abilities: vec!["planned_economy".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            
+            // Level 2 Technologies
+            Technology {
+                id: "progenitor_psych".to_string(),
+                name: "Progenitor Psych".to_string(),
+                category: TechCategory::Explore,
+                level: 2,
+                prerequisites: vec!["centauri_ecology".to_string(), "social_psych".to_string()],
+                enables: TechEnables {
+                    units: vec!["trance_scout".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            Technology {
+                id: "field_modulation".to_string(),
+                name: "Field Modulation".to_string(),
+                category: TechCategory::Conquer,
+                level: 2,
+                prerequisites: vec!["progenitor_psych".to_string(), "centauri_ecology".to_string()],
+                enables: TechEnables {
+                    units: vec!["resonance_laser".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            Technology {
+                id: "planetary_networks".to_string(),
+                name: "Planetary Networks".to_string(),
+                category: TechCategory::Discover,
+                level: 2,
+                prerequisites: vec!["information_networks".to_string()],
+                enables: TechEnables {
+                    facilities: vec!["hologram_theatre".to_string()],
+                    abilities: vec!["probe_teams".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            
+            // Level 3 Technologies
+            Technology {
+                id: "secrets_of_the_human_brain".to_string(),
+                name: "Secrets of the Human Brain".to_string(),
+                category: TechCategory::Explore,
+                level: 3,
+                prerequisites: vec!["progenitor_psych".to_string(), "social_psych".to_string()],
+                enables: TechEnables {
+                    facilities: vec!["bioenhancement_center".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            Technology {
+                id: "gene_splicing".to_string(),
+                name: "Gene Splicing".to_string(),
+                category: TechCategory::Build,
+                level: 3,
+                prerequisites: vec!["secrets_of_the_human_brain".to_string()],
+                enables: TechEnables {
+                    facilities: vec!["research_hospital".to_string()],
+                    abilities: vec!["genetic_engineering".to_string()],
+                    ..Default::default()
+                },
+                quote: None,
+            },
+            
+            // Add more technologies as needed...
+        ]
+    }
+
+    pub fn get_technology(&self, id: &str) -> Option<&Technology> {
+        self.technologies.iter().find(|t| t.id == id)
+    }
+
+    pub fn get_available_technologies(&self, researched: &HashSet<String>) -> Vec<&Technology> {
+        self.technologies
+            .iter()
+            .filter(|tech| {
+                !researched.contains(&tech.id) &&
+                tech.prerequisites.iter().all(|prereq| researched.contains(prereq))
+            })
+            .collect()
+    }
+
+    pub fn get_technologies_by_category(&self, category: TechCategory) -> Vec<&Technology> {
+        self.technologies
+            .iter()
+            .filter(|tech| tech.category == category)
+            .collect()
+    }
+
+    pub fn validate_prerequisites(&self) -> Result<(), String> {
+        for tech in &self.technologies {
+            for prereq in &tech.prerequisites {
+                if !self.technologies.iter().any(|t| t.id == *prereq) {
+                    return Err(format!(
+                        "Technology '{}' has invalid prerequisite: '{}'",
+                        tech.name, prereq
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_technology_tree_creation() {
+        let tree = TechnologyTree::new();
+        assert!(!tree.technologies.is_empty());
+    }
+
+    #[test]
+    fn test_get_starting_technologies() {
+        let tree = TechnologyTree::new();
+        let researched = HashSet::new();
+        let available = tree.get_available_technologies(&researched);
+        
+        // Should have 4 starting techs
+        assert_eq!(available.len(), 4);
+        
+        // All should be level 1
+        for tech in available {
+            assert_eq!(tech.level, 1);
+            assert!(tech.prerequisites.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_prerequisite_validation() {
+        let tree = TechnologyTree::new();
+        assert!(tree.validate_prerequisites().is_ok());
+    }
+
+    #[test]
+    fn test_technology_progression() {
+        let tree = TechnologyTree::new();
+        let mut researched = HashSet::new();
+        
+        // Research starting techs
+        researched.insert("centauri_ecology".to_string());
+        researched.insert("social_psych".to_string());
+        
+        let available = tree.get_available_technologies(&researched);
+        
+        // Should now have access to Progenitor Psych
+        assert!(available.iter().any(|t| t.id == "progenitor_psych"));
+    }
+}

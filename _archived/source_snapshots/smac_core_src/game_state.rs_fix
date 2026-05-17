@@ -1,0 +1,36 @@
+    pub fn sidebar_tabs(&self, active_tab: SidebarTab) -> Vec<SidebarTabState> {
+        SidebarTab::all()
+            .into_iter()
+            .map(|tab| SidebarTabState {
+                tab,
+                label_text: tab.label_text(),
+                selected: tab == active_tab,
+            })
+            .collect()
+    }
+
+    pub fn top_bar_display_state(&self, owner: usize) -> TopBarDisplayState {
+        let faction = self.faction(owner);
+        TopBarDisplayState {
+            year_text: format!("Year: {}", 2100 + self.turn),
+            energy_text: faction.map(|f| format!("Energy: {}", f.energy)),
+            research_text: faction.map(|f| {
+                format!(
+                    "Research: {}/{}",
+                    f.research,
+                    crate::content_api::tech_cost(f.current_research)
+                )
+            }),
+            food_text: faction.map(|f| format!("Food: {}%", f.food_security)),
+            toxicity_text: faction.map(|f| format!("Toxicity: {}", f.planet_toxicity)),
+            ai_dependence_text: faction.map(|f| format!("AI: {}%", f.ai_dependence)),
+            dust_fall_warning: if self.dust_fall_turns_left > 0 {
+                Some(format!(
+                    "⚠ DUST FALL: {}y remaining",
+                    self.dust_fall_turns_left
+                ))
+            } else {
+                None
+            },
+        }
+    }

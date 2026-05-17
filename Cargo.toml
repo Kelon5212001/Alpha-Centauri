@@ -1,0 +1,6 @@
+[workspace]
+members = [ "smac_bevy",
+    "smac_core",
+    "smac_gui"
+]
+resolver = "2"

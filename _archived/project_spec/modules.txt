@@ -1,0 +1,11 @@
+Map Generation
+Societies/Factions
+Technology Tree
+Units & Unit Types
+Buildings/Facilities
+Social Engineering/Civics
+Strategic AI
+Combat System
+Diplomacy/Trade
+Victory Conditions/Scoring
+User Interface (terminal for V1)

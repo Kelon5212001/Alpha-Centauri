@@ -1,0 +1,181 @@
+    pub fn base_panel_display_state(
+        &self,
+        base_id: usize,
+        viewer_owner: usize,
+    ) -> Option<BasePanelDisplayState> {
+        let base = self.base(base_id)?.clone();
+        let summary = presentation::base_panel_summary(
+            &base.name,
+            self.faction_name(base.owner),
+            base.population,
+            base.governor_mode,
+            self.base_trade_links(base.id),
+            self.base_unrest(base.id),
+            base.nutrients_stock,
+            base.minerals_stock,
+            self.base_yields(base.x, base.y),
+            self.effective_base_yields(base.id)
+                .unwrap_or_else(|| self.base_yields(base.x, base.y)),
+            base.production,
+            base.minerals_stock,
+            &base.production_queue,
+            &base.facilities,
+        );
+        let can_manage = base.owner == viewer_owner;
+        let (available_items, locked_items) = self.production_items_for_owner(base.owner);
+        let (convoy_used, convoy_capacity) = self.base_convoy_saturation_ratio(base.id);
+        let route_rows = self.base_convoy_route_display_rows(base.id);
+        let available_targets = if can_manage {
+            self.available_convoy_target_opportunities(base.id)
+        } else {
+            Vec::new()
+        };
+        let governor_plan = self.base_governor_plan(base.id);
+        let queue_rows = if can_manage {
+            base.production_queue
+                .iter()
+                .copied()
+                .enumerate()
+                .map(|(index, item)| BaseQueueRowState {
+                    index,
+                    item,
+                    label_text: format!(
+                        "[{}] {}",
+                        self.production_role_badge(base.owner, item),
+                        self.production_name(base.owner, item)
+                    ),
+                    tooltip_text: self.production_tooltip_for_owner(base.owner, item),
+                    governor_reason_text: self
+                        .base_governor_reason_for_item(base.id, item)
+                        .map(|(priority, reason)| format!("[P{priority}] {reason}")),
+                    activate_label_text: "Active",
+                    remove_label_text: "Remove",
+                    move_up_label_text: "Move Up",
+                    move_down_label_text: "Move Down",
+                })
+                .collect()
+        } else {
+            Vec::new()
+        };
+
+        let base_role = self.base_area_role(base.id);
+        Some(BasePanelDisplayState {
+            base_id: base.id,
+            owner: base.owner,
+            can_manage,
+            heading_text: format!("Base: {}", base.name),
+            owner_text: format!("Owner: {}", self.faction_name(base.owner)),
+            population_text: format!("Population: {}", summary.population),
+            governor_text: format!("Governor: {}", summary.governor_mode),
+            current_governor_mode: base.governor_mode,
+            current_governor_description: presentation::governor_mode_description(base.governor_mode),
+            area_role_text: format!("Role: {}", presentation::base_area_role_label(base_role)),
+            stability_text: format!("Stability: {}", summary.stability),
+            storage_text: format!("Storage: {}", summary.storage),
+            output_text: format!("Base Output: {}", summary.output),
+            effective_output_text: format!("Effective Output: {}", summary.effective_output),
+            defense_pressure_text: format!("Defense pressure: {}", self.base_local_military_pressure(base.id)),
+            psi_pressure_text: format!("Psi pressure: {}", self.base_local_psi_pressure(base.id)),
+            damaged_garrisons_text: format!("Damaged garrisons: {}", self.base_damaged_garrison_count(base.id)),
+            status_tags: self.base_status_tags(base.id, viewer_owner),
+            production_text: format!("Production: {}", summary.production),
+            production_role_text: format!(
+                "Role: {}",
+                self.production_role_badge(base.owner, base.production),
+            ),
+            production_dependency_text: presentation::production_dependency_text(base.production)
+                .to_string(),
+            production_tooltip_text: self.production_tooltip_for_owner(base.owner, base.production).replace('\n', " | "),
+            governor_alignment_text: self
+                .base_governor_reason_for_item(base.id, base.production)
+                .map(|(priority, reason)| format!("Governor alignment [P{priority}]: {reason}")),
+            queue_text: format!("Queue: {}", summary.queue),
+            facilities_text: format!("Facilities: {}", summary.facilities),
+            build_availability_text: format!(
+                "Availability: {} (unlocked by {})",
+                if available_items.contains(&base.production) {
+                    "Normal"
+                } else {
+                    "LOCKED"
+                },
+                content::required_tech_for_production(base.production)
+                    .map(presentation::tech_name)
+                    .unwrap_or("Baseline")
+            ),
+            research_focus_heading_text: (!base.production_queue.is_empty()
+                && matches!(base.production_queue[0], ProductionItem::ResearchFocus))
+                .then_some("Research focus"),
+            research_focus_text: self.research_progress(base.owner).map(
+                |(current_tech, current_research, current_cost)| {
+                    format!(
+                        "{} ({}/{})",
+                        presentation::tech_name(current_tech),
+                        current_research,
+                        current_cost
+                    )
+                },
+            ),
+            research_unlock_lines: self.base_governor_unlock_analysis_lines(base.id),
+            convoy_capacity_text: format!("Convoy Capacity: {}/{}", convoy_used, convoy_capacity),
+            convoy_status_tags: self.base_convoy_status_tags(base.id),
+            active_convoy_links_text: format!("Active convoy links: {}", summary.trade_links),
+            military_supply_links_text: format!(
+                "Military supply links: {}",
+                self.base_military_supply_links(base.id)
+            ),
+            convoy_routes_heading_text: "Convoy Routes",
+            convoy_routes_empty_text: route_rows.is_empty().then_some("No active convoy routes."),
+            convoy_routes: route_rows,
+            available_convoy_targets_heading_text: (!available_targets.is_empty())
+                .then_some("Available Convoy Targets"),
+            available_convoy_targets: available_targets,
+            governor_heading_text: "Base Governor",
+            governor_plan_heading_text: (!governor_plan.is_empty()).then_some("Current Plan"),
+            governor_plan_rows: governor_plan
+                .into_iter()
+                .map(|step| BaseGovernorPlanRowState {
+                    item: step.item,
+                    label_text: format!(
+                        "[{}] {}",
+                        self.production_role_badge(base.owner, step.item),
+                        self.production_name(base.owner, step.item)
+                    ),
+                    tooltip_text: self.production_tooltip_for_owner(base.owner, step.item),
+                    priority_text: format!("P{}", step.priority),
+                    reason_text: step.reason,
+                    apply_label_text: "Apply",
+                })
+                .collect(),
+            queue_governor_plan_label_text: Some("Queue Recommended Plan"),
+            apply_recovery_plan_label_text: Some("Apply Recovery Plan"),
+            apply_defense_plan_label_text: Some("Apply Defense Plan"),
+            queue_editor_heading_text: Some("Production Queue"),
+            queue_rows,
+            clear_queue_label_text: Some("Clear Queue"),
+            set_production_heading_text: Some("Set Production"),
+            set_production_options: available_items
+                .into_iter()
+                .map(|item| BaseProductionOptionState {
+                    item,
+                    label_text: self.production_name(base.owner, item),
+                    tooltip_text: self.production_tooltip_for_owner(base.owner, item),
+                })
+                .collect(),
+            locked_production_heading_text: (!locked_items.is_empty())
+                .then_some("Locked Items".to_string()),
+            locked_production_options: locked_items
+                .into_iter()
+                .map(|(item, tech)| BaseProductionOptionState {
+                    item,
+                    label_text: format!(
+                        "{} ({})",
+                        self.production_name(base.owner, item),
+                        tech.map(presentation::tech_name).unwrap_or("Locked")
+                    ),
+                    tooltip_text: self.production_tooltip_for_owner(base.owner, item),
+                })
+                .collect(),
+            queue_item_heading_text: Some("Add to Queue"),
+            queue_item_options: Vec::new(), // Filtered set
+        })
+    }

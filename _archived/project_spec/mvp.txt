@@ -1,0 +1,6 @@
+- Generate map
+- Player selects faction and places HQ
+- Player can move at least one unit
+- Player can build a city/base
+- AI can take simple turn
+- End condition (simple win/loss/exit)

@@ -1,0 +1,13 @@
+{
+  "forced_land_positions": [
+    { "x": 3, "y": 3 },
+    { "anchor": "ai", "x_offset": 0, "y_offset": 0 }
+  ],
+  "starting_units": [
+    { "owner": "player", "kind": "colony_pod", "anchor": "player", "x_offset": 0, "y_offset": 0 },
+    { "owner": "player", "kind": "scout_patrol", "anchor": "player", "x_offset": 1, "y_offset": 0 },
+    { "owner": "player", "kind": "former", "anchor": "player", "x_offset": 0, "y_offset": 1 },
+    { "owner": "ai", "kind": "colony_pod", "anchor": "ai", "x_offset": 0, "y_offset": 0 },
+    { "owner": "ai", "kind": "scout_patrol", "anchor": "ai", "x_offset": -1, "y_offset": 0 }
+  ]
+}

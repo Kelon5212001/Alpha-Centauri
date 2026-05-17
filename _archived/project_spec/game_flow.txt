@@ -1,0 +1,10 @@
+1. New Game
+2. Generate Map
+3. Select Faction
+4. Place Headquarters
+5. Game Turn Loop:
+    a. Player moves units
+    b. Player builds/expands
+    c. AI moves/acts
+    d. End Turn
+6. Check for Victory Conditions

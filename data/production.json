@@ -1,0 +1,278 @@
+[
+  {
+    "id": "scout_patrol",
+    "name": "Scout Patrol",
+    "cost": 12,
+    "build_kind": "unit",
+    "unit_kind": "scout_patrol"
+  },
+  {
+    "id": "colony_pod",
+    "name": "Colony Pod",
+    "cost": 24,
+    "build_kind": "unit",
+    "unit_kind": "colony_pod"
+  },
+  {
+    "id": "former",
+    "name": "Former",
+    "cost": 18,
+    "build_kind": "unit",
+    "unit_kind": "former"
+  },
+  {
+    "id": "speeder",
+    "name": "Speeder",
+    "cost": 22,
+    "build_kind": "unit",
+    "unit_kind": "speeder"
+  },
+  {
+    "id": "resonance_laser",
+    "name": "Resonance Laser",
+    "cost": 34,
+    "build_kind": "unit",
+    "unit_kind": "resonance_laser"
+  },
+  {
+    "id": "escort_speeder",
+    "name": "Escort Speeder",
+    "cost": 24,
+    "build_kind": "unit",
+    "unit_kind": "escort_speeder"
+  },
+  {
+    "id": "raider_speeder",
+    "name": "Raider Speeder",
+    "cost": 28,
+    "build_kind": "unit",
+    "unit_kind": "raider_speeder"
+  },
+  {
+    "id": "trance_scout",
+    "name": "Trance Scout",
+    "cost": 20,
+    "build_kind": "unit",
+    "unit_kind": "trance_scout"
+  },
+  {
+    "id": "garrison_guard",
+    "name": "Garrison Guard",
+    "cost": 24,
+    "build_kind": "unit",
+    "unit_kind": "garrison_guard"
+  },
+  {
+    "id": "psi_sentinel",
+    "name": "Psi Sentinel",
+    "cost": 26,
+    "build_kind": "unit",
+    "unit_kind": "psi_sentinel"
+  },
+  {
+    "id": "probe_team",
+    "name": "Probe Team",
+    "cost": 30,
+    "build_kind": "unit",
+    "unit_kind": "probe_team"
+  },
+  {
+    "id": "recycling_tanks",
+    "name": "Recycling Tanks",
+    "cost": 20,
+    "build_kind": "facility",
+    "facility_id": "recycling_tanks"
+  },
+  {
+    "id": "perimeter_defense",
+    "name": "Perimeter Defense",
+    "cost": 28,
+    "build_kind": "facility",
+    "facility_id": "perimeter_defense"
+  },
+  {
+    "id": "network_node",
+    "name": "Network Node",
+    "cost": 24,
+    "build_kind": "facility",
+    "facility_id": "network_node"
+  },
+  {
+    "id": "recreation_commons",
+    "name": "Recreation Commons",
+    "cost": 22,
+    "build_kind": "facility",
+    "facility_id": "recreation_commons"
+  },
+  {
+    "id": "greenhouse",
+    "name": "Greenhouse",
+    "cost": 24,
+    "build_kind": "facility",
+    "facility_id": "greenhouse"
+  },
+  {
+    "id": "mineral_refinery",
+    "name": "Mineral Refinery",
+    "cost": 26,
+    "build_kind": "facility",
+    "facility_id": "mineral_refinery"
+  },
+  {
+    "id": "trade_exchange",
+    "name": "Trade Exchange",
+    "cost": 28,
+    "build_kind": "facility",
+    "facility_id": "trade_exchange"
+  },
+  {
+    "id": "freight_depot",
+    "name": "Freight Depot",
+    "cost": 30,
+    "build_kind": "facility",
+    "facility_id": "freight_depot"
+  },
+  {
+    "id": "patrol_grid",
+    "name": "Patrol Grid",
+    "cost": 28,
+    "build_kind": "facility",
+    "facility_id": "patrol_grid"
+  },
+  {
+    "id": "command_center",
+    "name": "Command Center",
+    "cost": 30,
+    "build_kind": "facility",
+    "facility_id": "command_center"
+  },
+  {
+    "id": "field_hospital",
+    "name": "Field Hospital",
+    "cost": 26,
+    "build_kind": "facility",
+    "facility_id": "field_hospital"
+  },
+  {
+    "id": "military_academy",
+    "name": "Military Academy",
+    "cost": 34,
+    "build_kind": "facility",
+    "facility_id": "military_academy"
+  },
+  {
+    "id": "sensor_array",
+    "name": "Sensor Array",
+    "cost": 24,
+    "build_kind": "facility",
+    "facility_id": "sensor_array"
+  },
+  {
+    "id": "transit_hub",
+    "name": "Transit Hub",
+    "cost": 28,
+    "build_kind": "facility",
+    "facility_id": "transit_hub"
+  },
+  {
+    "id": "psi_beacon",
+    "name": "Psi Beacon",
+    "cost": 30,
+    "build_kind": "facility",
+    "facility_id": "psi_beacon"
+  },
+  {
+    "id": "forward_depot",
+    "name": "Forward Depot",
+    "cost": 32,
+    "build_kind": "facility",
+    "facility_id": "forward_depot"
+  },
+  {
+    "id": "hologram_theatre",
+    "name": "Hologram Theatre",
+    "cost": 30,
+    "build_kind": "facility",
+    "facility_id": "hologram_theatre"
+  },
+  {
+    "id": "bioenhancement_center",
+    "name": "Bioenhancement Center",
+    "cost": 36,
+    "build_kind": "facility",
+    "facility_id": "bioenhancement_center"
+  },
+  {
+    "id": "research_hospital",
+    "name": "Research Hospital",
+    "cost": 34,
+    "build_kind": "facility",
+    "facility_id": "research_hospital"
+  },
+  {
+    "id": "weather_pattern",
+    "name": "The Weather Pattern",
+    "cost": 200,
+    "build_kind": "project"
+  },
+  {
+    "id": "clinical_immortality",
+    "name": "The Clinical Immortality",
+    "cost": 300,
+    "build_kind": "project"
+  },
+  {
+    "id": "empath_guild",
+    "name": "The Empath Guild",
+    "cost": 250,
+    "build_kind": "project"
+  },
+  {
+    "id": "orbital_elevator",
+    "name": "The Orbital Elevator",
+    "cost": 400,
+    "build_kind": "project"
+  },
+  {
+    "id": "manifold_drive",
+    "name": "The Manifold Drive",
+    "cost": 500,
+    "build_kind": "project"
+  },
+  {
+    "id": "singularity_containment",
+    "name": "Singularity Containment",
+    "cost": 600,
+    "build_kind": "project"
+  },
+  {
+    "id": "black_hole_harvester",
+    "name": "Black Hole Harvester",
+    "cost": 800,
+    "build_kind": "project"
+  },
+  {
+    "id": "stockpile_energy",
+    "name": "Stockpile Energy",
+    "cost": 0,
+    "build_kind": "special"
+  },
+  {
+    "id": "sky_hydroponics",
+    "name": "Sky Hydroponics",
+    "cost": 60,
+    "build_kind": "special"
+  },
+  {
+    "id": "solar_transmitter",
+    "name": "Solar Transmitter",
+    "cost": 60,
+    "build_kind": "special"
+  },
+  {
+    "id": "orbital_defense",
+    "name": "Orbital Defense",
+    "cost": 60,
+    "build_kind": "special"
+  }
+]

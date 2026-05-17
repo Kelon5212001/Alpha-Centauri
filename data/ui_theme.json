@@ -1,0 +1,18 @@
+{
+  "window_title": "SMAC Rust Edition - Planetfall Command",
+  "app_title": "SMAC Rust Edition - Planetfall Command",
+  "command_console_heading": "Command Console",
+  "selection_heading": "Selection",
+  "research_heading": "Research",
+  "factions_heading": "Faction Status",
+  "event_log_heading": "Event Log",
+  "planet_heading": "Planet Surface",
+  "victory_text": "VICTORY: rival faction eliminated.",
+  "defeat_text": "DEFEAT: your faction has been wiped out.",
+  "warning_text": "Supply pod detected.",
+  "accent_hex": "#86c06c",
+  "warning_hex": "#f3cc52",
+  "danger_hex": "#d86a61",
+  "success_hex": "#8fd28a",
+  "panel_fill_hex": "#162019"
+}

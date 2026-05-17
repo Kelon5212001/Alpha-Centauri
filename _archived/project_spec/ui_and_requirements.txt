@@ -1,0 +1,3 @@
+Terminal-based UI (crossterm)
+Must include all 14 factions at launch
+Basic tech tree and combat must function before alpha

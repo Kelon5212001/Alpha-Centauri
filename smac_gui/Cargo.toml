@@ -1,0 +1,8 @@
+[package]
+name = "smac_gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.27.2"
+smac_core = { path = "../smac_core" }

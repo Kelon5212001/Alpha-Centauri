@@ -1,0 +1,13 @@
+{
+  "rustup": {
+    "target": "x86_64-unknown-linux-gnu",
+    "url": "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init",
+    "sha256_url": "https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init.sha256"
+  },
+  "zig": {
+    "version": "0.16.0",
+    "archive": "zig-x86_64-linux-0.16.0.tar.xz",
+    "url": "https://ziglang.org/download/0.16.0/zig-x86_64-linux-0.16.0.tar.xz",
+    "sha256": "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00"
+  }
+}

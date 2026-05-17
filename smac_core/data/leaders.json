@@ -1,0 +1,30 @@
+[
+    {
+        "id": 1,
+        "name": "Academician Zakharov",
+        "description": "Driven by science above all else.",
+        "abilities": ["Instant Tech on discovery", "Bonus to Labs"],
+        "stats": ["+2 Research", "-2 Probe"],
+        "personality": {
+            "archetype": "Scientist",
+            "preferred_victory": "Research",
+            "forbidden_actions": ["Initiate Unprovoked War"],
+            "required_actions": ["Build Labs every 5 turns"],
+            "ai_behavior_mod": "Prioritize Research above all else"
+        }
+    },
+    {
+        "id": 2,
+        "name": "Lady Deirdre Skye",
+        "description": "Eco-centric and peaceful.",
+        "abilities": ["Bonus to Planet", "Faster terraforming"],
+        "stats": ["+2 Efficiency", "+1 Planet"],
+        "personality": {
+            "archetype": "Ecologist",
+            "preferred_victory": "Transcendence",
+            "forbidden_actions": ["Deforest Tiles", "Attack Gaia's Stepdaughters"],
+            "required_actions": ["Plant Forest every 10 turns"],
+            "ai_behavior_mod": "Favors eco-friendly actions"
+        }
+    }
+]

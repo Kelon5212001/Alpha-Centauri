@@ -1,0 +1,208 @@
+    pub fn player_operations_dashboard_state(
+        &self,
+        current_unit_id: Option<usize>,
+        current_base_id: Option<usize>,
+        max_steps: usize,
+    ) -> PlayerOperationsDashboardState {
+        let owner = self.player_owner();
+        let focus = self.player_operations_focus_state(current_unit_id, current_base_id);
+        let actionable_recovery = self
+            .stressed_recovery_base_ids()
+            .into_iter()
+            .filter(|base_id| !self.base_recovery_plan_items(*base_id, max_steps).is_empty())
+            .count();
+        let actionable_defense = self
+            .frontier_base_ids()
+            .into_iter()
+            .filter(|base_id| !self.base_defense_plan_items(*base_id, max_steps).is_empty())
+            .count();
+        let actionable_economy = self
+            .unrest_base_ids(owner)
+            .into_iter()
+            .filter(|base_id| !self.base_economy_plan_items(*base_id, max_steps).is_empty())
+            .count();
+        let actionable_empty_queue = self
+            .faction_queue_gap_base_ids(owner)
+            .into_iter()
+            .filter(|base_id| !self.base_governor_queue_items(*base_id, max_steps).is_empty())
+            .count();
+
+        let jump_frontier = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Frontier,
+            "Jump Frontier Base",
+            current_base_id,
+        );
+        let jump_economy = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Unrest,
+            "Jump Economy Stress",
+            current_base_id,
+        );
+        let jump_logistics = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Logistics,
+            "Jump Logistics Stress",
+            current_base_id,
+        );
+        let jump_saturated = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Saturated,
+            "Jump Saturated Hub",
+            current_base_id,
+        );
+        let jump_collapsing = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Collapsing,
+            "Jump Collapsing Route",
+            current_base_id,
+        );
+        let jump_defense_mode = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Defense,
+            "Jump Defense Mode",
+            current_base_id,
+        );
+        let jump_logistics_mode = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::LogisticsMode,
+            "Jump Logistics Mode",
+            current_base_id,
+        );
+        let jump_recovery_mode = self.base_focus_jump_action_state(
+            owner,
+            BaseFocusFilter::Recovery,
+            "Jump Recovery Mode",
+            current_base_id,
+        );
+
+        PlayerOperationsDashboardState {
+            heading_text: "Operations Advice".to_string(),
+            advice_lines: self.player_operations_advice(),
+            focus,
+            jump_actions: vec![
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Frontier,
+                    button_text: jump_frontier.button_text.clone(),
+                    enabled: jump_frontier.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Unrest,
+                    button_text: jump_economy.button_text.clone(),
+                    enabled: jump_economy.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Logistics,
+                    button_text: jump_logistics.button_text.clone(),
+                    enabled: jump_logistics.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Saturated,
+                    button_text: jump_saturated.button_text.clone(),
+                    enabled: jump_saturated.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Collapsing,
+                    button_text: jump_collapsing.button_text.clone(),
+                    enabled: jump_collapsing.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Defense,
+                    button_text: jump_defense_mode.button_text.clone(),
+                    enabled: jump_defense_mode.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::LogisticsMode,
+                    button_text: jump_logistics_mode.button_text.clone(),
+                    enabled: jump_logistics_mode.enabled,
+                },
+                PlayerOperationsJumpActionState {
+                    filter: BaseFocusFilter::Recovery,
+                    button_text: jump_recovery_mode.button_text.clone(),
+                    enabled: jump_recovery_mode.enabled,
+                },
+            ],
+            select_damaged_unit_action: Self::player_operations_action_state(
+                "Select Damaged Unit",
+                self.player_damaged_unit_ids().len(),
+            ),
+            cycle_damaged_units_action: Self::player_operations_action_state(
+                "Cycle Damaged Units",
+                self.player_damaged_unit_ids().len(),
+            ),
+            jump_stressed_base_action: Self::player_operations_action_state(
+                "Jump To Stressed Base",
+                self.stressed_player_base_ids().len(),
+            ),
+            cycle_stressed_bases_action: Self::player_operations_action_state(
+                "Cycle Stressed Bases",
+                self.stressed_player_base_ids().len(),
+            ),
+            jump_recovery_base_action: Self::player_operations_action_state(
+                "Jump To Recovery Base",
+                self.recovering_garrison_base_ids().len(),
+            ),
+            apply_recovery_base_plan_action: Self::player_operations_action_state(
+                "Apply Base Recovery Plans",
+                actionable_recovery,
+            ),
+            fallback_action: Self::player_operations_action_state(
+                "Apply Fallback Moves",
+                self.suggested_player_fallback_moves(owner).len(),
+            ),
+            recovery_action: Self::player_operations_action_state(
+                "Apply Recovery Plans",
+                actionable_recovery,
+            ),
+            defense_action: Self::player_operations_action_state(
+                "Apply Defense Plans",
+                actionable_defense,
+            ),
+            governor_action: Self::player_operations_action_state(
+                "Apply Economy Plans",
+                actionable_economy,
+            ),
+            convoy_repair_action: Self::player_operations_action_state(
+                "Repair Convoys",
+                self.intercepted_player_convoy_route_count(owner),
+            ),
+            convoy_rebuild_action: Self::player_operations_action_state(
+                "Rebuild Convoys",
+                self.convoy_rebuild_opportunity_count(owner),
+            ),
+            escort_patrol_action: Self::player_operations_action_state(
+                "Assign Escort Patrols",
+                self.suggested_escort_patrol_moves(owner).len(),
+            ),
+            economy_action: Self::player_operations_action_state(
+                "Apply Economy Plans",
+                actionable_economy,
+            ),
+            empty_queue_action: Self::player_operations_action_state(
+                "Fill Queue Gaps",
+                actionable_empty_queue,
+            ),
+            jump_research_unlock_action: self.base_focus_jump_action_state(
+                owner,
+                BaseFocusFilter::ResearchUnlock,
+                "Jump Tech Unlock",
+                current_base_id,
+            ),
+            cycle_recovery_bases_action: Self::player_operations_action_state(
+                "Cycle Recovery Bases",
+                self.recovering_garrison_base_ids().len(),
+            ),
+            jump_frontier_base_action: jump_frontier,
+            jump_economy_stress_action: jump_economy,
+            jump_logistics_stress_action: jump_logistics,
+            jump_saturated_hub_action: jump_saturated,
+            jump_collapsing_route_action: jump_collapsing,
+            jump_defense_mode_action: jump_defense_mode,
+            jump_logistics_mode_action: jump_logistics_mode,
+            jump_recovery_mode_action: jump_recovery_mode,
+            select_recovering_garrison_action: Self::player_operations_action_state(
+                "Select Recovering Garrison",
+                self.recovering_garrison_unit_ids().len(),
+            ),
+        }
+    }

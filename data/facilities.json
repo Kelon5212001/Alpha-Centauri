@@ -1,0 +1,277 @@
+[
+  {
+    "id": "recycling_tanks",
+    "name": "Recycling Tanks",
+    "maintenance": 1,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 1,
+      "minerals": 1,
+      "energy": 0
+    }
+  },
+  {
+    "id": "perimeter_defense",
+    "name": "Perimeter Defense",
+    "maintenance": 2,
+    "defense_bonus": 3,
+    "stability_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 0
+    }
+  },
+  {
+    "id": "network_node",
+    "name": "Network Node",
+    "maintenance": 1,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 2
+    }
+  },
+  {
+    "id": "recreation_commons",
+    "name": "Recreation Commons",
+    "maintenance": 1,
+    "defense_bonus": 0,
+    "stability_bonus": 2,
+    "growth_threshold_reduction": 4,
+    "free_unit_support_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 1,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "greenhouse",
+    "name": "Greenhouse",
+    "maintenance": 1,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "growth_threshold_reduction": 2,
+    "yield_bonus": {
+      "nutrients": 2,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "mineral_refinery",
+    "name": "Mineral Refinery",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 2,
+      "energy": 1
+    }
+  },
+  {
+    "id": "trade_exchange",
+    "name": "Trade Exchange",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "convoy_capacity_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 2
+    }
+  },
+  {
+    "id": "freight_depot",
+    "name": "Freight Depot",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "convoy_capacity_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 1,
+      "energy": 1
+    }
+  },
+  {
+    "id": "patrol_grid",
+    "name": "Patrol Grid",
+    "maintenance": 2,
+    "defense_bonus": 1,
+    "stability_bonus": 0,
+    "convoy_capacity_bonus": 1,
+    "convoy_security_bonus": 2,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "command_center",
+    "name": "Command Center",
+    "maintenance": 2,
+    "defense_bonus": 1,
+    "stability_bonus": 1,
+    "repair_bonus": 1,
+    "training_bonus": 1,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 1,
+      "energy": 0
+    }
+  },
+  {
+    "id": "field_hospital",
+    "name": "Field Hospital",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 1,
+    "repair_bonus": 2,
+    "training_bonus": 0,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 0,
+    "convoy_security_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "military_academy",
+    "name": "Military Academy",
+    "maintenance": 3,
+    "defense_bonus": 1,
+    "stability_bonus": 0,
+    "repair_bonus": 0,
+    "training_bonus": 2,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 1,
+      "energy": 1
+    }
+  },
+  {
+    "id": "sensor_array",
+    "name": "Sensor Array",
+    "maintenance": 2,
+    "defense_bonus": 2,
+    "stability_bonus": 0,
+    "repair_bonus": 0,
+    "training_bonus": 0,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "transit_hub",
+    "name": "Transit Hub",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "repair_bonus": 0,
+    "training_bonus": 1,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 1,
+    "mobility_bonus": 1,
+    "convoy_capacity_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "psi_beacon",
+    "name": "Psi Beacon",
+    "maintenance": 2,
+    "defense_bonus": 1,
+    "stability_bonus": 1,
+    "repair_bonus": 0,
+    "training_bonus": 1,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 0,
+    "psi_support_bonus": 2,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 2
+    }
+  },
+  {
+    "id": "forward_depot",
+    "name": "Forward Depot",
+    "maintenance": 2,
+    "defense_bonus": 1,
+    "stability_bonus": 0,
+    "repair_bonus": 1,
+    "training_bonus": 1,
+    "growth_threshold_reduction": 0,
+    "free_unit_support_bonus": 1,
+    "mobility_bonus": 1,
+    "convoy_capacity_bonus": 1,
+    "convoy_security_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 1,
+      "energy": 1
+    }
+  },
+  {
+    "id": "hologram_theatre",
+    "name": "Hologram Theatre",
+    "maintenance": 2,
+    "defense_bonus": 0,
+    "stability_bonus": 2,
+    "growth_threshold_reduction": 1,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 2
+    }
+  },
+  {
+    "id": "bioenhancement_center",
+    "name": "Bioenhancement Center",
+    "maintenance": 3,
+    "defense_bonus": 1,
+    "stability_bonus": 1,
+    "training_bonus": 1,
+    "psi_support_bonus": 1,
+    "yield_bonus": {
+      "nutrients": 1,
+      "minerals": 0,
+      "energy": 1
+    }
+  },
+  {
+    "id": "research_hospital",
+    "name": "Research Hospital",
+    "maintenance": 3,
+    "defense_bonus": 0,
+    "stability_bonus": 1,
+    "repair_bonus": 2,
+    "growth_threshold_reduction": 2,
+    "yield_bonus": {
+      "nutrients": 1,
+      "minerals": 0,
+      "energy": 2
+    }
+  }
+]

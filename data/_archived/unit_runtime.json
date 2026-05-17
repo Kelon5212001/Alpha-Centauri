@@ -1,0 +1,34 @@
+[
+  {
+    "id": "colony_pod",
+    "name": "Colony Pod",
+    "max_moves": 1,
+    "attack": 0,
+    "defense": 1,
+    "base_hp": 10
+  },
+  {
+    "id": "scout_patrol",
+    "name": "Scout Patrol",
+    "max_moves": 1,
+    "attack": 2,
+    "defense": 2,
+    "base_hp": 10
+  },
+  {
+    "id": "former",
+    "name": "Former",
+    "max_moves": 1,
+    "attack": 0,
+    "defense": 1,
+    "base_hp": 10
+  },
+  {
+    "id": "mind_worm",
+    "name": "Mind Worm",
+    "max_moves": 1,
+    "attack": 3,
+    "defense": 2,
+    "base_hp": 10
+  }
+]

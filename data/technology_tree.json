@@ -1,0 +1,306 @@
+[
+  {
+    "id": "centauri_ecology",
+    "name": "Centauri Ecology",
+    "description": "Improves terraforming and fungus understanding.",
+    "category": "Explore",
+    "level": 1,
+    "cost": 40,
+    "prerequisites": [],
+    "enables": {
+      "units": ["former"],
+      "facilities": ["recycling_tanks"],
+      "abilities": [],
+      "terraforming": ["farm", "solar_collector", "forest"],
+      "social_engineering": ["green"]
+    },
+    "quote": "In the great commons at Gaia's Landing ... - Deirdre"
+  },
+  {
+    "id": "social_psych",
+    "name": "Social Psych",
+    "description": "Improves social stability and base morale systems.",
+    "category": "Build",
+    "level": 1,
+    "cost": 40,
+    "prerequisites": [],
+    "enables": {
+      "units": [],
+      "facilities": ["recreation_commons"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": ["fundamentalist"]
+    },
+    "quote": "If you can discover a better way of life ... - Plato"
+  },
+  {
+    "id": "doctrine_mobility",
+    "name": "Doctrine: Mobility",
+    "description": "Improves military movement doctrine.",
+    "category": "Conquer",
+    "level": 1,
+    "cost": 50,
+    "prerequisites": [],
+    "enables": {
+      "units": ["speeder", "escort_speeder", "raider_speeder"],
+      "facilities": ["perimeter_defense", "sensor_array", "transit_hub", "forward_depot", "patrol_grid"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": ["power"]
+    },
+    "quote": "Once a man has changed the relationship ... - Pravin Lal"
+  },
+  {
+    "id": "doctrine_initiative",
+    "name": "Doctrine: Initiative",
+    "description": "Mastery of naval warfare and initiative.",
+    "category": "Conquer",
+    "level": 2,
+    "cost": 60,
+    "prerequisites": ["doctrine_mobility"],
+    "enables": {
+      "units": [],
+      "facilities": [],
+      "weapons": [],
+      "armor": [],
+      "abilities": ["transport"],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "information_networks",
+    "name": "Information Networks",
+    "description": "Establishes the planetary data and computation backbone.",
+    "category": "Discover",
+    "level": 1,
+    "cost": 45,
+    "prerequisites": [],
+    "enables": {
+      "units": [],
+      "facilities": ["network_node", "trade_exchange"],
+      "abilities": ["planned_economy"],
+      "terraforming": [],
+      "social_engineering": ["planned", "police"]
+    },
+    "quote": null
+  },
+  {
+    "id": "doctrine_air_power",
+    "name": "Doctrine: Air Power",
+    "description": "The sky is the new frontier of war.",
+    "category": "Conquer",
+    "level": 3,
+    "cost": 100,
+    "prerequisites": ["doctrine_mobility"],
+    "enables": {
+      "units": ["needlejet"],
+      "facilities": [],
+      "weapons": [],
+      "armor": [],
+      "abilities": ["air_superiority"],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "progenitor_psych",
+    "name": "Progenitor Psych",
+    "description": "Unlocks deeper psionic understanding and anti-native defenses.",
+    "category": "Explore",
+    "level": 2,
+    "cost": 55,
+    "prerequisites": ["centauri_ecology", "social_psych"],
+    "enables": {
+      "units": ["trance_scout", "psi_sentinel"],
+      "facilities": ["psi_beacon"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "field_modulation",
+    "name": "Field Modulation",
+    "description": "Advances force-field warfare and resonance weapon systems.",
+    "category": "Conquer",
+    "level": 2,
+    "cost": 60,
+    "prerequisites": ["progenitor_psych", "centauri_ecology"],
+    "enables": {
+      "units": ["resonance_laser"],
+      "facilities": [],
+      "weapons": ["resonance_laser"],
+      "armor": ["resonance_armor"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "planetary_networks",
+    "name": "Planetary Networks",
+    "description": "Expands planetary data exchange, probes, and information control.",
+    "category": "Discover",
+    "level": 2,
+    "cost": 55,
+    "prerequisites": ["information_networks"],
+    "enables": {
+      "units": ["probe_team"],
+      "facilities": ["hologram_theatre"],
+      "abilities": ["probe_teams"],
+      "terraforming": [],
+      "social_engineering": ["knowledge", "democratic"]
+    },
+    "quote": null
+  },
+  {
+    "id": "secrets_of_the_human_brain",
+    "name": "Secrets of the Human Brain",
+    "description": "Reveals higher-order cognition and advanced human adaptation.",
+    "category": "Explore",
+    "level": 3,
+    "cost": 65,
+    "prerequisites": ["progenitor_psych", "social_psych"],
+    "enables": {
+      "units": [],
+      "facilities": ["bioenhancement_center"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": ["thought_control"]
+    },
+    "quote": null
+  },
+  {
+    "id": "gene_splicing",
+    "name": "Gene Splicing",
+    "description": "Improves growth and survival systems.",
+    "category": "Build",
+    "level": 3,
+    "cost": 50,
+    "prerequisites": ["secrets_of_the_human_brain"],
+    "enables": {
+      "units": [],
+      "facilities": ["research_hospital"],
+      "abilities": ["genetic_engineering"],
+      "terraforming": [],
+      "social_engineering": ["eudaimonic"]
+    },
+    "quote": null
+  },
+  {
+    "id": "industrial_base",
+    "name": "Industrial Base",
+    "description": "Improves mineral economy and production planning.",
+    "category": "Build",
+    "level": 2,
+    "cost": 40,
+    "prerequisites": ["biogenetics"],
+    "enables": {
+      "units": ["garrison_guard"],
+      "facilities": ["command_center", "military_academy", "mineral_refinery", "freight_depot"],
+      "abilities": [],
+      "terraforming": ["thermal_borehole"],
+      "social_engineering": ["wealth", "free_market"]
+    },
+    "quote": null
+  },
+  {
+    "id": "biogenetics",
+    "name": "Biogenetics",
+    "description": "Improves growth and survival systems.",
+    "category": "Build",
+    "level": 1,
+    "cost": 50,
+    "prerequisites": [],
+    "enables": {
+      "units": [],
+      "facilities": ["recycling_tanks", "field_hospital", "greenhouse"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "secrets_of_planet",
+    "name": "Secrets of Planet",
+    "description": "Reveals deeper native-life behavior.",
+    "category": "Explore",
+    "level": 5,
+    "cost": 300,
+    "prerequisites": ["advanced_field_theory"],
+    "enables": {
+      "units": [],
+      "facilities": [],
+      "secret_projects": ["empath_guild"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": ["cybernetic"]
+    },
+    "quote": null
+  },
+  {
+    "id": "orbital_mechanics",
+    "name": "Orbital Mechanics",
+    "description": "Mastery of orbit and gravity wells.",
+    "category": "Explore",
+    "level": 4,
+    "cost": 100,
+    "prerequisites": ["doctrine_mobility", "industrial_base"],
+    "enables": {
+      "units": [],
+      "facilities": [],
+      "secret_projects": ["orbital_elevator"],
+      "orbital": ["sky_hydroponics", "solar_transmitter", "orbital_defense"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "advanced_field_theory",
+    "name": "Advanced Field Theory",
+    "description": "Manipulating the fabric of spacetime.",
+    "category": "Discover",
+    "level": 4,
+    "cost": 120,
+    "prerequisites": ["field_modulation", "planetary_networks"],
+    "enables": {
+      "units": [],
+      "facilities": [],
+      "secret_projects": ["manifold_drive"],
+      "weapons": ["plasma_bolt"],
+      "armor": ["plasma_steel"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  },
+  {
+    "id": "singularity_physics",
+    "name": "Singularity Physics",
+    "description": "Harnessing the power of infinite density.",
+    "category": "Discover",
+    "level": 5,
+    "cost": 200,
+    "prerequisites": ["advanced_field_theory"],
+    "enables": {
+      "units": [],
+      "facilities": [],
+      "secret_projects": ["singularity_containment", "black_hole_harvester"],
+      "weapons": ["planet_buster"],
+      "armor": ["monolith_armor"],
+      "abilities": [],
+      "terraforming": [],
+      "social_engineering": []
+    },
+    "quote": null
+  }
+]

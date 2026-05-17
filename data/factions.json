@@ -1,0 +1,157 @@
+[
+  {
+    "id": 0,
+    "name": "Spartan Federation",
+    "leader": "Colonel Corazon Santiago",
+    "description": "Militant, disciplined, and expansionist. Excels in field control and force projection.",
+    "bonuses": ["+2 Morale", "Command Nexus equivalent start"],
+    "penalties": ["-1 Industry"],
+    "color": "Red",
+    "color_hex": "#b84a3c",
+    "runtime_role": "ai",
+    "starting_energy": 10,
+    "known_tech_ids": ["doctrine_mobility"],
+    "current_research_id": "industrial_base",
+    "base_names": ["Sparta Command", "Fort Survival", "Ironholm"],
+    "starting_food_security": 0,
+    "starting_ai_dependence": 20,
+    "starting_planet_toxicity": 0,
+    "ai_policy": {
+      "expansion_base_target": 3,
+      "attack_bias": 9,
+      "preferred_production": "scout_patrol",
+      "exploration_bias": 3,
+      "terraform_bias": 6
+    },
+    "personality": {
+      "archetype": "Warlord",
+      "preferred_victory": "Conquest",
+      "forbidden_actions": ["Demobilize Frontier Garrisons"],
+      "required_actions": ["Maintain Veteran Garrisons"]
+    }
+  },
+  {
+    "id": 1,
+    "name": "University of Planet",
+    "leader": "Academician Zakharov",
+    "description": "Research-driven, tech-centric. Suffers from probe vulnerability.",
+    "bonuses": ["+2 Research", "Free Network Node at every base"],
+    "penalties": ["-2 Probe"],
+    "color": "Blue",
+    "color_hex": "#4f7fd6",
+    "runtime_role": null,
+    "starting_energy": null,
+    "known_tech_ids": [],
+    "current_research_id": null,
+    "base_names": ["University Base One", "University Base Two", "University Base Three"],
+    "starting_food_security": 0,
+    "starting_ai_dependence": 40,
+    "starting_planet_toxicity": 0,
+    "ai_policy": {
+      "expansion_base_target": 2,
+      "attack_bias": 4,
+      "preferred_production": "former",
+      "exploration_bias": 2,
+      "terraform_bias": 6
+    },
+    "personality": {
+      "archetype": "Scientist",
+      "preferred_victory": "Research",
+      "forbidden_actions": ["Initiate Unprovoked War"],
+      "required_actions": ["Build Labs every 5 turns"]
+    }
+  },
+  {
+    "id": 2,
+    "name": "Gaia's Stepdaughters",
+    "leader": "Lady Deirdre Skye",
+    "description": "Eco-centric, planet-minded. Excels in terraforming and harmony.",
+    "bonuses": ["+2 Efficiency", "+1 Planet"],
+    "penalties": ["-1 Morale"],
+    "color": "Green",
+    "color_hex": "#5f9d58",
+    "runtime_role": "player",
+    "starting_energy": 10,
+    "known_tech_ids": ["centauri_ecology"],
+    "current_research_id": "industrial_base",
+    "base_names": ["Landing Point", "Greenhouse Gate", "Planetfall Nexus"],
+    "starting_food_security": 50,
+    "starting_ai_dependence": 0,
+    "starting_planet_toxicity": 0,
+    "ai_policy": {
+      "expansion_base_target": 2,
+      "attack_bias": 5,
+      "preferred_production": "former",
+      "exploration_bias": 2,
+      "terraform_bias": 8
+    },
+    "personality": {
+      "archetype": "Ecologist",
+      "preferred_victory": "Transcendence",
+      "forbidden_actions": ["Deforest Tiles", "Attack Gaia's Stepdaughters"],
+      "required_actions": ["Plant Forest every 10 turns"]
+    }
+  },
+  {
+    "id": 3,
+    "name": "Morgan Industries",
+    "leader": "CEO Nwabudike Morgan",
+    "description": "Industrial, wealthy, market-driven. Focuses on economy, less on growth.",
+    "bonuses": ["+1 Energy per base", "Extra commerce"],
+    "penalties": ["-1 Support", "Hab limit at size 4 until Hab Complex"],
+    "color": "Yellow",
+    "color_hex": "#c5a63f",
+    "runtime_role": null,
+    "starting_energy": null,
+    "known_tech_ids": [],
+    "current_research_id": null,
+    "base_names": ["Morgan Prime", "Trade Nexus", "Wealth Foundry"],
+    "starting_food_security": -10,
+    "starting_ai_dependence": 30,
+    "starting_planet_toxicity": 10,
+    "ai_policy": {
+      "expansion_base_target": 3,
+      "attack_bias": 3,
+      "preferred_production": "colony_pod",
+      "exploration_bias": 1,
+      "terraform_bias": 4
+    },
+    "personality": {
+      "archetype": "Capitalist",
+      "preferred_victory": "Economic",
+      "forbidden_actions": ["Free Unit Upkeep"],
+      "required_actions": ["Accumulate Energy"]
+    }
+  },
+  {
+    "id": 4,
+    "name": "Planetmind",
+    "leader": "Planetmind",
+    "description": "Native life gestalt consciousness. Relies on psi warfare and ecological pressure.",
+    "bonuses": ["Native spawn pressure", "Psi affinity"],
+    "penalties": ["No conventional infrastructure"],
+    "color": "Magenta",
+    "color_hex": "#8a4788",
+    "runtime_role": "native",
+    "starting_energy": 0,
+    "known_tech_ids": ["secrets_of_planet"],
+    "current_research_id": "secrets_of_planet",
+    "base_names": ["Fungal Node", "Psi Bloom", "Planet's Maw"],
+    "starting_food_security": 20,
+    "starting_ai_dependence": 0,
+    "starting_planet_toxicity": -50,
+    "ai_policy": {
+      "expansion_base_target": 0,
+      "attack_bias": 10,
+      "preferred_production": "mind_worm",
+      "exploration_bias": 0,
+      "terraform_bias": 0
+    },
+    "personality": {
+      "archetype": "Hive Mind",
+      "preferred_victory": "Planetary Domination",
+      "forbidden_actions": ["Industrial Terraforming"],
+      "required_actions": ["Expand Native Presence"]
+    }
+  }
+]

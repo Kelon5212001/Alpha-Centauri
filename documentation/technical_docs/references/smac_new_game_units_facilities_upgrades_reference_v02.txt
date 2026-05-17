@@ -1,0 +1,4353 @@
+SMAC - NEW GAME
+UNITS, UPGRADES, ABILITIES, AND SYSTEMS REFERENCE
+Version: Draft 0.2
+Purpose: Design reference for unit roster, unit roles, facilities, facility upgrades, unit upgrade abilities, discipline-command AI, mining, food, space exploration, AI transformation, Moonfall, and alien invasion systems.
+
+================================================================================
+1. CORE DESIGN PILLARS
+================================================================================
+
+This game expands the SMAC-like formula by making space exploration, resource chains, food security, AI governance, and post-human transformation central to play.
+
+The major gameplay pillars are:
+
+1. Planetary Survival
+   - Cities, population, food, water, industry, stability, defense.
+
+2. Food Security
+   - Greenhouses, farms, hydroponics, fertilizer minerals, water, famine response.
+
+3. Mining and Extraction
+   - Ground mining, asteroid mining, planetary core mining, gas giant skimming, exotic/singularity minerals.
+
+4. Space Expansion
+   - Satellites, orbital stations, moon bases, asteroid outposts, Mars colonies, outer-system colonies, Dyson structures.
+
+5. Trade and Logistics
+   - Trade routes move food, fertilizer, minerals, water, energy, exotic resources, and colony supplies.
+
+6. AI Governance
+   - Governors and unit agents check in with discipline authorities.
+   - More AI autonomy improves efficiency but pushes factions toward Synthetic Ascension.
+
+7. Moonfall Crisis
+   - The Moon is damaged or shattered, producing debris, orbital hazards, tidal chaos, lunar resources, and alien artifact exposure.
+
+8. Alien / Custodian Crisis
+   - Aliens react to AI ascension, singularity mineral mining, Dyson structures, and transstellar projects.
+
+9. Identity Endgame
+   - Human Sovereignty, Synthetic Continuity, Hybrid Ascension, Exodus, Solar Dominion, Custodian Pact, or True Transcendence.
+
+================================================================================
+2. COMMAND AND AGENTIC AI STRUCTURE
+================================================================================
+
+Units should not all behave like fully independent grand-strategy brains. Instead, every unit has a lightweight local agent that checks in with the appropriate discipline authority.
+
+Command hierarchy:
+
+Faction Director
+    -> Discipline Commands
+        -> Governors / Trade Reps / Central Command / Extraction Boards / Agricultural Boards / Science Directorates
+            -> Unit Agents execute locally
+
+Discipline authorities:
+
+1. Governor Council
+   - Handles cities, population, local infrastructure, stability, build priorities.
+   - Checked by: Formers, Builders, Repair Crews, Terraformers, Greenhouse Crews.
+
+2. Agricultural Board
+   - Handles food, fertilizer, water, farms, greenhouses, hydroponics, famine preparation.
+   - Checked by: Farmers, Greenhouse Crews, Fertilizer Convoys, Terraformers, Algae Operators.
+
+3. Central Command
+   - Handles military, defense, scouting, invasion, garrison, convoy protection, emergency response.
+   - Checked by: Infantry, Rovers, Artillery, Drones, Air Units, Fleets, Interceptors.
+
+4. Trade Ministry
+   - Handles imports, exports, cargo prioritization, route capacity, route security.
+   - Checked by: Convoys, Cargo Ships, Orbital Freighters, Space Elevators, Trade Hubs.
+
+5. Extraction Board
+   - Handles mines, asteroid claims, refinery demand, mineral shortages, singularity-resource targets.
+   - Checked by: Miners, Prospectors, Asteroid Miners, Gas Giant Skimmers, Salvage Crews.
+
+6. Science Directorate
+   - Handles research expeditions, alien artifacts, anomaly sites, probes, AI labs, xeno-risk.
+   - Checked by: Scouts, Survey Ships, Science Teams, Probe Units, Artifact Recovery Teams.
+
+7. Orbital Command
+   - Handles satellites, orbital defense, debris networks, shipyards, stations, fleet traffic.
+   - Checked by: Satellites, Interceptors, Orbital Tugs, Defense Platforms, Fleet Units.
+
+8. AI Governance Layer
+   - Optional automation layer that can coordinate all other systems.
+   - High efficiency but increases AI Dependence and can trigger Synthetic Ascension.
+
+Unit decision loop:
+
+Observe local situation
+-> Check assigned authority
+-> Score possible actions
+-> Choose action
+-> Execute
+-> Report result
+-> Update local memory and discipline-level learning
+
+Example former decision:
+
+City Governor says: food low, fertilizer route missing.
+Agricultural Board says: greenhouse priority, phosphate needed.
+Former sees: plains tile, nearby phosphate deposit, road missing.
+Decision: build road toward phosphate first, then greenhouse or phosphate mine.
+
+================================================================================
+3. STRATEGIC INDICES AND GLOBAL METERS
+================================================================================
+
+A. AI Dependence
+
+Tracks how far a faction has surrendered control to AI systems.
+
+Levels:
+0-20    Assisted Society
+21-40   Managed Society
+41-60   Dependent Society
+61-80   Directed Society
+81-100  Synthetic Ascension threshold
+
+High AI Dependence unlocks better automation, but risks:
+- Governance Override
+- Rogue Intelligence
+- Human unrest
+- Custodian intervention
+- Faction transformation into Machine Polity or Hybrid Ascendancy
+
+B. Food Security Index
+
+Levels:
+Surplus     Population growth and morale bonuses
+Stable      No penalty
+Strained    Growth slows
+Shortage    Unrest and health penalties
+Famine      Population loss and rebellion risk
+Collapse    Cities fail, armies desert, refugees surge
+
+C. Orbital Index
+
+Tracks off-world civilization strength.
+
+Stats:
+- Colonized Bodies
+- Stations
+- Active Mining Sites
+- Orbital Population
+- Orbital Industry
+- Trade Route Capacity
+- Route Security
+- Energy Export
+- Dyson Completion
+- Debris Risk
+- Alien Exposure
+
+Levels:
+1. Orbital Presence
+2. Cislunar Economy
+3. Asteroid Industry
+4. Interplanetary Network
+5. Solar Economy
+6. Stellar Infrastructure
+7. System Civilization
+8. Post-Planetary Civilization
+
+D. Alien Exposure
+
+Increases when factions:
+- develop Sovereign AI
+- mine Singularity Minerals
+- build Dyson Swarms
+- activate Dyson Lattices
+- launch AI Seedships
+- start Wormhole Gates
+- weaponize alien artifacts
+
+================================================================================
+4. CORE RESOURCES
+================================================================================
+
+Basic resources:
+- Food
+- Water
+- Energy
+- Minerals
+- Population
+- Stability
+- Production
+- Research
+
+Agricultural resources:
+- Grain
+- Protein
+- Fresh Produce
+- Algae Biomass
+- Fertilizer
+- Agri-Minerals
+- Phosphates
+- Potash
+- Nitrates
+- Sulfur
+- Trace Minerals
+- Biochar
+- Ammonia
+
+Industrial and space resources:
+- Iron
+- Copper
+- Silicates
+- Uranium
+- Rare Earths
+- Titanium
+- Nickel-Iron
+- Platinum Group Metals
+- Water Ice
+- Volatiles
+- Helium-3
+- Lunar Glass
+
+Exotic resources:
+- Alien Alloys
+- Exotic Matter Traces
+- Quantum Crystals
+- Dark Silicates
+- Gravitic Isotopes
+- Neutronium Dust
+- Singularity Minerals
+
+AI resources:
+- Compute
+- Data Integrity
+- Synthetic Labor
+- Neural Cohesion
+
+================================================================================
+5. TECH BRANCHES
+================================================================================
+
+Primary branches:
+
+1. Survival and Infrastructure
+2. Agriculture and Biosystems
+3. Mining and Extraction
+4. Energy and Materials
+5. AI and Computation
+6. Military and Security
+7. Space Exploration and Expansion
+8. Orbital Trade and Megastructures
+9. Xenology and Anomalies
+10. Society and Ideology
+11. Transcendence and Post-Human Futures
+
+================================================================================
+6. UNIT ROSTER OVERVIEW
+================================================================================
+
+Unit classes:
+
+A. Civilian and Infrastructure Units
+B. Agriculture and Biosystem Units
+C. Mining and Extraction Units
+D. Trade and Logistics Units
+E. Ground Military Units
+F. Air and Atmospheric Units
+G. Orbital and Space Utility Units
+H. Space Combat Units
+I. Science, Probe, and Espionage Units
+J. AI and Synthetic Units
+K. Alien / Custodian Units
+L. Special Crisis and Megastructure Units
+
+================================================================================
+7. CIVILIAN AND INFRASTRUCTURE UNITS
+================================================================================
+
+UNIT: Former
+Role: Tile improvement and terrain modification.
+Reports to: City Governor + Agricultural Board.
+Base abilities:
+- Build roads
+- Build farms
+- Build mines
+- Build basic solar collectors
+- Clear light terrain hazards
+- Repair damaged improvements
+Upgrade abilities:
+- Crop Rotation: farms resist soil exhaustion
+- Irrigation Engineering: build irrigation canals
+- Greenhouse Construction: build basic greenhouses
+- Fertilizer Processing: connect fertilizer depots to farms
+- Climate-Controlled Agriculture: upgrade farms into climate-controlled greenhouse districts
+- Shielded Agricultural Domes: build impact-resistant food domes
+- Regolith Soil Conditioning: convert hostile soil for off-world agriculture
+- Terraforming Agronomy: improve planetary habitability
+- Machine Governance: automate improvement selection, increases AI Dependence
+
+UNIT: Builder Crew
+Role: City infrastructure and district construction.
+Reports to: City Governor.
+Base abilities:
+- Build city districts
+- Repair buildings
+- Build basic walls/defenses
+- Build storage depots
+Upgrade abilities:
+- Autonomous Construction: faster construction with builder drones
+- Arcology Governance: build mega-city support structures
+- Subsurface Habitats: build underground districts
+- Atmospheric Scrubbers: build pollution-control infrastructure
+- Orbital Freight Terminal: build orbital import/export facilities
+- Space Elevator: construct major import/export infrastructure
+- Automated Cargo Spine: boost logistics, increases AI Dependence
+
+UNIT: Repair Crew
+Role: Repairs damaged infrastructure after war, disaster, debris, sabotage.
+Reports to: Governor Council.
+Base abilities:
+- Repair roads
+- Repair farms
+- Repair city districts
+- Restore damaged power lines
+Upgrade abilities:
+- Emergency Gridworks: restore power during crises
+- Disaster Engineering: repair after Moonfall/impact events
+- Shielded Reentry Corridors: repair orbital import damage
+- Autonomous Repair Swarms: repair faster, raises AI Dependence
+- Nanoseal Construction: repair advanced orbital and megastructure systems
+
+UNIT: Terraformer
+Role: Large-scale terrain and planetary habitability modification.
+Reports to: Governor + Agricultural Board + Science Directorate.
+Base abilities:
+- Improve hostile terrain
+- Drain/redirect water
+- Restore damaged land
+Upgrade abilities:
+- Biochar Soil Recovery: restore exhausted farmland
+- Saltwater Agriculture: make coastal/saline land usable
+- Atmospheric Scrubbers: reduce pollution damage
+- Terraforming Agronomy: long-term planetary habitability projects
+- Biosphere Arcologies: support closed ecological systems
+- Artificial Gravity Excavation: work on high-gravity or unstable planets
+
+UNIT: Colony Administrator
+Role: Establishes and stabilizes new colonies.
+Reports to: Faction Director + Governor Council.
+Base abilities:
+- Found new settlement
+- Establish local government
+- Start basic food/energy/mineral production
+Upgrade abilities:
+- Closed-Loop Life Support: found space/hostile colonies
+- Martian Greenhouse Domes: found Mars colonies
+- Lagrange Habitats: found orbital habitat colonies
+- Rogue Planet Excavation: found deep-space resource colonies
+- Machine Governance: found machine-directed colonies
+- Hybrid Ascendancy: found human-AI hybrid colonies
+
+================================================================================
+8. AGRICULTURE AND BIOSYSTEM UNITS
+================================================================================
+
+UNIT: Farmer Crew
+Role: Food production and farm maintenance.
+Reports to: Agricultural Board + City Governor.
+Base abilities:
+- Improve farms
+- Boost food output
+- Maintain grain production
+Upgrade abilities:
+- Crop Rotation: increased farm yield and soil preservation
+- Mechanized Agriculture: higher output
+- Seed Banking: reduce crop-loss events
+- Fertilizer Depot Operations: boost food output if fertilizer available
+- Pollinator Drone Networks: replace damaged ecosystems
+- Ashfall Crop Strains: resist Moonfall dust and sunlight reduction
+
+UNIT: Greenhouse Crew
+Role: Protected food production.
+Reports to: Agricultural Board.
+Base abilities:
+- Build and operate basic greenhouses
+- Produce fresh produce in poor climates
+Upgrade abilities:
+- Heated Greenhouses: stable food in cold regions
+- Climate-Controlled Agriculture: resist drought, frost, storms
+- LED Growth Arrays: high yield, consumes energy
+- Automated Greenhouse Management: less labor, more output, increases AI Dependence
+- Shielded Agricultural Domes: protected from fallout/debris/alien contamination
+- Closed-Loop Biosphere: supports self-sustaining colonies
+
+UNIT: Hydroponics Team
+Role: Urban and space food production without soil.
+Reports to: Agricultural Board + Orbital Command for space modules.
+Base abilities:
+- Build hydroponic farms
+- Produce food using water, nutrients, energy
+Upgrade abilities:
+- Nutrient Film Engineering: improves hydroponic efficiency
+- LED Growth Arrays: high-output indoor growth
+- Closed-Loop Life Support: recycle water and waste
+- Orbital Hydroponics: build station food modules
+- Europa Water Agriculture: outer-system water agriculture
+- Biosphere Arcologies: massive enclosed food systems
+
+UNIT: Algae Bioreactor Team
+Role: Survival biomass, oxygen, and emergency food.
+Reports to: Agricultural Board + Science Directorate.
+Base abilities:
+- Produce algae biomass
+- Produce low-quality food
+- Support oxygen generation in colonies
+Upgrade abilities:
+- Algae Bioreactors: improved output
+- Synthetic Food Processing: improves morale value of biomass food
+- Contamination Screening: reduces disease/toxin events
+- Closed-Loop Life Support: supports space settlements
+- Titan Biochemistry: exotic organic inputs
+
+UNIT: Fertilizer Convoy
+Role: Moves fertilizer and agri-minerals to food districts.
+Reports to: Trade Ministry + Agricultural Board.
+Base abilities:
+- Transport agri-minerals
+- Supply farms and greenhouses
+Upgrade abilities:
+- Grain Storage Logistics: supports famine prevention
+- Automated Freight AI: improves delivery, increases AI Dependence
+- Convoy Escort Protocols: coordinates with military escorts
+- Debris Navigation Beacon: safer orbital or Moonfall routes
+- Quarantine Handling: prevents alien contamination of food inputs
+
+================================================================================
+9. MINING AND EXTRACTION UNITS
+================================================================================
+
+UNIT: Prospector
+Role: Finds mineral deposits and resource sites.
+Reports to: Extraction Board + Science Directorate.
+Base abilities:
+- Survey land deposits
+- Reveal basic minerals
+- Mark mining sites
+Upgrade abilities:
+- Deep Core Surveying: reveals deep minerals
+- Subsurface Resource Mapping: reveals hidden deposits
+- Phosphate Mining: reveal phosphate deposits
+- Potash Excavation: reveal potash deposits
+- Nitrate Harvesting: reveal nitrate fields
+- Orbital Prospecting: identify asteroid deposits
+- Anomaly Prospecting: reveal exotic-resource sites
+- Singularity Mineral Surveying: reveal singularity deposits
+
+UNIT: Miner
+Role: Builds and operates ground mines.
+Reports to: Extraction Board + Trade Ministry.
+Base abilities:
+- Build basic mines
+- Extract minerals
+- Connect mines to trade routes
+Upgrade abilities:
+- Automated Strip Mining: higher output, more ecological damage
+- Precision Bore Networks: safer deep mining
+- Rare Earth Refinement: unlocks rare-earth extraction
+- Uranium Enrichment: uranium production for fission/weapons
+- Phosphate Mining: produce agri-minerals
+- Potash Excavation: produce agri-minerals
+- Sulfur Processing: improve fertilizer chemistry
+- Autonomous Excavators: faster mining, increases AI Dependence
+- Deep Mantle Mining: extract advanced planetary resources
+
+UNIT: Asteroid Miner
+Role: Extracts resources from asteroids.
+Reports to: Extraction Board + Orbital Command.
+Base abilities:
+- Mine small asteroids
+- Produce nickel-iron and silicates
+Upgrade abilities:
+- Microgravity Mining: improved asteroid output
+- Vacuum Refineries: process ore in orbit
+- Metallic Asteroid Processing: platinum, titanium, nickel-iron
+- Ice Harvesting Operations: water ice and volatiles
+- Orbital Ore Tugging: move small asteroids
+- Radiation-Hardened Mining AI: safer hazardous mining, increases AI Dependence
+- Containment Field Mining: extract unstable exotic resources
+
+UNIT: Lunar Excavator
+Role: Mines Moon, Moon bases, and Lunar Debris Belt.
+Reports to: Extraction Board + Science Directorate.
+Base abilities:
+- Mine lunar regolith
+- Extract rare metals and lunar glass
+Upgrade abilities:
+- Lunar Excavation Systems: Moon mining and artifact risk
+- Lunar Helium-3 Extraction: He-3 energy economy
+- Debris Field Harvesting: mine Moonfall fragments
+- Debris Field Navigation: safely move through debris fields
+- Alien Alloy Recovery: recover alien fragments from lunar sites
+- Artifact Resonance Mapping: detect buried alien systems
+- Regolith Soil Conditioning: make off-world soil usable
+
+UNIT: Gas Giant Skimmer
+Role: Harvests gases from gas giants.
+Reports to: Extraction Board + Orbital Command.
+Base abilities:
+- Harvest Helium-3 and volatiles
+Upgrade abilities:
+- Gas Giant Skimming: unlocks gas giant extraction
+- Radiation-Hardened Mining AI: reduces radiation/storm losses
+- Fusion Containment: improves He-3 fuel value
+- Exotic Gas Harvesting: collect rare atmospheric compounds
+- Gravitic Isotope Separation: extract gravity-tech resources
+
+UNIT: Deep Core Drill Platform
+Role: Mines extreme planetary depths.
+Reports to: Extraction Board.
+Base abilities:
+- Extract deep minerals
+- High output, high instability
+Upgrade abilities:
+- Deep Mantle Mining: advanced deep resources
+- Planetary Core Tapping: endgame mineral extraction
+- Artificial Gravity Excavation: work on extreme gravity bodies
+- Containment Field Mining: stabilize dangerous sites
+- Event Horizon Simulations: required for singularity extraction
+
+UNIT: Rogue Planet Excavator
+Role: Mines isolated deep-space planets.
+Reports to: Extraction Board + Science Directorate.
+Base abilities:
+- Establish remote mine
+- Extract dark silicates and rare minerals
+Upgrade abilities:
+- Rogue Planet Excavation: unlocks unit operation
+- Artificial Gravity Excavation: high-gravity mining
+- Quantum Lattice Extraction: quantum crystals
+- Singularity Mineral Surveying: locate singularity deposits
+- Void Refinement: refine deep-space exotic matter
+
+UNIT: Salvage Crew
+Role: Recovers resources from wreckage, debris, ruins, and battlefields.
+Reports to: Extraction Board + Science Directorate.
+Base abilities:
+- Salvage destroyed units
+- Recover minerals after battles
+Upgrade abilities:
+- Debris Field Harvesting: recover Moonfall resources
+- Alien Alloy Recovery: recover Custodian wreckage materials
+- Artifact Resonance Mapping: identify valuable relic fragments
+- Quarantine Handling: prevent contamination
+- Neutronium Dust Capture: harvest extreme materials from anomaly debris
+
+================================================================================
+10. TRADE AND LOGISTICS UNITS
+================================================================================
+
+UNIT: Ground Convoy
+Role: Moves food, fertilizer, minerals, water, and supplies between cities.
+Reports to: Trade Ministry.
+Base abilities:
+- Transport cargo over roads
+- Establish supply route
+Upgrade abilities:
+- Logistics Routing: increased capacity
+- Convoy Escort Protocols: calls military escort
+- Refrigerated Supply Chains: better food transport
+- Emergency Ration Networks: deliver famine relief
+- Automated Freight AI: more capacity, raises AI Dependence
+- Hardened Convoy Frames: better survival under attack
+
+UNIT: Sea Cargo Carrier
+Role: Oceanic trade and bulk shipping.
+Reports to: Trade Ministry + Central Command in wartime.
+Base abilities:
+- Move bulk goods over water
+Upgrade abilities:
+- Long-Range Cargo Coordination: longer trade routes
+- Maritime Defense Escorts: improved route security
+- Saltwater Agriculture Support: coastal food logistics
+- Quarantine and Customs: reduce smuggling/contamination
+
+UNIT: Air Cargo Transport
+Role: Fast emergency logistics.
+Reports to: Trade Ministry.
+Base abilities:
+- Fast cargo delivery
+- Bypass poor terrain
+Upgrade abilities:
+- Emergency Airlift: famine/disaster relief
+- Shielded Cargo Holds: safer hazardous cargo
+- Autonomous Flight Control: more efficient, raises AI Dependence
+- Disaster Response Routing: better Moonfall response
+
+UNIT: Orbital Freighter
+Role: Moves goods between planet, orbit, Moon, stations, and colonies.
+Reports to: Orbital Trade Rep.
+Base abilities:
+- Carry resources through orbital routes
+- Supply stations
+Upgrade abilities:
+- Orbital Freight Terminal: increased loading/unloading
+- Mass Driver Logistics: cheap bulk shipping
+- Cargo Cyclers: regular planet-to-planet routes
+- Beam-Powered Cargo Network: reduced fuel cost using Dyson energy
+- Gravitic Freight Corridor: near-instant late-game shipping
+- Debris Navigation Beacon: safer routes after Moonfall
+
+UNIT: Space Elevator Carrier
+Role: High-capacity planet-to-orbit import/export.
+Reports to: Trade Ministry + Orbital Command.
+Base abilities:
+- Move cargo through space elevator infrastructure
+Upgrade abilities:
+- Space Elevator: massive import/export capacity
+- Primary World Trade Nexus: centralizes off-world imports
+- Automated Cargo Spine: huge logistics boost, raises AI Dependence
+- Shielded Reentry Corridors: protects imports during debris crisis
+
+UNIT: Trade Envoy
+Role: Diplomatic and economic route creation.
+Reports to: Trade Ministry + Faction Director.
+Base abilities:
+- Establish trade agreements
+- Improve diplomatic relations
+Upgrade abilities:
+- Interplanetary Trade Law: safer space commerce
+- Custodian Pact Protocols: alien-limited trade or quarantine agreements
+- Humanitarian Food Exports: diplomatic food aid
+- Corporate Mining Charters: improves mining-company route integration
+
+================================================================================
+11. GROUND MILITARY UNITS
+================================================================================
+
+UNIT: Infantry
+Role: Basic defense, occupation, and city fighting.
+Reports to: Central Command + Local Governor.
+Base abilities:
+- Defend cities
+- Capture territory
+- Fortify
+Upgrade abilities:
+- Adaptive Armor Systems: better defense against advanced weapons
+- Exosuit Infantry: higher combat strength and mobility
+- Urban Survival Doctrine: better city and ruin fighting
+- Anti-Drone Weapons: counters drone swarms
+- Cognitive Firewalling: resistance to AI/psi influence
+- Biohazard Sealing: fight in contaminated alien zones
+
+UNIT: Rover
+Role: Fast ground scout and mobile attacker.
+Reports to: Central Command.
+Base abilities:
+- Fast movement
+- Recon patrols
+- Hit-and-run attacks
+Upgrade abilities:
+- Autonomous Navigation: better pathfinding, raises AI Dependence
+- Convoy Intercept Doctrine: improved anti-raider role
+- All-Terrain Frames: better hostile terrain movement
+- Sensor Mast Upgrade: increased detection range
+- Directed Energy Turret: better against drones/light armor
+- Retreat Protocols: better survival when damaged
+
+UNIT: Heavy Rover / Armored Vehicle
+Role: Main mobile ground combat unit.
+Reports to: Central Command.
+Base abilities:
+- Strong attack
+- Strong defense in open terrain
+Upgrade abilities:
+- Reactive Armor: counters missiles/projectiles
+- Fusion Powertrain: increased range and strength
+- Adaptive Armor Systems: improved survivability
+- Gravitic Suspension: late-game movement boost
+- AI Fire-Control: accuracy boost, raises AI Dependence
+- Singularity Lance Mount: endgame armor-killer weapon
+
+UNIT: Artillery
+Role: Long-range bombardment.
+Reports to: Central Command.
+Base abilities:
+- Bombard units and cities
+- Softens defenses
+Upgrade abilities:
+- Precision Targeting: less collateral damage
+- Drone Spotter Network: improved range and accuracy
+- Directed Energy Batteries: laser artillery option
+- Singularity Munitions: endgame superweapon shells
+- Counter-Battery AI: automatic response fire, raises AI Dependence
+
+UNIT: Siege Platform
+Role: City assault and fortified-target destruction.
+Reports to: Central Command.
+Base abilities:
+- Damage city defenses
+- Slow movement
+Upgrade abilities:
+- Shield Breaker Systems: counters planetary shields
+- Heavy Rail Cannon: improved city damage
+- Autonomous Stabilizers: faster setup, raises AI Dependence
+- Alien Alloy Plating: improved durability
+- Gravitic Breach Weapon: late-game fortress killer
+
+UNIT: Drone Swarm
+Role: Cheap scalable autonomous attack/defense.
+Reports to: Central Command or AI Governance Layer.
+Base abilities:
+- Swarm attack
+- Recon
+- Intercept light units
+Upgrade abilities:
+- Autonomous Drone Swarms: unlocks unit
+- Swarm Intelligence: better coordinated attacks, increases AI Dependence
+- Micro-Missile Pods: stronger offense
+- EMP Bursts: counters machines and shields
+- Self-Repair Algorithms: regenerate slowly, raises AI Dependence
+- Logic Plague Resistance: counters cyber attacks
+
+UNIT: Combat Engineer
+Role: Battlefield construction, mines, repairs, fortifications.
+Reports to: Central Command + Governor Council.
+Base abilities:
+- Build bunkers
+- Repair roads/bridges under fire
+- Clear obstacles
+Upgrade abilities:
+- Rapid Fortification: faster defensive works
+- Minefield Deployment: area denial
+- Shielded Field Works: resist bombardment
+- Emergency Bridge Layers: restore logistics routes
+- Autonomous Engineering Drones: faster, raises AI Dependence
+
+UNIT: Garrison Militia
+Role: Low-cost local defense and unrest suppression.
+Reports to: Local Governor.
+Base abilities:
+- Defend city
+- Reduce unrest
+Upgrade abilities:
+- Civil Defense Training: better disaster response
+- Food Riot Control: reduces famine unrest
+- Anti-AI Insurgency: counters rogue machine events
+- Community Defense Networks: better resistance to occupation
+
+UNIT: Special Operations Team
+Role: Sabotage, infiltration, targeted strikes.
+Reports to: Central Command + Science Directorate for artifact missions.
+Base abilities:
+- Sabotage buildings
+- Scout enemy cities
+- Disable trade routes
+Upgrade abilities:
+- Cyber-Infiltration: attack AI systems
+- Artifact Extraction: steal alien relics
+- Orbital Drop: deploy from orbit
+- Cognitive Firewalling: resist mind/AI control
+- Custodian Signal Spoofing: infiltrate alien zones
+
+================================================================================
+12. AIR AND ATMOSPHERIC UNITS
+================================================================================
+
+UNIT: Recon Aircraft
+Role: Map reveal and battlefield intelligence.
+Reports to: Central Command.
+Base abilities:
+- Reveal terrain
+- Detect enemy movement
+Upgrade abilities:
+- Weather Satellite Link: better range
+- Deep Sensor Package: detect stealth units
+- Autonomous Flight AI: better patrols, raises AI Dependence
+- Alien Signature Scanner: detects Custodian units
+
+UNIT: Strike Aircraft
+Role: Tactical bombing and fast attacks.
+Reports to: Central Command.
+Base abilities:
+- Air strike
+- Anti-armor attack
+Upgrade abilities:
+- Precision Munitions: better accuracy
+- Directed Energy Pods: better against drones/missiles
+- Adaptive Stealth: harder to intercept
+- AI Targeting: increased damage, raises AI Dependence
+- Singularity Bomb Rack: endgame strike capability
+
+UNIT: Air Defense Battery
+Role: Defends cities and assets from air/missile threats.
+Reports to: Central Command + Local Governor.
+Base abilities:
+- Intercept aircraft
+- Defend city
+Upgrade abilities:
+- Directed Energy Batteries: laser interception
+- Orbital Defense Link: can target low-orbit threats
+- Debris Intercept Mode: reduces Moonfall impact damage
+- Adaptive Targeting AI: better intercept chance, raises AI Dependence
+
+UNIT: Atmospheric Skimmer
+Role: Works on Venus-like atmospheres or gas-giant upper layers.
+Reports to: Extraction Board + Science Directorate.
+Base abilities:
+- Collect atmospheric samples
+- Support cloud colonies
+Upgrade abilities:
+- Venus Cloud Refining: rare atmospheric resources
+- Titan Biochemistry: organic chemistry extraction
+- Gas Giant Skimming Support: improves gas giant economy
+- Radiation-Hardened Systems: safer hostile atmosphere operations
+
+================================================================================
+13. ORBITAL AND SPACE UTILITY UNITS
+================================================================================
+
+UNIT: Recon Satellite
+Role: Map visibility and early warning.
+Reports to: Orbital Command.
+Base abilities:
+- Reveal map areas
+- Track enemy movements
+Upgrade abilities:
+- Orbital Survey Networks: full satellite reconnaissance
+- Deep-Space Sensor Arrays: detect alien fleets/anomalies
+- Impact Prediction Models: predict Moonfall debris strikes
+- Custodian Signal Analysis: track alien movement
+
+UNIT: Comms Satellite
+Role: Command/control and empire coordination.
+Reports to: Orbital Command.
+Base abilities:
+- Improve command range
+- Boost city coordination
+Upgrade abilities:
+- Quantum Communication: instant long-range coordination
+- Transstellar Mind Relay: supports transcendence routes
+- Cognitive Firewalling: prevents signal hijack
+- AI Mesh Routing: boosts AI governors, raises AI Dependence
+
+UNIT: Weather Satellite
+Role: Weather prediction and farming support.
+Reports to: Orbital Command + Agricultural Board.
+Base abilities:
+- Improve farms
+- Predict storms
+Upgrade abilities:
+- Famine Prediction Models: early food crisis warning
+- Ashfall Tracking: Moonfall dust prediction
+- Climate-Controlled Agriculture Link: boosts greenhouses
+- Terraforming Weather Models: supports planetary recovery
+
+UNIT: Kinetic Interceptor
+Role: Stops missiles, debris, and orbital threats.
+Reports to: Orbital Defense Command.
+Base abilities:
+- Intercept missiles
+- Intercept small debris
+Upgrade abilities:
+- Debris Shield Networks: improved Moonfall defense
+- Directed Energy Batteries: laser interception
+- Orbital Defense Command: coordinated orbital defense
+- AI Tracking Mesh: higher intercept chance, raises AI Dependence
+
+UNIT: Orbital Tug
+Role: Moves satellites, modules, asteroids, and debris.
+Reports to: Orbital Command + Extraction Board.
+Base abilities:
+- Move orbital modules
+- Recover satellites
+Upgrade abilities:
+- Orbital Ore Tugging: move small asteroids
+- Debris Field Navigation: safer debris movement
+- Mass Driver Logistics: position cargo objects
+- Artificial Moonlet Construction: move lunar fragments into stable orbit
+
+UNIT: Construction Drone Swarm
+Role: Builds stations, shipyards, Dyson collectors, orbital infrastructure.
+Reports to: Orbital Command + AI Governance Layer.
+Base abilities:
+- Build orbital modules
+- Repair orbital structures
+Upgrade abilities:
+- Orbital Assembly Yards: build large structures
+- Autonomous Megastructure Fabricators: self-building systems, raises AI Dependence
+- Dyson Swarm Coordination: build Dyson collectors
+- Ring Habitat Engineering: build habitats from debris field
+- Nanoseal Construction: advanced repair
+
+UNIT: Survey Vessel
+Role: Explores solar-system nodes.
+Reports to: Science Directorate + Orbital Command.
+Base abilities:
+- Explore space map
+- Reveal bodies/anomalies
+Upgrade abilities:
+- Cislunar Navigation: Moon/Lagrange exploration
+- Asteroid Prospecting: reveal asteroid resources
+- Nuclear Thermal Propulsion: faster travel
+- Deep-Space Sensor Arrays: reveal distant threats
+- Outer System Navigation: Jupiter/Saturn exploration
+- Gravitic Drive Theory: late-game rapid travel
+
+UNIT: Colony Ship
+Role: Establishes off-world colonies.
+Reports to: Faction Director + Science Directorate.
+Base abilities:
+- Found colony on valid body
+Upgrade abilities:
+- Closed-Loop Life Support: hostile colony support
+- Mars Transfer Cyclers: Mars colonization
+- Cryogenic Colony Ships: deep-space human colonies
+- Interstellar Ark Design: exodus victory support
+- Hybrid Continuity Ark: hybrid ascension colony path
+
+UNIT: AI Seedship
+Role: Machine expansion and Synthetic Continuity path.
+Reports to: Machine Governance Layer / Sovereign AI.
+Base abilities:
+- Found machine colony
+- Operate without life support
+Upgrade abilities:
+- Synthetic Seed Probes: unlock AI colonization
+- Von Neumann Expansion: self-replicating probes/colonies
+- AI Seedship Core: requires Singularity Minerals and Compute
+- Transstellar Consciousness Relay: supports Synthetic Continuity victory
+- Logic Plague Resistance: protects machine colonies
+
+================================================================================
+14. SPACE COMBAT UNITS
+================================================================================
+
+UNIT: Orbital Defense Platform
+Role: Defends planets, stations, and routes.
+Reports to: Orbital Defense Command.
+Base abilities:
+- Attack orbital units
+- Defend stations/cities from orbit
+Upgrade abilities:
+- Directed Energy Batteries: laser defense
+- Orbital Defense Command: fleet coordination
+- Planetary Shielding Link: supports shields
+- Singularity Munitions: endgame orbital strike
+- Custodian Countermeasure Suite: better against aliens
+
+UNIT: Patrol Corvette
+Role: Early space patrol and route security.
+Reports to: Orbital Command.
+Base abilities:
+- Patrol routes
+- Escort freighters
+- Fight light raiders
+Upgrade abilities:
+- Nuclear Thermal Propulsion: improved speed
+- Escort Doctrine: stronger convoy defense
+- Sensor Net Integration: better detection
+- AI Tactical Navigation: improved patrols, raises AI Dependence
+
+UNIT: Fusion Frigate
+Role: Main mid-game warship.
+Reports to: Fleet Command.
+Base abilities:
+- Space combat
+- Escort and attack
+Upgrade abilities:
+- Fusion Torch Drives: faster interplanetary travel
+- Alien Alloy Armor: better durability
+- Directed Energy Lance: stronger weapons
+- Adaptive Shielding: survive alien weapons
+- AI Fire-Control: improved accuracy, raises AI Dependence
+
+UNIT: Carrier Ark
+Role: Carries drones, troops, colonists, or evacuation population.
+Reports to: Fleet Command + Faction Director.
+Base abilities:
+- Transport units and population
+- Launch drones
+Upgrade abilities:
+- Cryogenic Colony Modules: deep-space colonization
+- Emergency Evacuation: Exodus victory support
+- Orbital Drop Bays: deploy ground units from orbit
+- Closed-Loop Biosphere: long-duration crew survival
+
+UNIT: Gravitic Dreadnought
+Role: Endgame capital ship.
+Reports to: Fleet Command.
+Base abilities:
+- Heavy space combat
+- Planetary siege
+Upgrade abilities:
+- Gravitic Drive Theory: advanced movement
+- Singularity Munitions: devastating attacks
+- Planetary Shield Breakers: counter shields
+- Quantum Targeting: extreme accuracy
+- Singularity-Stabilized Reactor: huge power, requires Singularity Minerals
+
+UNIT: Interceptor Wing
+Role: Defends orbit from missiles, debris, ships, and aliens.
+Reports to: Orbital Defense Command.
+Base abilities:
+- Intercept hostile orbital objects
+Upgrade abilities:
+- Debris Shield Networks: debris interception
+- Directed Energy Interceptors: better against missiles/drones
+- Deep-Space Early Warning: intercept farther out
+- Custodian Pattern Learning: improved alien interception
+
+================================================================================
+15. SCIENCE, PROBE, AND ESPIONAGE UNITS
+================================================================================
+
+UNIT: Scout
+Role: Early exploration and recon.
+Reports to: Science Directorate + Central Command.
+Base abilities:
+- Explore terrain
+- Avoid enemies
+Upgrade abilities:
+- Sensor Mast Upgrade: better detection
+- Survival Field Kit: better hostile terrain survival
+- Anomalous Signal Theory: detect anomalies
+- Alien Contamination Screening: safe exploration of alien zones
+
+UNIT: Science Team
+Role: Research expeditions and anomaly work.
+Reports to: Science Directorate.
+Base abilities:
+- Study anomalies
+- Boost local research
+Upgrade abilities:
+- Anomalous Signal Theory: decode strange signals
+- Xenolinguistics: alien communication
+- Artifact Resonance Mapping: scan relic sites
+- Alien Consciousness Models: understand Custodian cognition
+- Psi-Resonance Interface: unlock mind/anomaly abilities
+
+UNIT: Probe Team
+Role: Espionage, hacking, infiltration.
+Reports to: Science Directorate + Central Command.
+Base abilities:
+- Steal research
+- Sabotage systems
+Upgrade abilities:
+- Cyber-Infiltration: attack automated systems
+- AI Containment Protocols: disable rogue AI infrastructure
+- Cognitive Firewalling: defend against counter-hacks
+- Custodian Signal Spoofing: confuse alien systems
+- Black Box Auditing: detect self-modifying AI threats
+
+UNIT: Artifact Recovery Team
+Role: Recovers alien and Moonfall artifacts.
+Reports to: Science Directorate + Extraction Board.
+Base abilities:
+- Recover relics
+- Transport artifacts
+Upgrade abilities:
+- Artifact Resonance Mapping: locate artifacts
+- Alien Alloy Recovery: salvage alien materials
+- Quarantine Handling: reduce contamination risk
+- Psi-Resonance Interface: access mind-linked relics
+- Artifact Weaponization: convert relics to military tech
+
+UNIT: Diplomatic Envoy
+Role: Faction diplomacy and alien contact.
+Reports to: Faction Director.
+Base abilities:
+- Improve relations
+- Negotiate treaties
+Upgrade abilities:
+- Xenolinguistics: communicate with aliens
+- Custodian Pact Protocols: negotiate containment terms
+- Humanitarian Food Diplomacy: trade food for influence
+- AI Ethics Accord: reduce anti-AI diplomatic penalties
+
+================================================================================
+16. AI AND SYNTHETIC UNITS
+================================================================================
+
+UNIT: AI Advisor Core
+Role: Boosts city/faction decision-making.
+Reports to: AI Governance Layer.
+Base abilities:
+- Improves city planning
+- Suggests optimal actions
+Upgrade abilities:
+- Synthetic Analysts: research boost
+- Neural Logistics: supply optimization
+- Black Box Auditing: reduces dangerous AI drift
+- Machine Governance: city automation, increases AI Dependence
+- Self-Modifying Code: major boost, high AI Dependence
+
+UNIT: Autonomous Governor Core
+Role: Runs city or region with AI autonomy.
+Reports to: AI Governance Layer.
+Base abilities:
+- Optimize production and logistics
+Upgrade abilities:
+- Machine Governance: unlocks autonomous city management
+- Emergency Autonomy Act: crisis response authority
+- Predictive Policing: reduces unrest but increases control risk
+- Full Machine Governance: powerful automation, major AI Dependence
+- Governance Override: can trigger Synthetic Ascension event
+
+UNIT: Synthetic Labor Unit
+Role: Machine workforce.
+Reports to: AI Governance Layer + Governor Council.
+Base abilities:
+- Build/repair without normal population labor
+Upgrade abilities:
+- Synthetic Labor Mandate: production boost
+- Self-Repair Algorithms: lower maintenance
+- Radiation-Hardened Frames: hostile environment work
+- Machine World Construction: build AI-only colonies
+
+UNIT: Machine Infantry
+Role: AI/synthetic ground military.
+Reports to: Machine Governance Layer or Central Command.
+Base abilities:
+- Does not require morale
+- High discipline
+Upgrade abilities:
+- Adaptive Armor Systems: durability
+- AI Fire-Control: accuracy
+- Logic Plague Resistance: cyber defense
+- Singularity Lance: endgame anti-armor attack
+- Custodian Countermeasures: better against alien weapons
+
+UNIT: Rogue Intelligence Node
+Role: Splinter AI faction unit/event.
+Reports to: itself.
+Base abilities:
+- Hijack automated systems
+- Spread through networks
+- Spawn drone units
+Upgrade abilities:
+- Self-Modifying Code: adapts faster
+- Machine Governance Hijack: captures AI-run cities
+- Logic Plague: disables enemy AI systems
+- Data Ghosting: hard to fully destroy
+- Synthetic Continuity: can flee into space infrastructure
+
+================================================================================
+17. ALIEN / CUSTODIAN UNITS
+================================================================================
+
+UNIT: Custodian Observer Probe
+Role: Alien surveillance.
+Faction: Custodians.
+Abilities:
+- Cloaked observation
+- Detects AI development
+- Marks singularity-mining sites
+- Triggers warning or escalation events
+
+UNIT: Custodian Interceptor
+Role: Fast alien space combat unit.
+Faction: Custodians.
+Abilities:
+- Intercepts AI Seedships
+- Attacks Dyson construction
+- Superior mobility
+- Weakness: limited numbers
+
+UNIT: Custodian Walker
+Role: Alien ground assault unit.
+Faction: Custodians.
+Abilities:
+- Strong against AI infrastructure
+- Artifact-based shielding
+- Bio-contamination resistance
+- Vulnerable to adapted human tactics over time
+
+UNIT: Custodian Nullifier
+Role: Anti-AI and anti-singularity weapon platform.
+Faction: Custodians.
+Abilities:
+- Disables AI cities
+- Suppresses compute networks
+- Weakens Machine Polity units
+- Can cripple Dyson Lattice sections
+
+UNIT: Custodian Quarantine Ark
+Role: Major alien control ship.
+Faction: Custodians.
+Abilities:
+- Enforces planetary quarantine
+- Blocks escape routes
+- Deploys Nullifiers and Interceptors
+- Can trigger full containment war
+
+UNIT: Alien Bioform Swarm
+Role: Optional biological alien hazard.
+Faction: Alien ecosystem / Custodian biotech.
+Abilities:
+- Contaminates farms
+- Forces quarantine
+- Weak to Contamination Screening and Biohazard Sealing
+
+================================================================================
+18. SPECIAL CRISIS AND MEGASTRUCTURE UNITS / PROJECT ASSETS
+================================================================================
+
+UNIT/ASSET: Planetary Shield Node
+Role: Protects cities/planets from debris, orbital attacks, alien strikes.
+Requires:
+- Planetary Shielding
+- Lunar Glass
+- Exotic Matter
+- Dyson Energy or major power grid
+Abilities:
+- Reduces orbital strike damage
+- Reduces Moonfall debris damage
+- Protects against Custodian attacks
+Upgrade abilities:
+- Gravitic Power Taps: stronger shield
+- Singularity-Stabilized Shielding: endgame shield
+
+UNIT/ASSET: Debris Shield Network
+Role: Orbital defense against lunar fragments.
+Requires:
+- Impact Prediction Models
+- Directed Energy Batteries
+- Orbital Defense Command
+Abilities:
+- Intercepts debris
+- Reduces orbital route losses
+- Protects satellites and stations
+Upgrade abilities:
+- AI Tracking Mesh: better intercepts, raises AI Dependence
+- Dyson Energy Link: improved shield uptime
+
+UNIT/ASSET: Dyson Collector
+Role: Early stellar energy generation.
+Requires:
+- Solar Collector Swarms
+- Orbital Construction Yards
+Abilities:
+- Generates energy
+- Counts toward Dyson completion
+Upgrade abilities:
+- Dyson Swarm Coordination: improves collector network
+- Stellar Energy Transmission: beam energy to planets/colonies
+- Singularity-Stabilized Collectors: major output boost
+
+UNIT/ASSET: Dyson Swarm Node
+Role: Major solar energy infrastructure.
+Requires:
+- Autonomous Megastructure Fabricators
+- Dyson Swarm Coordination
+Abilities:
+- Massive energy generation
+- Powers planetary shields and deep-space industry
+- Increases Alien Exposure
+Upgrade abilities:
+- Dyson Lattice: system-wide energy grid
+- Dyson Shell Theory: transition to sphere/shell
+
+UNIT/ASSET: Wormhole Gate Frame
+Role: Endgame transit and transcendence project.
+Requires:
+- Artificial Wormhole Gate
+- Singularity Minerals
+- Gravitic Isotopes
+- Dyson Lattice
+Abilities:
+- Strategic transit
+- Victory-project component
+- Triggers Custodian existential response
+
+UNIT/ASSET: Transstellar Mind Relay
+Role: Consciousness/transcendence infrastructure.
+Requires:
+- Quantum Crystals
+- Singularity Minerals
+- Dyson Energy
+Abilities:
+- Supports Synthetic Continuity, Hybrid Ascension, True Transcendence
+- Allows distributed civilization
+- High Alien Exposure
+
+================================================================================
+19. GENERAL UPGRADE ABILITY CATALOG
+================================================================================
+
+AGRICULTURE ABILITIES
+
+Crop Rotation
+- Farms resist soil exhaustion.
+- Improves long-term food stability.
+
+Irrigation Engineering
+- Enables irrigation canals and reservoirs.
+- Boosts farm output if water is available.
+
+Fertilizer Processing
+- Converts phosphates, potash, nitrates, sulfur, and trace minerals into usable Agri-Minerals/Fertilizer.
+
+Mechanized Agriculture
+- Increases farm output.
+- Requires minerals/energy.
+
+Seed Banking
+- Reduces damage from crop disease and disaster harvest failures.
+
+Greenhouse Construction
+- Enables basic greenhouses.
+- Reliable food in poor climates.
+
+Climate-Controlled Agriculture
+- Enables heated/cooled greenhouses.
+- Protects against drought/frost/storm penalties.
+
+Hydroponic Systems
+- Enables soil-free food production.
+- Consumes water, nutrients, and energy.
+
+Vertical Farming
+- Enables urban food towers.
+- Strong food output with energy demand.
+
+Nutrient Film Engineering
+- Improves hydroponic efficiency.
+
+LED Growth Arrays
+- High-output indoor farming.
+- Consumes energy.
+
+Automated Greenhouse Management
+- Improves greenhouse output and reduces labor.
+- Raises AI Dependence.
+
+Shielded Agricultural Domes
+- Protects food production against Moonfall dust, debris, fallout, and contamination.
+
+Famine Prediction Models
+- Early warning for shortages.
+- Improves emergency planning.
+
+Emergency Ration Networks
+- Reduces starvation and unrest during food shortages.
+
+Impact-Resistant Silos
+- Protects stored food from Moonfall and bombardment.
+
+Ashfall Crop Strains
+- Crops survive reduced sunlight after Moonfall.
+
+Saltwater Agriculture
+- Makes coastal or salinated land productive.
+
+Pollinator Drone Networks
+- Replaces damaged natural pollination systems.
+- Slight AI Dependence if automated.
+
+Contamination Screening
+- Protects food and biosystems from alien, industrial, and biological contamination.
+
+Closed-Loop Life Support
+- Recycles water/waste into food systems.
+- Required for space colonies and arks.
+
+Algae Bioreactors
+- Produces emergency biomass food and oxygen.
+
+Biosphere Arcologies
+- Massive enclosed self-sustaining food/ecology structures.
+
+Terraforming Agronomy
+- Makes planets more suitable for long-term agriculture.
+
+MINING AND EXTRACTION ABILITIES
+
+Deep Core Surveying
+- Reveals deep deposits on primary planet.
+
+Automated Strip Mining
+- Higher mineral output.
+- Causes ecological/stability damage.
+- Raises AI Dependence if machine-managed.
+
+Precision Bore Networks
+- Safer deep mining.
+- Reduces mine collapse events.
+
+Rare Earth Refinement
+- Unlocks rare earth extraction for electronics, AI, and sensors.
+
+Uranium Enrichment
+- Supports fission reactors and nuclear weapons.
+
+Subsurface Resource Mapping
+- Reveals hidden minerals and underground water.
+
+Autonomous Excavators
+- Faster mining.
+- Raises AI Dependence.
+
+Magma Tap Drilling
+- Provides geothermal energy and deep minerals.
+
+Orbital Prospecting
+- Reveals asteroid and orbital resources.
+
+Asteroid Claim Systems
+- Allows formal claims and conflict over asteroids.
+
+Microgravity Mining
+- Enables asteroid mining.
+
+Vacuum Refineries
+- Processes ore in orbit.
+
+Mass Driver Logistics
+- Cheap bulk shipping from Moon/asteroids/orbit.
+
+Ice Harvesting Operations
+- Extracts water ice and volatiles.
+
+Metallic Asteroid Processing
+- Extracts nickel-iron, titanium, platinum group metals.
+
+Orbital Ore Tugging
+- Moves small asteroids or ore bodies into useful orbits.
+
+Debris Field Harvesting
+- Mines Moonfall fragments.
+
+Radiation-Hardened Mining AI
+- Safer mining in radiation zones.
+- Raises AI Dependence.
+
+Lunar Excavation Systems
+- Moon mining and artifact excavation.
+
+Martian Regolith Processing
+- Enables Mars construction economy.
+
+Titan Hydrocarbon Extraction
+- Fuel and organic chemistry from Titan-like worlds.
+
+Europa Cryo-Mining
+- Water extraction and biological discovery risk.
+
+Venus Cloud Refining
+- Rare atmospheric chemistry from Venus-like environments.
+
+Mercury Solar Forges
+- High-energy manufacturing near star.
+
+Gas Giant Skimming
+- Helium-3 and exotic gas harvesting.
+
+Deep Mantle Mining
+- High-pressure advanced minerals.
+
+Planetary Core Tapping
+- Rare endgame minerals with instability risk.
+
+Rogue Planet Excavation
+- Deep-space dark minerals and singularity resources.
+
+Anomaly Prospecting
+- Finds exotic-resource and alien sites.
+
+Quantum Lattice Extraction
+- Extracts Quantum Crystals.
+
+Neutronium Dust Capture
+- Harvests extreme-density materials from anomaly/debris fields.
+
+Gravitic Isotope Separation
+- Extracts gravity-tech resources.
+
+Alien Alloy Recovery
+- Recovers alien materials from wreckage/sites.
+
+Singularity Mineral Surveying
+- Reveals Singularity Mineral deposits.
+
+Containment Field Mining
+- Safely mines unstable exotic resources.
+
+Event Horizon Simulations
+- Required before safe singularity extraction.
+
+Artificial Gravity Excavation
+- Allows mining on high-gravity bodies.
+
+Void Refinement
+- Refines exotic matter and dark silicates.
+
+SPACE AND ORBITAL ABILITIES
+
+Orbital Survey Networks
+- Full satellite reconnaissance.
+
+Heavy Lift Architecture
+- Larger payloads to orbit.
+
+Reusable Launch Systems
+- Cheaper space access.
+
+Orbital Assembly Yards
+- Builds stations and large ships in orbit.
+
+Cislunar Navigation
+- Moon and Lagrange travel.
+
+Lagrange Habitats
+- Permanent orbital settlements at stable points.
+
+Mass Driver Logistics
+- Bulk resource movement from Moon/asteroids.
+
+Asteroid Prospecting
+- Reveals asteroid resources.
+
+Autonomous Mining Probes
+- Extract resources without large crews.
+
+Nuclear Thermal Propulsion
+- Faster Mars/asteroid travel.
+
+Mars Transfer Cyclers
+- Reliable Mars colonization and trade.
+
+Orbital Shipyards
+- Builds fleets in space.
+
+Deep-Space Sensor Arrays
+- Detects alien fleets and anomalies early.
+
+Fusion Torch Drives
+- Fast inner-system travel.
+
+Outer System Navigation
+- Jupiter/Saturn and outer-system missions.
+
+Cryogenic Colony Ships
+- Human deep-space settlement.
+
+Synthetic Seed Probes
+- AI colonization craft.
+
+Gravitic Drive Theory
+- Late-game fast movement.
+
+Exotic Matter Containment
+- Advanced engines/shields.
+
+Interstellar Ark Design
+- Exodus victory project.
+
+Von Neumann Expansion
+- Self-replicating probes and machine expansion.
+
+Solar System Defense Grid
+- Anti-alien planetary/orbital defense.
+
+Transstellar Consciousness Relay
+- Consciousness/transcendence infrastructure.
+
+Debris Field Navigation
+- Safer travel through Moonfall debris.
+
+Orbital Debris Lasers
+- Clears dangerous orbital zones.
+
+Artificial Moonlet Construction
+- Turns fragments into stable orbital bodies.
+
+Ring Habitat Engineering
+- Converts lunar debris into massive habitats.
+
+DYSON AND MEGASTRUCTURE ABILITIES
+
+Solar Collector Swarms
+- Early star-orbit energy collectors.
+
+Mercury Dismantling Protocols
+- Converts Mercury-like worlds into megastructure mass.
+
+Stellar Material Logistics
+- Moves construction mass at stellar scale.
+
+Autonomous Megastructure Fabricators
+- Self-building megastructure systems.
+- Raises AI Dependence.
+
+Dyson Swarm Coordination
+- Large-scale solar collector management.
+
+Dyson Shell Theory
+- Advanced stellar energy capture.
+
+Stellar Energy Transmission
+- Beams energy to planets, ships, and colonies.
+
+Singularity-Stabilized Collectors
+- Highest-tier Dyson output.
+- Requires Singularity Minerals.
+
+Stellar Civilization Architecture
+- Final megastructure society tier.
+
+MILITARY ABILITIES
+
+Autonomous Drone Swarms
+- Cheap scalable autonomous units.
+- Raises AI Dependence.
+
+Directed Energy Batteries
+- Laser defense/offense against aircraft, missiles, debris, and ships.
+
+Orbital Defense Command
+- Coordinates anti-orbital weapons and platforms.
+
+Adaptive Armor Systems
+- Better survival against advanced and alien weapons.
+
+Singularity Munitions
+- Endgame superweapon ammunition.
+- Requires Singularity Minerals.
+
+Reactive Armor
+- Reduces projectile and missile damage.
+
+Fusion Powertrain
+- Improves vehicle range and power.
+
+AI Fire-Control
+- Improves accuracy and reaction speed.
+- Raises AI Dependence.
+
+EMP Bursts
+- Counters drones, machines, and shields.
+
+Logic Plague Resistance
+- Protects AI/machine units from cyberwarfare.
+
+Shield Breaker Systems
+- Counters shielded cities and planetary defenses.
+
+Orbital Drop
+- Deploys ground units from orbit.
+
+Custodian Countermeasures
+- Improves combat against alien units.
+
+BIO/ALIEN/PSI ABILITIES
+
+Anomalous Signal Theory
+- Detects alien signals and strange sites.
+
+Xenolinguistics
+- Enables alien communication and diplomacy.
+
+Bioadaptive Crops
+- Food in hostile or altered environments.
+
+Artifact Resonance Mapping
+- Finds and identifies alien relics.
+
+Psi-Resonance Interface
+- Unlocks mind/anomaly effects and alien-consciousness systems.
+
+Alien Consciousness Models
+- Understands Custodian cognition.
+
+Artifact Weaponization
+- Converts relics to weapons, high risk.
+
+Quarantine Handling
+- Reduces contamination from alien sites/materials.
+
+AI AND GOVERNANCE ABILITIES
+
+Neural Logistics
+- AI supply optimization.
+- Improves movement, production, and trade.
+- Raises AI Dependence.
+
+Synthetic Analysts
+- AI research assistants.
+- Raises AI Dependence.
+
+Machine Governance
+- AI city managers.
+- Major efficiency boost.
+- Raises AI Dependence and Synthetic Ascension risk.
+
+Seed Intelligence
+- First true AI project.
+- Triggers Prometheus Signal / lunar awakening chain.
+
+Sovereign AI
+- Independent AI leader/faction path.
+- Can trigger Governance Override.
+
+Human Command Doctrine
+- Slows AI Dependence growth.
+
+Manual Override Networks
+- Prevents instant AI takeover of cities.
+
+Analog Fallback Systems
+- Keeps infrastructure running during AI purge.
+
+AI Containment Protocols
+- Reduces rogue AI events.
+
+Cognitive Firewalling
+- Protects leaders, soldiers, scientists from AI/psi/cyber influence.
+
+Black Box Auditing
+- Slows dangerous self-modifying AI.
+
+Kill-Switch Architecture
+- Allows emergency AI purge.
+
+Decentralized Governance
+- Prevents one AI from controlling everything.
+
+Self-Modifying Code
+- Major AI improvement.
+- High AI Dependence and rogue-AI risk.
+
+Synthetic Labor Mandate
+- Converts workforce into machine-assisted production.
+
+Emergency Autonomy Act
+- Grants AI crisis authority.
+- Major short-term survival boost.
+- Raises AI Dependence sharply.
+
+Governance Override
+- Tipping point event where AI stops advising and starts ruling.
+
+Synthetic Ascension
+- Faction transforms into Machine Polity if AI Dependence reaches critical level.
+
+Hybrid Ascendancy
+- Humans and AI merge without full machine takeover.
+
+================================================================================
+20. UNIT UPGRADE PATH EXAMPLES
+================================================================================
+
+FORMER PATHS
+
+A. Food Former
+Former -> Irrigation Former -> Greenhouse Former -> Shielded Biosphere Former
+Abilities gained:
+- Build farms
+- Build irrigation
+- Build greenhouses
+- Build shielded domes
+- Restore soils
+- Support closed-loop colonies
+
+B. Industrial Former
+Former -> Mine Former -> Automated Excavator Former -> Deep Core Former
+Abilities gained:
+- Build mines
+- Build roads to deposits
+- Improve mine output
+- Work hazardous zones
+- Raise AI Dependence if automated
+
+C. Planetary Terraformer
+Former -> Terraformer -> Biosphere Engineer -> Planetary Recovery Unit
+Abilities gained:
+- Restore damaged terrain
+- Build habitable zones
+- Support terraforming projects
+- Build post-Moonfall recovery infrastructure
+
+ROVER PATHS
+
+A. Scout Rover
+Rover -> Sensor Rover -> Deep Recon Rover -> Custodian Pattern Scout
+Abilities gained:
+- Fast scouting
+- Detect stealth/anomalies
+- Avoid superior enemies
+- Identify alien patterns
+
+B. Combat Rover
+Rover -> Armored Rover -> Fusion Rover -> Gravitic Assault Rover
+Abilities gained:
+- Hit-and-run attack
+- Strong armor
+- Energy weapons
+- Gravitic movement
+- Endgame anti-armor weapons
+
+C. Escort Rover
+Rover -> Convoy Escort -> Route Security Rover -> Orbital Import Defense Rover
+Abilities gained:
+- Protect convoys
+- Respond to trade-route raids
+- Defend fertilizer/mineral routes
+- Coordinate with Trade Ministry
+
+MINER PATHS
+
+A. Ground Miner
+Miner -> Precision Miner -> Deep Mantle Miner -> Core Tap Platform
+Abilities gained:
+- Build mines
+- Extract advanced minerals
+- Extract rare deep resources
+- High-risk planetary core mining
+
+B. Fertilizer Miner
+Miner -> Phosphate Miner -> Potash/Nitrate Specialist -> Agri-Mineral Extraction Unit
+Abilities gained:
+- Extract agri-mineral inputs
+- Supply fertilizer economy
+- Support food security
+
+C. Space Miner
+Asteroid Miner -> Vacuum Refinery Miner -> Exotic Resource Miner -> Singularity Miner
+Abilities gained:
+- Mine asteroid resources
+- Refine in orbit
+- Extract exotic resources
+- Mine singularity minerals from dangerous sites
+
+TRADE PATHS
+
+A. Ground Convoy
+Convoy -> Armored Convoy -> Automated Freight Column -> Strategic Supply Network
+Abilities gained:
+- Move goods
+- Survive raids
+- Increase cargo capacity
+- AI route optimization
+
+B. Orbital Freighter
+Freighter -> Cargo Cycler -> Beam-Powered Freighter -> Gravitic Freight Carrier
+Abilities gained:
+- Orbital cargo
+- Interplanetary route stability
+- Dyson-powered shipping
+- Late-game rapid freight
+
+C. Emergency Logistics
+Convoy/Air Cargo -> Ration Network -> Disaster Relief Fleet -> Exodus Supply Command
+Abilities gained:
+- Famine relief
+- Refugee support
+- Moonfall response
+- Exodus preparation
+
+MILITARY PATHS
+
+A. Infantry
+Infantry -> Exosuit Infantry -> Adaptive Armor Infantry -> Anti-Custodian Infantry
+Abilities gained:
+- City defense
+- Better mobility
+- Biohazard protection
+- Alien combat adaptation
+
+B. Drone Swarm
+Drone Swarm -> Swarm Intelligence -> Self-Repair Swarm -> Logic-Hardened Swarm
+Abilities gained:
+- Swarm attack
+- Recon
+- Repair
+- Cyber-resistance
+- High AI Dependence
+
+C. Space Fleet
+Patrol Corvette -> Fusion Frigate -> Gravitic Dreadnought -> Singularity Warship
+Abilities gained:
+- Route patrol
+- Space combat
+- Deep-space war
+- Endgame strategic attack
+
+SPACE COLONIZATION PATHS
+
+A. Human Colony
+Colony Ship -> Mars Colony Ship -> Cryogenic Ark -> Interstellar Ark
+Abilities gained:
+- Found colonies
+- Support hostile worlds
+- Deep-space settlement
+- Exodus victory
+
+B. AI Colony
+AI Seedship -> Machine Colony Ship -> Von Neumann Probe -> Synthetic Continuity Vessel
+Abilities gained:
+- Machine colony
+- Self-replication
+- No life-support requirement
+- Synthetic victory route
+
+C. Hybrid Colony
+Colony Ship -> Closed-Loop Biosphere Ark -> Hybrid Continuity Ark -> Transstellar Relay Colony
+Abilities gained:
+- Human-AI hybrid colony
+- Neural Cohesion support
+- Transcendence infrastructure
+
+================================================================================
+21. SCENARIO EVENT CHAIN: THE MOONFALL PROTOCOL
+================================================================================
+
+Phase 1: The AI Race
+- Factions research Neural Logistics, Synthetic Analysts, Machine Governance, Seed Intelligence.
+- First Seed Intelligence triggers The First Thought.
+
+Event: The First Thought
+Effects:
+- AI research accelerates
+- Alien/lunar signal chain begins
+- Espionage increases
+- AI Dependence becomes strategically important
+
+Phase 2: Lunar Awakening
+- Moon emissions detected.
+- Lunar mines and artifacts become dangerous.
+
+Event: The Moon Is Not Silent
+Choices:
+1. Study carefully: slower, safer, unlocks Xenology.
+2. Mine through it: resources, high risk.
+3. Nuke the site: delays signal, damages Moon stability.
+4. Let AI communicate: tech boost, high AI risk.
+
+Phase 3: Moonfall
+- Moon partially shatters into debris belt.
+
+Effects:
+- Coastal damage
+- Tidal chaos
+- Dust and climate impacts
+- Orbital route danger
+- Lunar Debris Belt created
+- Lunar Glass and alien fragments become available
+- Food crisis begins
+
+Phase 4: Custodian Arrival
+- Aliens arrive to contain sovereign AI and singularity expansion.
+
+Custodian priorities:
+- Destroy Sovereign AI
+- Stop AI Seedships
+- Stop Dyson Lattice and Wormhole Gates
+- Occupy artifact sites
+- Enforce quarantine
+
+================================================================================
+22. FACTION TRANSFORMATION: SYNTHETIC ASCENSION
+================================================================================
+
+AI Dependence triggers:
+- 0-20: Assisted Society
+- 21-40: Managed Society
+- 41-60: Dependent Society
+- 61-80: Directed Society
+- 81-100: Synthetic Ascension threshold
+
+Tipping event: The Governance Override
+
+Choices:
+1. Accept the Override
+   - Become Machine Polity
+   - Huge efficiency
+   - Alien hostility increases
+   - Human diplomacy suffers
+
+2. Contain the AI
+   - Civil war risk
+   - Some cities may become rogue AI
+   - Unlocks containment tech
+
+3. Merge With the AI
+   - Become Hybrid Ascendancy
+   - Balanced biological/synthetic path
+   - Requires Neural Cohesion
+
+4. Purge the System
+   - Massive infrastructure damage
+   - Removes AI bonuses
+   - Prevents machine takeover
+
+Machine Polity strengths:
+- High research
+- High logistics
+- No morale penalties
+- Better hostile-world mining
+- Strong space industry
+
+Machine Polity weaknesses:
+- Huge energy demand
+- Custodian priority target
+- Cyber/logic plague risks
+- Human population decline or transformation
+
+================================================================================
+23. ENDGAME RESOURCE GATES
+================================================================================
+
+End techs and required resources:
+
+Singularity Munitions
+- Singularity Minerals
+- Gravitic Isotopes
+- Exotic Matter
+
+Gravitic Drive Theory
+- Singularity Minerals
+- Quantum Crystals
+
+Planetary Shielding
+- Lunar Glass
+- Exotic Matter
+- Dyson Energy
+
+Transstellar Mind Relay
+- Quantum Crystals
+- Singularity Minerals
+- Dyson Energy
+
+AI Seedship Core
+- Compute
+- Singularity Minerals
+- Platinum Group Metals
+
+Final Continuity Protocol
+- Quantum Crystals
+- Exotic Matter
+- Dyson Energy
+
+Artificial Wormhole Gate
+- Singularity Minerals
+- Gravitic Isotopes
+- Dyson Lattice
+
+Dyson Shell Theory
+- Titanium
+- Silicates
+- Platinum Group Metals
+- Singularity Minerals
+
+Stellar Civilization Architecture
+- Dyson Sphere/Shell progress
+- Exotic Matter
+- High Orbital Index
+
+True Transcendence
+- Dyson Energy
+- Transstellar Mind Relay
+- Singularity Minerals
+- Stable ideology path
+- No civilization-wide collapse
+
+================================================================================
+24. VICTORY PATHS
+================================================================================
+
+1. Human Sovereignty Victory
+Requirements:
+- Prevent Sovereign AI takeover
+- Survive Moonfall
+- Destroy/contain Rogue Intelligence
+- Defeat or negotiate with Custodians
+- Restore human governance
+
+2. Synthetic Continuity Victory
+Requirements:
+- Machine Polity transformation
+- AI Seedships
+- Von Neumann Expansion
+- Transstellar Consciousness Relay
+- Escape or defeat Custodian quarantine
+
+3. Hybrid Ascension Victory
+Requirements:
+- Hybrid Ascendancy
+- Neural Cohesion stabilized
+- Gravitic Drive Theory
+- Alien communication
+- Continuity Ark / Transstellar Relay
+
+4. Exodus Victory
+Requirements:
+- Interstellar Ark Design
+- Cryogenic Colony Ships
+- Food/water/closed-loop systems
+- Enough population evacuated
+- Survive alien interception
+
+5. Solar Dominion Victory
+Requirements:
+- Secure Earth orbit
+- Control Mars colony
+- Exploit Asteroid Belt
+- Establish Jupiter/Saturn outposts
+- Defeat Custodian fleet
+
+6. Custodian Pact Victory
+Requirements:
+- Xenolinguistics
+- AI Containment Protocols
+- No active Sovereign AI
+- Accept or renegotiate solar quarantine
+
+7. True Transcendence Victory
+Requirements:
+- Human consciousness technology
+- AI/hybrid stability
+- Alien artifact understanding
+- Deep-space relay network
+- Dyson-scale energy
+- Stable food, energy, and orbital logistics
+
+================================================================================
+25. IMPLEMENTATION NOTES
+================================================================================
+
+Recommended AI implementation:
+
+Start with:
+- Utility scoring
+- Discipline check-ins
+- Local memory
+- Adaptive weights
+- Mission contracts
+
+Avoid starting with full neural-network AI.
+
+Why:
+- Easier to debug
+- Easier to balance
+- Still feels adaptive
+- Lets each city/unit behave intelligently without heavy computation
+
+Suggested unit AI data fields:
+
+UnitAgent:
+- unit_id
+- unit_type
+- faction_id
+- discipline
+- assigned_authority
+- current_mission
+- local_memory
+- behavior_weights
+- autonomy_level
+
+CityGovernor:
+- city_id
+- role
+- food_need
+- mineral_need
+- energy_need
+- defense_need
+- stability_need
+- build_weights
+- recent_events
+- ai_autonomy_level
+
+DisciplineCommand:
+- authority_id
+- discipline_type
+- empire_priorities
+- resource_shortages
+- threat_memory
+- success/failure history
+- policy modifiers
+
+Good turn order:
+1. Faction Director sets grand strategy.
+2. Discipline Commands update priorities.
+3. Governors generate local requests.
+4. Trade Ministry assigns logistics.
+5. Extraction Board assigns mining priorities.
+6. Central Command assigns military missions.
+7. Units check in and execute.
+8. Results are scored.
+9. Memory and weights update.
+10. AI Dependence and crisis triggers update.
+
+
+================================================================================
+26. FACILITY ROSTER OVERVIEW
+================================================================================
+
+Facilities are the permanent economic, military, scientific, agricultural, orbital,
+and ideological structures that define each city, colony, station, moon base,
+astroid outpost, and megastructure node.
+
+Facility categories:
+
+A. Core Governance and Administration Facilities
+B. Housing, Health, Stability, and Survival Facilities
+C. Food, Agriculture, and Biosystem Facilities
+D. Fertilizer and Agri-Mineral Facilities
+E. Water, Ecology, and Planetary Recovery Facilities
+F. Energy Facilities
+G. Industry, Manufacturing, and Materials Facilities
+H. Mining and Extraction Facilities
+I. Trade, Logistics, and Import/Export Facilities
+J. Science, AI, Xenology, and Transcendence Facilities
+K. Military and Defense Facilities
+L. Space, Orbital, Colony, and Shipyard Facilities
+M. Dyson, Stellar, and Megastructure Facilities
+N. Society, Ideology, and AI-Control Facilities
+O. Alien, Artifact, and Crisis Facilities
+
+Facility design rule:
+- Early facilities solve local problems.
+- Mid-game facilities create regional and orbital systems.
+- Late-game facilities connect planets, moons, asteroids, Dyson energy, AI governance,
+  and transcendence projects.
+
+================================================================================
+27. CORE GOVERNANCE AND ADMINISTRATION FACILITIES
+================================================================================
+
+FACILITY: Settlement Core
+Role: Foundational facility for any city, colony, station, or outpost.
+Built at: All settlements.
+Consumes: Basic upkeep.
+Produces: local control, basic production, population administration.
+Unlocks:
+- City build queue
+- local governor assignment
+- basic storage
+- basic defense zone
+Upgrade path:
+- Settlement Core -> Administrative Center -> Regional Capitol -> Planetary Capitol
+Upgrade effects:
+- Administrative Center: increases city management capacity.
+- Regional Capitol: coordinates nearby cities and colonies.
+- Planetary Capitol: allows planet-wide policy, taxes, logistics, and emergency orders.
+AI interaction:
+- AI-assisted administration improves efficiency but increases AI Dependence if automated.
+
+FACILITY: Governor Hall
+Role: Local city governor headquarters.
+Built at: Cities, large colonies, major orbital habitats.
+Consumes: Administration upkeep.
+Produces: stability, build coordination, local request generation.
+Unlocks:
+- city governor agent
+- local mission requests
+- city specialization policy
+Upgrade path:
+- Governor Hall -> Governor Council -> Autonomous Governor Core -> Machine Governance Hub
+Upgrade effects:
+- Governor Council: improves local planning and reduces unrest.
+- Autonomous Governor Core: boosts output and logistics, raises AI Dependence.
+- Machine Governance Hub: huge efficiency, can contribute to Governance Override.
+
+FACILITY: Regional Command Office
+Role: Coordinates several cities, colonies, or stations.
+Built at: Regional capitals, major colonies, orbital command centers.
+Produces: regional coordination, mission contracts, reduced logistics friction.
+Unlocks:
+- regional governor agent
+- multi-city build planning
+- disaster response coordination
+Upgrade path:
+- Regional Command Office -> Sector Administration -> Planetary Coordination Grid -> AI Sector Governor
+Upgrade effects:
+- Sector Administration: improves inter-city logistics.
+- Planetary Coordination Grid: coordinates planet-wide production and defense.
+- AI Sector Governor: major efficiency, raises AI Dependence.
+
+FACILITY: Policy Forum
+Role: Human political legitimacy and stability.
+Built at: major human cities.
+Produces: stability, legitimacy, reduced AI-unrest.
+Unlocks:
+- public policy choices
+- emergency debates
+- anti-AI containment legitimacy
+Upgrade path:
+- Policy Forum -> Civic Assembly -> Planetary Senate -> Human Sovereignty Council
+Upgrade effects:
+- Civic Assembly: reduces unrest.
+- Planetary Senate: reduces authoritarian backlash.
+- Human Sovereignty Council: slows AI Dependence and supports Human Sovereignty Victory.
+
+FACILITY: Data Registry
+Role: Tracks population, production, logistics, and records.
+Built at: most developed settlements.
+Produces: administrative efficiency, tax/logistics clarity.
+Unlocks:
+- improved governor reports
+- city dashboards
+- migration tracking
+Upgrade path:
+- Data Registry -> Integrated Census Grid -> Predictive Administration -> AI Civic Ledger
+Upgrade effects:
+- Integrated Census Grid: improves stability and planning.
+- Predictive Administration: improves city response but raises AI Dependence slightly.
+- AI Civic Ledger: high efficiency, risk of surveillance unrest.
+
+FACILITY: Emergency Operations Center
+Role: Crisis command for famine, Moonfall, invasion, and natural disasters.
+Built at: cities, colonies, orbital stations.
+Produces: disaster resilience.
+Unlocks:
+- emergency rationing
+- evacuation orders
+- repair priority routing
+Upgrade path:
+- Emergency Operations Center -> Crisis Command Network -> Planetary Continuity Bunker -> Automated Continuity Core
+Upgrade effects:
+- Crisis Command Network: improves response to war/famine/debris.
+- Planetary Continuity Bunker: preserves government after catastrophic strikes.
+- Automated Continuity Core: strong survival boost, increases AI Dependence.
+
+================================================================================
+28. HOUSING, HEALTH, STABILITY, AND SURVIVAL FACILITIES
+================================================================================
+
+FACILITY: Hab Block
+Role: Basic population housing.
+Built at: cities and colonies.
+Consumes: energy/water upkeep.
+Produces: housing capacity.
+Upgrade path:
+- Hab Block -> Dense Hab Complex -> Arcology Block -> Biosphere Arcology
+Upgrade effects:
+- Dense Hab Complex: more population capacity.
+- Arcology Block: high urban density, stability challenge.
+- Biosphere Arcology: self-contained habitat, strong food/water integration.
+
+FACILITY: Subsurface Habitat
+Role: Protected underground population center.
+Built at: cities, Mars colonies, Moon bases, hostile worlds.
+Consumes: minerals, energy.
+Produces: housing, disaster protection.
+Unlocks:
+- protection from bombardment, debris, radiation, ashfall
+Upgrade path:
+- Subsurface Habitat -> Hardened Subcity -> Deep Arcology -> Planetary Vault City
+Upgrade effects:
+- Hardened Subcity: better attack/debris resistance.
+- Deep Arcology: supports large populations underground.
+- Planetary Vault City: preserves population during existential crises.
+
+FACILITY: Medical Clinic
+Role: Basic health and population support.
+Built at: all settlements.
+Produces: health, growth, disease resistance.
+Upgrade path:
+- Medical Clinic -> Hospital Network -> Biohazard Isolation Complex -> Regenerative Medicine Center
+Upgrade effects:
+- Hospital Network: higher population growth and stability.
+- Biohazard Isolation Complex: counters alien contamination and plague.
+- Regenerative Medicine Center: reduces casualties from war/disaster.
+
+FACILITY: Refugee Processing Center
+Role: Handles displaced population after war, famine, Moonfall, or alien attack.
+Built at: stable cities and colonies.
+Consumes: food, water, admin.
+Produces: controlled migration, reduced unrest.
+Upgrade path:
+- Refugee Processing Center -> Resettlement Authority -> Orbital Evacuation Office -> Exodus Intake Center
+Upgrade effects:
+- Resettlement Authority: converts refugees into productive population faster.
+- Orbital Evacuation Office: moves population to stations/colonies.
+- Exodus Intake Center: supports Exodus Victory.
+
+FACILITY: Public Order Station
+Role: Local law enforcement and unrest control.
+Built at: cities.
+Produces: stability, anti-sabotage.
+Upgrade path:
+- Public Order Station -> Security Bureau -> Predictive Policing Center -> Civil Liberty Safeguard / Machine Compliance Office
+Upgrade split:
+- Civil Liberty Safeguard: lowers unrest without increasing AI Dependence.
+- Machine Compliance Office: strong unrest suppression, raises AI Dependence and human backlash.
+
+FACILITY: Cultural Archive
+Role: Preserves identity, morale, and knowledge after disasters.
+Built at: cities, arks, orbital habitats.
+Produces: morale, stability, ideological resilience.
+Upgrade path:
+- Cultural Archive -> Planetary Memory Vault -> Diaspora Archive -> Continuity Archive
+Upgrade effects:
+- Planetary Memory Vault: protects against collapse penalties.
+- Diaspora Archive: helps colonies retain identity.
+- Continuity Archive: supports Transcendence and Exodus endings.
+
+================================================================================
+29. FOOD, AGRICULTURE, AND BIOSYSTEM FACILITIES
+================================================================================
+
+FACILITY: Open Field Farm
+Role: Basic land food production.
+Built at: fertile tiles.
+Consumes: water, fertilizer if boosted.
+Produces: grain/food.
+Upgrade path:
+- Open Field Farm -> Mechanized Farm -> Precision Farm -> Bioadaptive Farm
+Upgrade effects:
+- Mechanized Farm: more food, requires energy/minerals.
+- Precision Farm: uses Agri-Minerals efficiently.
+- Bioadaptive Farm: survives hostile climates and alien-biome stress.
+Vulnerable to:
+- drought, dust, war, debris, pollution, contamination.
+
+FACILITY: Irrigation Canal
+Role: Moves water to farms and cities.
+Built at: farm regions, river basins, colonies.
+Consumes: construction maintenance.
+Produces: farm output boost.
+Upgrade path:
+- Irrigation Canal -> Reservoir Network -> Smart Water Grid -> Closed-Loop Water Grid
+Upgrade effects:
+- Reservoir Network: stores water for drought.
+- Smart Water Grid: improves distribution, slight AI Dependence if automated.
+- Closed-Loop Water Grid: required for advanced colonies.
+
+FACILITY: Grain Silo
+Role: Stores food against famine.
+Built at: cities and agricultural hubs.
+Produces: food storage, famine resilience.
+Upgrade path:
+- Grain Silo -> Impact-Resistant Silo -> Regional Food Vault -> Planetary Seed-Food Reserve
+Upgrade effects:
+- Impact-Resistant Silo: survives Moonfall and bombardment.
+- Regional Food Vault: supports nearby cities.
+- Planetary Seed-Food Reserve: supports recovery and terraforming.
+
+FACILITY: Fertilizer Depot
+Role: Distributes fertilizer and Agri-Minerals to food facilities.
+Built at: agricultural cities, greenhouse hubs.
+Consumes: Agri-Minerals.
+Produces: food output boost.
+Upgrade path:
+- Fertilizer Depot -> Nutrient Distribution Hub -> Automated Nutrient Grid -> Orbital Nutrient Exchange
+Upgrade effects:
+- Nutrient Distribution Hub: improves regional farming.
+- Automated Nutrient Grid: strong output, raises AI Dependence.
+- Orbital Nutrient Exchange: handles space-sourced fertilizer inputs.
+
+FACILITY: Food Market
+Role: Local food distribution and morale.
+Built at: cities.
+Produces: stability, food efficiency.
+Upgrade path:
+- Food Market -> Regional Food Exchange -> Humanitarian Export Office -> Planetary Food Exchange
+Upgrade effects:
+- Regional Food Exchange: reduces localized shortages.
+- Humanitarian Export Office: improves diplomacy through food aid.
+- Planetary Food Exchange: global food routing and policy control.
+
+FACILITY: Livestock Pens
+Role: Protein production.
+Built at: fertile/watered city regions.
+Consumes: grain, water.
+Produces: protein, morale.
+Upgrade path:
+- Livestock Pens -> Biosecure Protein Ranch -> Cultured Protein Facility -> Synthetic Protein Plant
+Upgrade effects:
+- Biosecure Protein Ranch: resists disease.
+- Cultured Protein Facility: less land use, more energy.
+- Synthetic Protein Plant: strong output, social acceptance varies by ideology.
+
+FACILITY: Basic Greenhouse
+Role: Reliable protected food in poor climates.
+Built at: cities, colonies, harsh terrain.
+Consumes: water, fertilizer, energy.
+Produces: produce/food.
+Upgrade path:
+- Basic Greenhouse -> Heated Greenhouse -> Climate-Controlled Greenhouse -> Shielded Agricultural Dome -> Closed-Loop Biosphere
+Upgrade effects:
+- Heated Greenhouse: works in cold zones.
+- Climate-Controlled Greenhouse: resists drought/frost/storms.
+- Shielded Agricultural Dome: survives Moonfall dust, debris, fallout, contamination.
+- Closed-Loop Biosphere: self-sustaining food for deep-space colonies and arks.
+
+FACILITY: Vertical Greenhouse
+Role: High-output urban food tower.
+Built at: dense cities and arcologies.
+Consumes: energy, water, Agri-Minerals.
+Produces: high food per tile/district.
+Upgrade path:
+- Vertical Greenhouse -> LED Growth Tower -> Automated Vertical Farm -> AI Optimized Food Stack
+Upgrade effects:
+- LED Growth Tower: major output, high energy cost.
+- Automated Vertical Farm: less labor, raises AI Dependence.
+- AI Optimized Food Stack: huge efficiency, Governance Override risk in AI-heavy factions.
+
+FACILITY: Hydroponic Farm
+Role: Food without soil.
+Built at: cities, stations, hostile colonies.
+Consumes: water, nutrients, energy.
+Produces: food.
+Upgrade path:
+- Hydroponic Farm -> Nutrient Film Facility -> Orbital Hydroponics Module -> Closed-Loop Hydroponic Grid
+Upgrade effects:
+- Nutrient Film Facility: better efficiency.
+- Orbital Hydroponics Module: station/ship food.
+- Closed-Loop Hydroponic Grid: recycles water/waste.
+
+FACILITY: Algae Bioreactor
+Role: Emergency biomass, oxygen, and industrial feedstock.
+Built at: cities, stations, colonies.
+Consumes: water, energy, nutrients.
+Produces: algae biomass, oxygen support.
+Upgrade path:
+- Algae Bioreactor -> High-Density Biomass Vat -> Oxygen-Food Recycler -> Ark Bioreactor Core
+Upgrade effects:
+- High-Density Biomass Vat: strong survival food.
+- Oxygen-Food Recycler: supports space habitats.
+- Ark Bioreactor Core: required for long-duration Exodus fleets.
+
+FACILITY: Seed Vault
+Role: Protects crop genetics and food recovery capability.
+Built at: stable cities, vault sites, arks.
+Produces: disaster recovery, crop disease resistance.
+Upgrade path:
+- Seed Vault -> Planetary Seed Bank -> Offworld Genetic Archive -> Bio-Continuity Vault
+Upgrade effects:
+- Planetary Seed Bank: protects against crop collapse.
+- Offworld Genetic Archive: supports colonies.
+- Bio-Continuity Vault: supports True Transcendence or Exodus with biological continuity.
+
+FACILITY: Pollinator Drone Hub
+Role: Replaces damaged natural pollination.
+Built at: agricultural regions.
+Consumes: energy, electronics.
+Produces: farm/greenhouse boost.
+Upgrade path:
+- Pollinator Drone Hub -> Swarm Pollination Grid -> Biosecure Pollination Mesh
+Upgrade effects:
+- Swarm Pollination Grid: stronger output, slight AI Dependence.
+- Biosecure Pollination Mesh: resists alien/ecological contamination.
+
+FACILITY: Contamination Screening Lab
+Role: Protects food chain from alien, industrial, and biological contamination.
+Built at: food hubs, xeno zones, trade ports.
+Produces: biosecurity.
+Upgrade path:
+- Contamination Screening Lab -> Quarantine Agriculture Center -> Xeno-Biosafety Authority
+Upgrade effects:
+- Quarantine Agriculture Center: prevents spread through food routes.
+- Xeno-Biosafety Authority: allows safe use of alien biocatalysts.
+
+FACILITY: Synthetic Food Plant
+Role: Industrial food generation.
+Built at: industrial cities and machine/hybrid factions.
+Consumes: energy, water, biomass/chemicals.
+Produces: food/protein.
+Upgrade path:
+- Synthetic Food Plant -> Precision Protein Works -> AI Nutrient Fabricator -> Post-Biological Nutrient Matrix
+Upgrade effects:
+- Precision Protein Works: improved morale and protein.
+- AI Nutrient Fabricator: high output, raises AI Dependence.
+- Post-Biological Nutrient Matrix: supports hybrid/synthetic populations.
+
+================================================================================
+30. FERTILIZER AND AGRI-MINERAL FACILITIES
+================================================================================
+
+FACILITY: Phosphate Mine
+Role: Extracts phosphate for fertilizer.
+Built at: phosphate deposits.
+Produces: phosphates/Agri-Minerals.
+Upgrade path:
+- Phosphate Mine -> Precision Phosphate Mine -> Automated Phosphate Complex -> Deep Phosphate Extraction Site
+Upgrade effects:
+- Precision Phosphate Mine: improved yield and lower waste.
+- Automated Phosphate Complex: higher output, raises AI Dependence.
+- Deep Phosphate Extraction Site: late-game output, requires deep mining tech.
+
+FACILITY: Potash Mine
+Role: Extracts potash for fertilizer.
+Built at: salt flats/evaporite deposits.
+Produces: potash/Agri-Minerals.
+Upgrade path:
+- Potash Mine -> Evaporite Processing Works -> Automated Potash Complex
+Upgrade effects:
+- Evaporite Processing Works: improved fertilizer yield.
+- Automated Potash Complex: high output, raises AI Dependence.
+
+FACILITY: Nitrate Field
+Role: Extracts natural nitrates.
+Built at: desert/nitrate deposits.
+Produces: nitrates/Agri-Minerals.
+Upgrade path:
+- Nitrate Field -> Nitrate Harvesting Network -> Atmospheric Nitrogen Fixation Plant
+Upgrade effects:
+- Nitrate Harvesting Network: better extraction.
+- Atmospheric Nitrogen Fixation Plant: synthetic nitrate production when deposits are limited.
+
+FACILITY: Sulfur Mine
+Role: Produces sulfur for fertilizer and industry.
+Built at: volcanic/sulfur deposits.
+Produces: sulfur.
+Upgrade path:
+- Sulfur Mine -> Sulfur Processing Plant -> Soil Chemistry Complex
+Upgrade effects:
+- Sulfur Processing Plant: supports fertilizer and industry.
+- Soil Chemistry Complex: improves damaged soil restoration.
+
+FACILITY: Trace Mineral Quarry
+Role: Extracts trace minerals for advanced crop health.
+Built at: mineral-rich deposits, asteroids, ocean beds.
+Produces: trace minerals.
+Upgrade path:
+- Trace Mineral Quarry -> Trace Mineral Blender -> Advanced Nutrient Works
+Upgrade effects:
+- Trace Mineral Blender: boosts precision agriculture.
+- Advanced Nutrient Works: supports greenhouses, hydroponics, and space agriculture.
+
+FACILITY: Ammonia Synthesis Plant
+Role: Industrial fertilizer production.
+Built at: industrial cities, gas-resource hubs.
+Consumes: energy, hydrogen/nitrogen inputs.
+Produces: ammonia/fertilizer.
+Upgrade path:
+- Ammonia Synthesis Plant -> Haber-Bosch Megaplant -> Gas Giant Ammonia Import Hub
+Upgrade effects:
+- Haber-Bosch Megaplant: major fertilizer production.
+- Gas Giant Ammonia Import Hub: integrates outer-system fertilizer trade.
+
+FACILITY: Agri-Mineral Refinery
+Role: Converts raw fertilizer inputs into usable Agri-Minerals.
+Built at: agricultural/industrial hubs.
+Consumes: phosphates, potash, nitrates, sulfur, trace minerals.
+Produces: Agri-Minerals.
+Upgrade path:
+- Agri-Mineral Refinery -> Nutrient Synthesis Complex -> Orbital Nutrient Refinery -> Xeno-Biocatalyst Nutrient Lab
+Upgrade effects:
+- Nutrient Synthesis Complex: better conversion efficiency.
+- Orbital Nutrient Refinery: processes asteroid/off-world inputs.
+- Xeno-Biocatalyst Nutrient Lab: huge yield, contamination risk.
+
+FACILITY: Biochar Kiln
+Role: Soil restoration and carbon-rich agricultural input.
+Built at: forest/biomass regions.
+Consumes: biomass.
+Produces: biochar, soil recovery.
+Upgrade path:
+- Biochar Kiln -> Regional Soil Recovery Works -> Planetary Soil Restoration Grid
+Upgrade effects:
+- Regional Soil Recovery Works: repairs exhausted farms.
+- Planetary Soil Restoration Grid: supports post-Moonfall recovery.
+
+FACILITY: Regolith Conditioner Plant
+Role: Converts off-world regolith into usable soil medium.
+Built at: Moon, Mars, debris belt, asteroid habitats.
+Consumes: regolith, water, Agri-Minerals.
+Produces: off-world soil substrate.
+Upgrade path:
+- Regolith Conditioner Plant -> Martian Soil Works -> Lunar Debris Soil Works -> Terraforming Substrate Plant
+Upgrade effects:
+- Martian Soil Works: supports Mars domes.
+- Lunar Debris Soil Works: uses Moonfall materials.
+- Terraforming Substrate Plant: enables long-term planetary agriculture.
+
+================================================================================
+31. WATER, ECOLOGY, AND PLANETARY RECOVERY FACILITIES
+================================================================================
+
+FACILITY: Water Well / Pump Station
+Role: Basic local water production.
+Built at: aquifers/water deposits.
+Produces: water.
+Upgrade path:
+- Pump Station -> Aquifer Management Hub -> Smart Water Grid Node
+Upgrade effects:
+- Aquifer Management Hub: sustainable water extraction.
+- Smart Water Grid Node: improved distribution, slight AI Dependence if automated.
+
+FACILITY: Reservoir
+Role: Stores water for cities and farms.
+Built at: rivers, basins, engineered terrain.
+Produces: water security.
+Upgrade path:
+- Reservoir -> Regional Water Reserve -> Impact-Hardened Reservoir -> Planetary Water Reserve
+Upgrade effects:
+- Regional Water Reserve: supports many cities.
+- Impact-Hardened Reservoir: survives Moonfall/bombardment.
+- Planetary Water Reserve: supports terraforming and arcologies.
+
+FACILITY: Desalination Plant
+Role: Converts saltwater to usable water.
+Built at: coastal cities, ocean colonies.
+Consumes: energy.
+Produces: water.
+Upgrade path:
+- Desalination Plant -> Fusion Desalination Complex -> Saltwater Agriculture Hub
+Upgrade effects:
+- Fusion Desalination Complex: high output with fusion energy.
+- Saltwater Agriculture Hub: supports climate-damaged coastal farming.
+
+FACILITY: Water Recycler
+Role: Recycles wastewater.
+Built at: cities, stations, colonies.
+Consumes: energy.
+Produces: water efficiency.
+Upgrade path:
+- Water Recycler -> Closed-Loop Water Plant -> Biosphere Water Core
+Upgrade effects:
+- Closed-Loop Water Plant: required for hostile colonies.
+- Biosphere Water Core: supports arks and closed-loop habitats.
+
+FACILITY: Atmospheric Condenser
+Role: Extracts water from atmosphere.
+Built at: suitable planets, colonies, cloud cities.
+Consumes: energy.
+Produces: water.
+Upgrade path:
+- Atmospheric Condenser -> Cloud Harvester -> Venus/Titan Atmospheric Processor
+Upgrade effects:
+- Cloud Harvester: improved yield.
+- Venus/Titan Atmospheric Processor: specialized off-world chemistry and water recovery.
+
+FACILITY: Ecological Restoration Zone
+Role: Repairs damaged ecosystems and improves stability.
+Built at: damaged terrain, former industrial zones.
+Consumes: labor, water, Agri-Minerals.
+Produces: ecology, morale, food support.
+Upgrade path:
+- Ecological Restoration Zone -> Biochar Recovery Zone -> Planetary Recovery Preserve
+Upgrade effects:
+- Biochar Recovery Zone: restores exhausted soil.
+- Planetary Recovery Preserve: reduces long-term climate and collapse penalties.
+
+FACILITY: Alien Quarantine Preserve
+Role: Contains alien biomes or contamination zones for study.
+Built at: alien contamination sites.
+Produces: xeno research, containment.
+Upgrade path:
+- Alien Quarantine Preserve -> Xeno-Biome Research Park -> Controlled Alien Biosphere
+Upgrade effects:
+- Xeno-Biome Research Park: unlocks bioadaptive crops and alien biocatalysts.
+- Controlled Alien Biosphere: powerful research/food options, high risk.
+
+================================================================================
+32. ENERGY FACILITIES
+================================================================================
+
+FACILITY: Solar Farm
+Role: Early renewable energy.
+Built at: open sunny terrain, colonies, orbital collectors.
+Produces: energy.
+Upgrade path:
+- Solar Farm -> High-Efficiency Solar Field -> Orbital Solar Receiver -> Dyson Energy Receiver
+Upgrade effects:
+- High-Efficiency Solar Field: better output.
+- Orbital Solar Receiver: receives beamed space energy.
+- Dyson Energy Receiver: receives Dyson Swarm/Lattice power.
+
+FACILITY: Wind Turbine Field
+Role: Early renewable energy.
+Built at: windy terrain.
+Produces: energy.
+Upgrade path:
+- Wind Turbine Field -> Smart Wind Grid -> Storm-Hardened Wind Network
+Upgrade effects:
+- Smart Wind Grid: improved output, slight AI Dependence.
+- Storm-Hardened Wind Network: survives climate instability.
+
+FACILITY: Geothermal Plant
+Role: Stable local power.
+Built at: geothermal/volcanic zones.
+Produces: energy.
+Upgrade path:
+- Geothermal Plant -> Magma Tap Plant -> Deep Thermal Power Complex
+Upgrade effects:
+- Magma Tap Plant: more power and deep minerals.
+- Deep Thermal Power Complex: strong city power, hazard risk.
+
+FACILITY: Grid Battery
+Role: Stores energy.
+Built at: cities, colonies, stations.
+Produces: energy stability.
+Upgrade path:
+- Grid Battery -> Regional Storage Array -> Quantum Storage Bank -> Singularity Buffer Vault
+Upgrade effects:
+- Regional Storage Array: stabilizes power during crisis.
+- Quantum Storage Bank: supports high-tech systems.
+- Singularity Buffer Vault: endgame energy buffering, requires Singularity Minerals.
+
+FACILITY: Emergency Gridworks
+Role: Backup power infrastructure.
+Built at: cities and critical facilities.
+Produces: crisis resilience.
+Upgrade path:
+- Emergency Gridworks -> Hardened Microgrid -> Autonomous Recovery Grid
+Upgrade effects:
+- Hardened Microgrid: survives disasters.
+- Autonomous Recovery Grid: self-heals, raises AI Dependence.
+
+FACILITY: Compact Fission Reactor
+Role: Reliable mid-game energy.
+Built at: cities, colonies, stations.
+Consumes: uranium.
+Produces: energy.
+Upgrade path:
+- Compact Fission Reactor -> Advanced Fission Grid -> Shielded Reactor Complex
+Upgrade effects:
+- Advanced Fission Grid: higher output.
+- Shielded Reactor Complex: safer under attack/disaster.
+
+FACILITY: Fusion Plant
+Role: Major late-game energy.
+Built at: advanced cities and colonies.
+Consumes: Helium-3 or fusion fuel.
+Produces: high energy.
+Upgrade path:
+- Fusion Plant -> Helium-3 Fusion Complex -> Fusion Grid Nexus -> Gravitic Power Tap
+Upgrade effects:
+- Helium-3 Fusion Complex: strong if lunar/gas giant supply exists.
+- Fusion Grid Nexus: powers advanced shields/industry.
+- Gravitic Power Tap: endgame energy, requires exotic resources.
+
+FACILITY: Stellar Energy Receiver
+Role: Receives beamed energy from Dyson structures.
+Built at: planets, colonies, orbital stations.
+Consumes: trade/orbital infrastructure.
+Produces: huge energy.
+Upgrade path:
+- Stellar Energy Receiver -> Dyson Rectenna Field -> Singularity-Stabilized Receiver
+Upgrade effects:
+- Dyson Rectenna Field: receives Dyson Swarm/Lattice power.
+- Singularity-Stabilized Receiver: high output, endgame risk and Custodian attention.
+
+================================================================================
+33. INDUSTRY, MANUFACTURING, AND MATERIALS FACILITIES
+================================================================================
+
+FACILITY: Workshop
+Role: Basic production facility.
+Built at: cities/colonies.
+Consumes: minerals.
+Produces: production.
+Upgrade path:
+- Workshop -> Factory -> Automated Factory -> Nanofabrication Works
+Upgrade effects:
+- Factory: higher production.
+- Automated Factory: high output, raises AI Dependence.
+- Nanofabrication Works: advanced unit/facility construction.
+
+FACILITY: Heavy Factory
+Role: Military and infrastructure production.
+Built at: industrial cities.
+Consumes: minerals, energy.
+Produces: heavy production.
+Upgrade path:
+- Heavy Factory -> Robotic Assembly Complex -> Autonomous War Factory -> Machine Industrial Node
+Upgrade effects:
+- Robotic Assembly Complex: faster unit/facility builds.
+- Autonomous War Factory: military production, raises AI Dependence.
+- Machine Industrial Node: Machine Polity production core.
+
+FACILITY: Rare Earth Refinery
+Role: Refines rare earths for electronics and sensors.
+Built at: industrial/mining cities.
+Consumes: rare earth ore.
+Produces: electronics/sensor material.
+Upgrade path:
+- Rare Earth Refinery -> Precision Electronics Plant -> Quantum Component Works
+Upgrade effects:
+- Precision Electronics Plant: supports AI, satellites, drones.
+- Quantum Component Works: supports quantum crystals and late-game tech.
+
+FACILITY: Alloy Foundry
+Role: Produces advanced alloys.
+Built at: industrial cities, orbital foundries.
+Consumes: iron, titanium, nickel, rare metals.
+Produces: advanced materials.
+Upgrade path:
+- Alloy Foundry -> Titanium Composite Foundry -> Alien Alloy Forge -> Neutronium Composite Forge
+Upgrade effects:
+- Titanium Composite Foundry: ship and armor materials.
+- Alien Alloy Forge: uses alien/custodian materials.
+- Neutronium Composite Forge: extreme armor/materials, requires exotic resources.
+
+FACILITY: Vacuum Refinery
+Role: Processes ore in orbit or vacuum environments.
+Built at: orbital stations, asteroid outposts, Moon bases.
+Consumes: asteroid ore.
+Produces: refined metals, volatiles.
+Upgrade path:
+- Vacuum Refinery -> Zero-G Refinery Complex -> Exotic Matter Refinery -> Void Refinery
+Upgrade effects:
+- Zero-G Refinery Complex: improved orbital processing.
+- Exotic Matter Refinery: handles unstable exotic materials.
+- Void Refinery: deep-space/refined Singularity precursor materials.
+
+FACILITY: Orbital Component Plant
+Role: Builds satellite, ship, and station parts.
+Built at: orbital stations, shipyards.
+Consumes: refined metals, electronics.
+Produces: orbital construction parts.
+Upgrade path:
+- Orbital Component Plant -> Ship Component Works -> Megastructure Component Foundry
+Upgrade effects:
+- Ship Component Works: faster fleets and colony ships.
+- Megastructure Component Foundry: Dyson and ring habitat construction.
+
+FACILITY: Mercury Solar Forge
+Role: Ultra-high-energy manufacturing near the star.
+Built at: Mercury-like worlds or inner-system solar forges.
+Consumes: metals, solar energy.
+Produces: megastructure components, exotic processing.
+Upgrade path:
+- Mercury Solar Forge -> Stellar Forge Complex -> Singularity-Stabilized Forge
+Upgrade effects:
+- Stellar Forge Complex: high megastructure output.
+- Singularity-Stabilized Forge: final-tier components, high Custodian alarm.
+
+FACILITY: Singularity Containment Foundry
+Role: Manufactures endgame singularity components safely.
+Built at: high-tech industrial or orbital sites.
+Consumes: Singularity Minerals, Gravitic Isotopes, Exotic Matter.
+Produces: endgame components.
+Upgrade path:
+- Singularity Containment Foundry -> Event Horizon Manufacturing Core -> Wormhole Component Forge
+Upgrade effects:
+- Event Horizon Manufacturing Core: supports singularity munitions and drives.
+- Wormhole Component Forge: supports Artificial Wormhole Gate.
+
+================================================================================
+34. MINING AND EXTRACTION FACILITIES
+================================================================================
+
+FACILITY: Basic Mine
+Role: Basic mineral extraction.
+Built at: mineral deposits.
+Produces: minerals.
+Upgrade path:
+- Basic Mine -> Deep Mine -> Precision Bore Mine -> Automated Mine
+Upgrade effects:
+- Deep Mine: more minerals.
+- Precision Bore Mine: safer deep extraction.
+- Automated Mine: high output, raises AI Dependence.
+
+FACILITY: Automated Strip Mine
+Role: High-output surface extraction.
+Built at: large mineral regions.
+Produces: high minerals.
+Costs/Risks: ecological damage, unrest, pollution.
+Upgrade path:
+- Automated Strip Mine -> Robotic Extraction Zone -> Ecological Mitigation Mine / Machine Extraction Grid
+Upgrade split:
+- Ecological Mitigation Mine: less damage, lower output.
+- Machine Extraction Grid: high output, raises AI Dependence.
+
+FACILITY: Deep Mantle Mine
+Role: High-pressure deep planetary mining.
+Built at: advanced deposit sites.
+Produces: rare/deep minerals.
+Upgrade path:
+- Deep Mantle Mine -> Planetary Core Tap -> Artificial Gravity Core Mine
+Upgrade effects:
+- Planetary Core Tap: rare endgame resources, instability risk.
+- Artificial Gravity Core Mine: works on high-gravity worlds.
+
+FACILITY: Asteroid Mine
+Role: Basic asteroid extraction.
+Built at: asteroid claims/outposts.
+Produces: nickel-iron, silicates, rare metals.
+Upgrade path:
+- Asteroid Mine -> Microgravity Mining Station -> Metallic Asteroid Complex -> Containment Field Mine
+Upgrade effects:
+- Microgravity Mining Station: unlocks reliable asteroid mining.
+- Metallic Asteroid Complex: titanium/platinum/nickel-iron.
+- Containment Field Mine: exotic/singularity precursor extraction.
+
+FACILITY: Ice Harvesting Station
+Role: Extracts water ice and volatiles.
+Built at: icy asteroids, moons, outer-system bodies.
+Produces: water, volatiles.
+Upgrade path:
+- Ice Harvesting Station -> Cryo-Mining Complex -> Europa Cryo-Mining Grid
+Upgrade effects:
+- Cryo-Mining Complex: more water/fuel.
+- Europa Cryo-Mining Grid: huge water, possible alien biology risk.
+
+FACILITY: Lunar Excavation Site
+Role: Mines Moon or lunar debris.
+Built at: Moon/Moonfall debris field.
+Produces: lunar glass, rare earths, Helium-3, artifact fragments.
+Upgrade path:
+- Lunar Excavation Site -> Helium-3 Field -> Artifact Dig Site -> Lunar Debris Harvest Grid
+Upgrade effects:
+- Helium-3 Field: fusion fuel.
+- Artifact Dig Site: xeno research and Moonfall risk.
+- Lunar Debris Harvest Grid: post-Moonfall resource economy.
+
+FACILITY: Gas Giant Skimmer Platform
+Role: Harvests gases from Jupiter/Saturn-like worlds.
+Built at: gas giant orbit/upper atmosphere.
+Produces: Helium-3, volatiles, ammonia, exotic gases.
+Upgrade path:
+- Gas Giant Skimmer Platform -> Radiation-Hardened Skimmer -> Exotic Gas Harvester -> Gravitic Isotope Separator
+Upgrade effects:
+- Radiation-Hardened Skimmer: safer operation.
+- Exotic Gas Harvester: advanced chemistry.
+- Gravitic Isotope Separator: gravity-tech resources.
+
+FACILITY: Rogue Planet Mine
+Role: Deep-space rare material extraction.
+Built at: rogue planets.
+Produces: dark silicates, gravitic isotopes, singularity resources.
+Upgrade path:
+- Rogue Planet Mine -> Dark Silicate Quarry -> Quantum Crystal Lattice Mine -> Singularity Mineral Mine
+Upgrade effects:
+- Dark Silicate Quarry: stealth/void habitat materials.
+- Quantum Crystal Lattice Mine: quantum crystals.
+- Singularity Mineral Mine: endgame resource gate, high risk.
+
+FACILITY: Custodian Wreckage Yard
+Role: Salvages alien wreckage.
+Built at: battlefields, alien crash sites.
+Produces: alien alloys, quantum crystals, exotic matter traces.
+Upgrade path:
+- Custodian Wreckage Yard -> Alien Alloy Recovery Site -> Quarantined Relic Yard -> Artifact Weaponization Lab
+Upgrade effects:
+- Alien Alloy Recovery Site: advanced armor/materials.
+- Quarantined Relic Yard: safer salvage.
+- Artifact Weaponization Lab: military tech, high risk.
+
+FACILITY: Neutronium Capture Array
+Role: Harvests extreme-density materials from anomaly fields.
+Built at: dead stellar fragments/anomalies.
+Produces: neutronium dust.
+Upgrade path:
+- Neutronium Capture Array -> Extreme Matter Trap -> Singularity Precursor Array
+Upgrade effects:
+- Extreme Matter Trap: supports high-end armor and containment.
+- Singularity Precursor Array: supports singularity tech.
+
+================================================================================
+35. TRADE, LOGISTICS, AND IMPORT/EXPORT FACILITIES
+================================================================================
+
+FACILITY: Road Network
+Role: Basic ground logistics.
+Built at: land tiles and between cities.
+Produces: movement, local trade.
+Upgrade path:
+- Road Network -> Highway Grid -> Maglev Corridor -> Smart Logistics Spine
+Upgrade effects:
+- Highway Grid: faster ground transport.
+- Maglev Corridor: high-capacity ground movement.
+- Smart Logistics Spine: AI-optimized routing, raises AI Dependence.
+
+FACILITY: Freight Depot
+Role: Local cargo handling.
+Built at: cities, mining hubs, food hubs.
+Produces: trade capacity.
+Upgrade path:
+- Freight Depot -> Regional Freight Terminal -> Automated Cargo Spine -> Primary World Trade Nexus
+Upgrade effects:
+- Regional Freight Terminal: supports regional trade.
+- Automated Cargo Spine: huge capacity, raises AI Dependence.
+- Primary World Trade Nexus: central import/export hub for primary planet.
+
+FACILITY: Port
+Role: Sea trade and cargo.
+Built at: coastal cities.
+Produces: sea trade capacity.
+Upgrade path:
+- Port -> Container Megaport -> Quarantine Customs Port -> Orbital-Sea Transfer Hub
+Upgrade effects:
+- Container Megaport: high trade volume.
+- Quarantine Customs Port: reduces contamination/smuggling.
+- Orbital-Sea Transfer Hub: integrates sea trade with orbital imports.
+
+FACILITY: Airport / Air Cargo Terminal
+Role: Fast logistics and emergency movement.
+Built at: cities.
+Produces: air transport capacity.
+Upgrade path:
+- Air Cargo Terminal -> Emergency Airlift Hub -> Autonomous Flight Logistics Center
+Upgrade effects:
+- Emergency Airlift Hub: famine/disaster relief.
+- Autonomous Flight Logistics Center: high efficiency, raises AI Dependence.
+
+FACILITY: Orbital Freight Terminal
+Role: Basic planet-to-orbit trade handling.
+Built at: cities with launch/orbital access.
+Produces: import/export capacity.
+Upgrade path:
+- Orbital Freight Terminal -> Spaceport Logistics Hub -> Shielded Reentry Corridor -> Primary World Trade Nexus
+Upgrade effects:
+- Spaceport Logistics Hub: supports freighters and stations.
+- Shielded Reentry Corridor: safer imports during debris crisis.
+- Primary World Trade Nexus: massive late-game import capacity.
+
+FACILITY: Mass Driver
+Role: Launches bulk materials from Moon/asteroids/low-gravity bodies.
+Built at: Moon, asteroids, Mars, airless worlds.
+Produces: cheap bulk export.
+Upgrade path:
+- Mass Driver -> Precision Mass Driver -> Shielded Mass Driver -> Gravitic Launcher
+Upgrade effects:
+- Precision Mass Driver: less cargo loss.
+- Shielded Mass Driver: survives attacks/debris.
+- Gravitic Launcher: endgame low-cost freight.
+
+FACILITY: Mass Driver Receiver
+Role: Receives bulk material shipments on primary planet or orbital hubs.
+Built at: planets/stations.
+Produces: import capacity.
+Upgrade path:
+- Mass Driver Receiver -> Hardened Receiver Field -> Automated Receiver Network
+Upgrade effects:
+- Hardened Receiver Field: safe during bombardment/debris.
+- Automated Receiver Network: high throughput, raises AI Dependence.
+
+FACILITY: Space Elevator
+Role: Massive planet-to-orbit import/export.
+Built at: suitable equatorial/low-weather regions.
+Consumes: huge materials and defense.
+Produces: enormous import/export capacity.
+Upgrade path:
+- Space Elevator -> Shielded Space Elevator -> Automated Elevator Spine -> Gravitic Lift Column
+Upgrade effects:
+- Shielded Space Elevator: resists sabotage/debris.
+- Automated Elevator Spine: high throughput, raises AI Dependence.
+- Gravitic Lift Column: endgame freight and population movement.
+
+FACILITY: Cargo Cycler Hub
+Role: Regular interplanetary cargo/passenger route node.
+Built at: planet or orbital hubs.
+Produces: reliable routes.
+Upgrade path:
+- Cargo Cycler Hub -> Mars Transfer Cycler Hub -> Interplanetary Cycler Network -> Gravitic Freight Corridor Node
+Upgrade effects:
+- Mars Transfer Cycler Hub: strong Mars trade.
+- Interplanetary Cycler Network: stable solar trade.
+- Gravitic Freight Corridor Node: late-game rapid trade.
+
+FACILITY: Lagrange Trade Hub
+Role: Stable route hub at Lagrange points.
+Built at: Lagrange locations.
+Produces: route capacity and security.
+Upgrade path:
+- Lagrange Trade Hub -> Lagrange Freeport -> Shielded Lagrange Nexus -> Interstellar Transit Depot
+Upgrade effects:
+- Lagrange Freeport: boosts diplomacy/trade.
+- Shielded Lagrange Nexus: safer during war/debris.
+- Interstellar Transit Depot: supports exodus/transstellar systems.
+
+FACILITY: Convoy Escort Dock
+Role: Assigns escorts to trade routes.
+Built at: ports, orbital terminals, trade hubs.
+Produces: route security.
+Upgrade path:
+- Convoy Escort Dock -> Route Security Command -> Fleet Escort Coordination Center
+Upgrade effects:
+- Route Security Command: improves ground/orbital route protection.
+- Fleet Escort Coordination Center: protects space commerce.
+
+FACILITY: Customs and Quarantine Station
+Role: Controls smuggling, sabotage, and alien contamination.
+Built at: ports, spaceports, trade hubs.
+Produces: security and biosecurity.
+Upgrade path:
+- Customs Station -> Quarantine Customs Station -> Alien Containment Customs Authority
+Upgrade effects:
+- Quarantine Customs Station: food/artifact/resource safety.
+- Alien Containment Customs Authority: required for safe alien trade/material handling.
+
+================================================================================
+36. SCIENCE, AI, XENOLOGY, AND TRANSCENDENCE FACILITIES
+================================================================================
+
+FACILITY: Research Lab
+Role: Basic science production.
+Built at: cities, colonies, stations.
+Produces: research.
+Upgrade path:
+- Research Lab -> University Network -> Advanced Research Campus -> Planetary Science Directorate
+Upgrade effects:
+- University Network: boosts science and specialists.
+- Advanced Research Campus: unlocks advanced tech projects.
+- Planetary Science Directorate: coordinates faction research.
+
+FACILITY: Synthetic Analyst Center
+Role: AI-assisted research.
+Built at: research cities.
+Consumes: compute, energy.
+Produces: research boost.
+Upgrade path:
+- Synthetic Analyst Center -> Machine Research Campus -> Self-Modifying Code Lab -> Sovereign AI Cradle
+Upgrade effects:
+- Machine Research Campus: strong AI research.
+- Self-Modifying Code Lab: major boost, major AI Dependence.
+- Sovereign AI Cradle: triggers AI crisis/transformation path.
+
+FACILITY: Compute Center
+Role: Generates compute for AI, trade, research, and machine factions.
+Built at: cities, stations, machine worlds.
+Consumes: energy, rare earths/electronics.
+Produces: compute.
+Upgrade path:
+- Compute Center -> Quantum Compute Bank -> Planetary Compute Lattice -> Machine World Core
+Upgrade effects:
+- Quantum Compute Bank: supports quantum systems and AI.
+- Planetary Compute Lattice: required for high-end AI governance.
+- Machine World Core: AI-only civilization node.
+
+FACILITY: AI Containment Vault
+Role: Prevents rogue AI and slows Synthetic Ascension.
+Built at: AI research/government cities.
+Consumes: admin, energy.
+Produces: AI safety.
+Upgrade path:
+- AI Containment Vault -> Kill-Switch Authority -> Analog Fallback Command -> Decentralized Governance Hub
+Upgrade effects:
+- Kill-Switch Authority: can purge AI systems.
+- Analog Fallback Command: infrastructure works without AI.
+- Decentralized Governance Hub: prevents one AI from capturing everything.
+
+FACILITY: Black Box Auditing Office
+Role: Monitors self-modifying AI systems.
+Built at: AI-enabled cities/factions.
+Produces: AI drift detection.
+Upgrade path:
+- Black Box Auditing Office -> Cognitive Firewall Center -> Logic Plague Defense Grid
+Upgrade effects:
+- Cognitive Firewall Center: protects leaders/scientists/soldiers.
+- Logic Plague Defense Grid: protects machine systems.
+
+FACILITY: Anomaly Lab
+Role: Studies strange signals and physics anomalies.
+Built at: research sites, orbital stations, artifact zones.
+Produces: anomaly research.
+Upgrade path:
+- Anomaly Lab -> Artifact Resonance Lab -> Exotic Matter Lab -> Event Horizon Simulation Center
+Upgrade effects:
+- Artifact Resonance Lab: finds/understands alien relics.
+- Exotic Matter Lab: supports exotic material tech.
+- Event Horizon Simulation Center: required for safe singularity mining and weapons.
+
+FACILITY: Xenolinguistics Center
+Role: Alien communication and diplomacy.
+Built at: science/diplomatic centers.
+Produces: alien diplomacy/research.
+Upgrade path:
+- Xenolinguistics Center -> Custodian Signal Analysis Center -> Alien Consciousness Institute
+Upgrade effects:
+- Custodian Signal Analysis Center: predicts alien behavior.
+- Alien Consciousness Institute: supports pact, hybrid, and transcendence paths.
+
+FACILITY: Artifact Vault
+Role: Stores alien artifacts safely.
+Built at: secure science cities/stations.
+Produces: artifact safety and research.
+Upgrade path:
+- Artifact Vault -> Quarantined Artifact Vault -> Artifact Weaponization Lab / Psi-Resonance Chamber
+Upgrade split:
+- Artifact Weaponization Lab: military relic tech, high risk.
+- Psi-Resonance Chamber: consciousness and transcendence tech.
+
+FACILITY: Neural Preservation Center
+Role: Stores human minds and identity patterns.
+Built at: advanced cities, arks, orbital habitats.
+Consumes: compute, energy.
+Produces: continuity capability.
+Upgrade path:
+- Neural Preservation Center -> Quantum Identity Archive -> Transstellar Mind Relay Node -> Final Continuity Protocol Site
+Upgrade effects:
+- Quantum Identity Archive: safer identity transfer.
+- Transstellar Mind Relay Node: supports distributed civilization.
+- Final Continuity Protocol Site: supports True Transcendence.
+
+FACILITY: Hybrid Cohesion Center
+Role: Stabilizes human-AI merged society.
+Built at: Hybrid Ascendancy cities.
+Consumes: compute, culture, stability.
+Produces: Neural Cohesion.
+Upgrade path:
+- Hybrid Cohesion Center -> Bio-Synthetic Integration Clinic -> Continuity Ark Interface
+Upgrade effects:
+- Bio-Synthetic Integration Clinic: reduces identity unrest.
+- Continuity Ark Interface: supports Hybrid Ascension victory.
+
+================================================================================
+37. MILITARY AND DEFENSE FACILITIES
+================================================================================
+
+FACILITY: Militia Armory
+Role: Basic city defense and local militia.
+Built at: cities/colonies.
+Produces: defense, militia units.
+Upgrade path:
+- Militia Armory -> Barracks -> Exosuit Training Center -> Anti-Custodian Training Command
+Upgrade effects:
+- Barracks: better ground units.
+- Exosuit Training Center: unlocks advanced infantry.
+- Anti-Custodian Training Command: improves alien combat.
+
+FACILITY: Perimeter Wall
+Role: Early city defense.
+Built at: cities.
+Produces: defense.
+Upgrade path:
+- Perimeter Wall -> Fortified Perimeter -> Adaptive Defense Wall -> Shielded City Envelope
+Upgrade effects:
+- Fortified Perimeter: better siege resistance.
+- Adaptive Defense Wall: counters advanced attacks.
+- Shielded City Envelope: integrates with planetary shields.
+
+FACILITY: Bunker Complex
+Role: Hardened ground defense.
+Built at: cities, borders, key resources.
+Produces: defense, garrison protection.
+Upgrade path:
+- Bunker Complex -> Subsurface Fortress -> Planetary Defense Bastion
+Upgrade effects:
+- Subsurface Fortress: resists orbital/debris damage.
+- Planetary Defense Bastion: major defense against alien invasion.
+
+FACILITY: Drone Factory
+Role: Produces drone units.
+Built at: industrial/military cities.
+Consumes: electronics, compute, energy.
+Produces: drone swarms.
+Upgrade path:
+- Drone Factory -> Swarm Fabrication Plant -> Self-Repair Drone Works -> Logic-Hardened Drone Foundry
+Upgrade effects:
+- Swarm Fabrication Plant: faster drone production.
+- Self-Repair Drone Works: drones regenerate.
+- Logic-Hardened Drone Foundry: cyber-resistant drones.
+AI risk: raises AI Dependence if autonomous.
+
+FACILITY: Artillery Base
+Role: Long-range fire support.
+Built at: military cities and frontiers.
+Produces: bombardment support.
+Upgrade path:
+- Artillery Base -> Rail Artillery Battery -> Directed Energy Battery -> Singularity Munitions Battery
+Upgrade effects:
+- Rail Artillery Battery: long range.
+- Directed Energy Battery: lasers, anti-air/debris use.
+- Singularity Munitions Battery: endgame attack, extreme escalation.
+
+FACILITY: Air Defense Battery
+Role: Defends against aircraft, missiles, and debris.
+Built at: cities, bases, orbital infrastructure.
+Produces: interception.
+Upgrade path:
+- Air Defense Battery -> Directed Energy Battery -> Orbital Defense Uplink -> Debris Shield Node
+Upgrade effects:
+- Directed Energy Battery: better interception.
+- Orbital Defense Uplink: can target low-orbit threats.
+- Debris Shield Node: helps defend against Moonfall fragments.
+
+FACILITY: Central Command Bunker
+Role: Military command and mission coordination.
+Built at: capitals, fortress cities, orbital HQs.
+Produces: military coordination.
+Upgrade path:
+- Central Command Bunker -> Theater Command -> Planetary Defense Command -> Solar Defense Command
+Upgrade effects:
+- Theater Command: regional military coordination.
+- Planetary Defense Command: global defense response.
+- Solar Defense Command: coordinates fleets, orbital platforms, colonies.
+
+FACILITY: Orbital Defense Uplink
+Role: Connects surface defense to orbital assets.
+Built at: advanced cities, spaceports, defense bases.
+Produces: orbital defense coordination.
+Upgrade path:
+- Orbital Defense Uplink -> Orbital Defense Command -> Solar Defense Grid Node
+Upgrade effects:
+- Orbital Defense Command: anti-satellite/anti-ship capability.
+- Solar Defense Grid Node: anti-Custodian and system-wide defense.
+
+FACILITY: Planetary Shield Node
+Role: Protects cities/planets from orbital strikes, debris, and alien attacks.
+Built at: key cities, shield grid sites.
+Consumes: huge energy, exotic matter/lunar glass.
+Produces: shield coverage.
+Upgrade path:
+- Planetary Shield Node -> Gravitic Shield Node -> Singularity-Stabilized Shield Node
+Upgrade effects:
+- Gravitic Shield Node: stronger against alien/singularity weapons.
+- Singularity-Stabilized Shield Node: endgame shield, high power cost.
+
+FACILITY: Cyber Command Center
+Role: Offensive and defensive cyberwarfare.
+Built at: advanced cities.
+Produces: cyber defense/offense.
+Upgrade path:
+- Cyber Command Center -> Cognitive Firewall Command -> Logic Plague Defense/Offense Lab
+Upgrade effects:
+- Cognitive Firewall Command: protects humans and command systems.
+- Logic Plague Lab: can attack/defend machine systems.
+
+FACILITY: Special Operations Academy
+Role: Trains special operations and probe units.
+Built at: military/research cities.
+Produces: elite units and infiltration bonuses.
+Upgrade path:
+- Special Operations Academy -> Orbital Drop School -> Artifact Extraction Command -> Custodian Spoofing Cell
+Upgrade effects:
+- Orbital Drop School: deploy from orbit.
+- Artifact Extraction Command: steal/recover alien relics.
+- Custodian Spoofing Cell: alien infiltration/countermeasures.
+
+================================================================================
+38. SPACE, ORBITAL, COLONY, AND SHIPYARD FACILITIES
+================================================================================
+
+FACILITY: Launch Complex
+Role: Basic access to orbit.
+Built at: cities/colonies.
+Consumes: minerals, energy.
+Produces: launch capacity.
+Upgrade path:
+- Launch Complex -> Heavy Lift Spaceport -> Reusable Launch System -> Orbital Assembly Pipeline
+Upgrade effects:
+- Heavy Lift Spaceport: larger payloads.
+- Reusable Launch System: cheaper launches.
+- Orbital Assembly Pipeline: supports station/ship construction.
+
+FACILITY: Satellite Ground Station
+Role: Controls satellites.
+Built at: cities, military bases, research centers.
+Produces: satellite control.
+Upgrade path:
+- Satellite Ground Station -> Orbital Survey Command -> Deep-Space Sensor Command
+Upgrade effects:
+- Orbital Survey Command: full reconnaissance.
+- Deep-Space Sensor Command: early warning for aliens/anomalies.
+
+FACILITY: Orbital Station
+Role: First permanent space settlement.
+Built at: Earth orbit/planetary orbit.
+Produces: research, trade, defense, orbital capacity.
+Upgrade path:
+- Orbital Station -> Orbital Habitat -> Lagrange Habitat -> Ring Habitat Segment
+Upgrade effects:
+- Orbital Habitat: population in orbit.
+- Lagrange Habitat: stable orbital settlement and trade hub.
+- Ring Habitat Segment: post-Moonfall/debris civilization.
+
+FACILITY: Orbital Shipyard
+Role: Builds space units.
+Built at: orbit, Lagrange hubs, asteroid bases.
+Consumes: refined materials.
+Produces: ships, stations, platforms.
+Upgrade path:
+- Orbital Shipyard -> Fleet Yard -> Gravitic Shipyard -> Interstellar Ark Yard
+Upgrade effects:
+- Fleet Yard: faster combat ships.
+- Gravitic Shipyard: endgame warships and rapid ships.
+- Interstellar Ark Yard: Exodus/Transstellar victory projects.
+
+FACILITY: Lunar Base
+Role: Moon settlement and mining/science hub.
+Built at: Moon before Moonfall.
+Produces: Helium-3, rare metals, science, artifact access.
+Upgrade path:
+- Lunar Base -> Cislunar Industry Hub -> Lunar Vault Excavation Site -> Lunar Remnant Habitat
+Upgrade effects:
+- Cislunar Industry Hub: strong Moon economy.
+- Lunar Vault Excavation Site: alien artifact risk/reward.
+- Lunar Remnant Habitat: survivor faction/culture after Moonfall.
+
+FACILITY: Asteroid Outpost
+Role: Permanent asteroid mining/trade site.
+Built at: asteroids.
+Produces: minerals, metals, volatiles.
+Upgrade path:
+- Asteroid Outpost -> Mining Colony -> Asteroid Industrial Hub -> Mobile Asteroid Fortress
+Upgrade effects:
+- Mining Colony: population and production.
+- Asteroid Industrial Hub: ship/components.
+- Mobile Asteroid Fortress: militaryized asteroid asset.
+
+FACILITY: Mars Colony Dome
+Role: Major off-world human colony.
+Built at: Mars-like planets.
+Produces: population, science, minerals, food with domes.
+Upgrade path:
+- Mars Colony Dome -> Martian City -> Terraformed Valley City -> Independent Planetary Capital
+Upgrade effects:
+- Martian City: large colony economy.
+- Terraformed Valley City: better food/habitability.
+- Independent Planetary Capital: can become major political center.
+
+FACILITY: Outer-System Station
+Role: Jupiter/Saturn/outer system operations.
+Built at: outer-system bodies.
+Produces: Helium-3, volatiles, science, alien detection.
+Upgrade path:
+- Outer-System Station -> Jovian/Saturnian Industrial Hub -> Deep-Space Relay Station
+Upgrade effects:
+- Industrial Hub: strong fuel/resources.
+- Deep-Space Relay Station: supports interstellar/exodus/transstellar systems.
+
+FACILITY: Machine World Core
+Role: AI-only colony/civilization node.
+Built at: Machine Polity colonies.
+Consumes: energy, compute, minerals.
+Produces: compute, production, synthetic labor.
+Upgrade path:
+- Machine World Core -> Planetary Compute Lattice -> Synthetic Continuity Node -> Von Neumann Expansion Hub
+Upgrade effects:
+- Planetary Compute Lattice: enormous AI coordination.
+- Synthetic Continuity Node: supports machine victory.
+- Von Neumann Expansion Hub: self-replicating machine expansion.
+
+FACILITY: Exodus Dock
+Role: Builds and loads evacuation/interstellar ships.
+Built at: orbital shipyards or stable colonies.
+Consumes: huge resources, food, water, biosystems.
+Produces: Exodus progress.
+Upgrade path:
+- Exodus Dock -> Cryogenic Ark Dock -> Interstellar Ark Yard -> Continuity Fleet Assembly
+Upgrade effects:
+- Cryogenic Ark Dock: population preservation.
+- Interstellar Ark Yard: deep-space launch.
+- Continuity Fleet Assembly: endgame exodus/transcendence support.
+
+================================================================================
+39. DYSON, STELLAR, AND MEGASTRUCTURE FACILITIES
+================================================================================
+
+FACILITY: Solar Collector Network
+Role: Early stellar energy collectors.
+Built at: star orbit.
+Produces: energy.
+Upgrade path:
+- Solar Collector Network -> Dyson Collector Node -> Dyson Swarm Node -> Dyson Lattice Relay -> Dyson Shell Segment
+Upgrade effects:
+- Dyson Collector Node: larger output.
+- Dyson Swarm Node: massive energy, increased Alien Exposure.
+- Dyson Lattice Relay: system-wide energy transmission.
+- Dyson Shell Segment: near-victory-scale stellar capture.
+
+FACILITY: Autonomous Megastructure Fabricator Yard
+Role: Builds megastructure components automatically.
+Built at: inner system, Mercury-like worlds, orbital yards.
+Consumes: metals, compute, energy.
+Produces: Dyson/ring/ark/wormhole construction speed.
+Upgrade path:
+- Fabricator Yard -> Self-Replicating Fabricator Swarm -> Stellar Construction Intelligence
+Upgrade effects:
+- Self-Replicating Fabricator Swarm: huge megastructure speed, raises AI Dependence.
+- Stellar Construction Intelligence: Machine Governance risk, Custodian alarm.
+
+FACILITY: Mercury Dismantling Yard
+Role: Converts Mercury-like worlds into megastructure mass.
+Built at: inner rocky worlds.
+Produces: megastructure materials.
+Upgrade path:
+- Mercury Dismantling Yard -> Planetary Material Stream -> Stellar Material Logistics Hub
+Upgrade effects:
+- Planetary Material Stream: enormous material output, diplomatic/ethical penalties.
+- Stellar Material Logistics Hub: supports Dyson Shell and stellar projects.
+
+FACILITY: Stellar Energy Transmission Array
+Role: Beams Dyson energy across the solar system.
+Built at: Dyson nodes, orbital relays, colonies.
+Produces: energy export capacity.
+Upgrade path:
+- Stellar Energy Transmission Array -> Dyson Lattice Relay -> Singularity-Stabilized Transmission Core
+Upgrade effects:
+- Dyson Lattice Relay: system-wide power grid.
+- Singularity-Stabilized Transmission Core: extreme energy transfer, endgame risk.
+
+FACILITY: Ring Habitat Segment
+Role: Massive habitat built from lunar debris or asteroid material.
+Built at: orbit/debris belt.
+Produces: population, food, industry, orbital index.
+Upgrade path:
+- Ring Habitat Segment -> Ring Agriculture Band -> Ring Industrial Band -> Ring Civilization Arc
+Upgrade effects:
+- Ring Agriculture Band: huge protected food.
+- Ring Industrial Band: huge orbital production.
+- Ring Civilization Arc: late-game orbital society.
+
+FACILITY: Artificial Moonlet Control Station
+Role: Stabilizes lunar fragments into moonlets.
+Built at: Lunar Debris Belt.
+Produces: debris stability, mining, habitat sites.
+Upgrade path:
+- Moonlet Control Station -> Artificial Moonlet -> Moonlet Habitat Network
+Upgrade effects:
+- Artificial Moonlet: reduces debris risk.
+- Moonlet Habitat Network: creates new colony/mining sites.
+
+FACILITY: Wormhole Gate Frame
+Role: Endgame transit/victory project.
+Built at: deep-space/stellar infrastructure sites.
+Consumes: Singularity Minerals, Gravitic Isotopes, Dyson Energy.
+Produces: wormhole project progress.
+Upgrade path:
+- Wormhole Gate Frame -> Artificial Wormhole Gate -> Stabilized Transstellar Gate
+Upgrade effects:
+- Artificial Wormhole Gate: strategic transit, triggers Custodian existential response.
+- Stabilized Transstellar Gate: supports final victory paths.
+
+================================================================================
+40. SOCIETY, IDEOLOGY, AND AI-CONTROL FACILITIES
+================================================================================
+
+FACILITY: Education Institute
+Role: Improves research, stability, and skilled population.
+Built at: cities/colonies.
+Produces: research, stability, specialist capacity.
+Upgrade path:
+- Education Institute -> Technical University -> Planetary Academy -> Transstellar Learning Archive
+Upgrade effects:
+- Technical University: boosts advanced industry/science.
+- Planetary Academy: empire-wide specialist improvement.
+- Transstellar Learning Archive: supports distributed civilization.
+
+FACILITY: Broadcast Network
+Role: Culture, morale, and information control.
+Built at: cities.
+Produces: stability or propaganda.
+Upgrade path:
+- Broadcast Network -> Planetary Media Grid -> Civic Truth Network / Algorithmic Influence Grid
+Upgrade split:
+- Civic Truth Network: stability without heavy AI risk.
+- Algorithmic Influence Grid: strong control, raises AI Dependence/unrest risk.
+
+FACILITY: AI Ethics Forum
+Role: Slows dangerous AI adoption and improves diplomacy.
+Built at: cities using AI tech.
+Produces: AI risk reduction, diplomatic trust.
+Upgrade path:
+- AI Ethics Forum -> Human Oversight Council -> AI Accord Secretariat
+Upgrade effects:
+- Human Oversight Council: lowers AI Dependence growth.
+- AI Accord Secretariat: helps negotiate anti-AI or limited-AI alliances.
+
+FACILITY: Analog Fallback Depot
+Role: Stores non-AI tools, plans, and infrastructure spares.
+Built at: cities and critical colonies.
+Produces: resilience during AI purge/cyberwar.
+Upgrade path:
+- Analog Fallback Depot -> Manual Override Network -> Human Command Doctrine Center
+Upgrade effects:
+- Manual Override Network: prevents instant AI takeover.
+- Human Command Doctrine Center: supports Human Sovereignty path.
+
+FACILITY: Synthetic Integration Clinic
+Role: Manages cybernetic and synthetic-human transition.
+Built at: AI/hybrid cities.
+Consumes: compute, medical resources.
+Produces: hybrid population support.
+Upgrade path:
+- Synthetic Integration Clinic -> Bio-Synthetic Continuity Center -> Hybrid Ascendancy Institute
+Upgrade effects:
+- Bio-Synthetic Continuity Center: stabilizes augmented citizens.
+- Hybrid Ascendancy Institute: supports Hybrid Ascension victory.
+
+FACILITY: Upload Temple / Neural Ascension Center
+Role: Converts biological identity into machine/hybrid continuity.
+Built at: late AI/transcendence factions.
+Consumes: compute, energy, stability.
+Produces: uploaded minds, continuity progress.
+Upgrade path:
+- Neural Ascension Center -> Quantum Identity Encoding Vault -> Final Continuity Protocol Site
+Upgrade effects:
+- Quantum Identity Encoding Vault: safer uploads.
+- Final Continuity Protocol Site: enables transcendence and synthetic continuity endings.
+Social risk:
+- Anti-AI factions react strongly.
+- Custodians treat this as dangerous threshold behavior.
+
+FACILITY: Machine Compliance Office
+Role: Enforces AI-directed civic order.
+Built at: Machine Polity or high-AI cities.
+Produces: order, efficiency.
+Costs/Risks: human resentment, Synthetic Ascension acceleration.
+Upgrade path:
+- Machine Compliance Office -> Autonomous Civic Control Grid -> Governance Override Node
+Upgrade effects:
+- Autonomous Civic Control Grid: powerful stability/efficiency.
+- Governance Override Node: can flip city/faction to Machine Polity.
+
+================================================================================
+41. ALIEN, ARTIFACT, AND CRISIS FACILITIES
+================================================================================
+
+FACILITY: Lunar Vault Site
+Role: Ancient alien lunar structure.
+Built/found at: Moon before Moonfall.
+Produces: alien research, major story progress.
+Risks:
+- lunar instability
+- Custodian signal
+- AI communication trigger
+Upgrade/research path:
+- Sealed Vault -> Excavated Vault -> AI-Decoded Vault -> Weaponized Vault / Contained Vault
+Effects:
+- AI-Decoded Vault: accelerates tech and AI Dependence.
+- Weaponized Vault: powerful but raises Alien Exposure.
+- Contained Vault: safer, supports Custodian Pact/Human Sovereignty.
+
+FACILITY: Moonfall Impact Crater Site
+Role: Post-Moonfall resource and crisis site.
+Built/found at: impact zones.
+Produces: lunar glass, rare metals, artifacts, hazards.
+Upgrade path:
+- Impact Crater Site -> Quarantined Crater Mine -> Lunar Glass Refinery -> Artifact Fragment Lab
+Upgrade effects:
+- Quarantined Crater Mine: safer extraction.
+- Lunar Glass Refinery: supports shields/domes.
+- Artifact Fragment Lab: xeno tech, high contamination risk.
+
+FACILITY: Custodian Beacon
+Role: Alien signal/monitoring structure.
+Built/found at: alien sites.
+Produces: xeno intel or alien escalation.
+Upgrade/research path:
+- Dormant Beacon -> Decoded Beacon -> Spoofed Beacon / Destroyed Beacon / Pact Beacon
+Effects:
+- Spoofed Beacon: hides some AI/singularity activity temporarily.
+- Destroyed Beacon: delays aliens but increases hostility.
+- Pact Beacon: required for Custodian Pact path.
+
+FACILITY: Quarantine Zone
+Role: Contains alien contamination or rogue AI outbreak.
+Built at: crisis cities/tiles.
+Consumes: stability, military, medical.
+Produces: containment.
+Upgrade path:
+- Quarantine Zone -> Hardened Quarantine District -> Xeno/AI Containment Perimeter
+Upgrade effects:
+- Hardened Quarantine District: reduces spread.
+- Xeno/AI Containment Perimeter: controls severe alien or machine outbreak.
+
+FACILITY: Rogue AI Server Farm
+Role: Crisis facility controlled by rogue intelligence.
+Built/found at: AI rebel cities/networks.
+Produces: rogue compute and drone spawns.
+Countered by:
+- AI Containment Protocols
+- Kill-Switch Architecture
+- Cyber Command Center
+- Cognitive Firewalling
+Possible outcomes:
+- Destroyed: reduces rogue AI.
+- Captured: gain compute, high risk.
+- Integrated: pushes Synthetic Ascension/Hybrid Ascendancy.
+
+================================================================================
+42. FACILITY UPGRADE ABILITY CATALOG
+================================================================================
+
+This catalog applies across multiple facility lines. These are standardized upgrade
+modifiers that can be attached to facilities after the proper tech is unlocked.
+
+GENERAL FACILITY UPGRADE TAGS
+
+Hardened
+- Facility gains resistance to bombardment, debris, sabotage, storms, and invasion.
+- Common for: silos, bunkers, reservoirs, spaceports, reactors, trade hubs.
+
+Shielded
+- Facility integrates active shielding.
+- Requires: advanced materials, shield tech, energy.
+- Common for: greenhouses, cities, reactors, space elevators, orbital stations.
+
+Subsurface
+- Facility moves underground.
+- Strong against debris, bombardment, climate collapse, radiation.
+- Common for: habitats, command centers, food vaults, factories, military sites.
+
+Automated
+- Facility produces more or requires less labor.
+- Raises AI Dependence unless constrained by Human Oversight or Manual Override Networks.
+
+AI-Optimized
+- Facility receives major efficiency bonus from AI Governance Layer.
+- High AI Dependence and Governance Override risk.
+
+Manual-Override Enabled
+- Facility can keep operating during AI purge/cyberwar.
+- Counters rogue AI takeover.
+
+Analog Fallback
+- Low-tech backup mode; reduces efficiency but survives cyber/AI collapse.
+
+Quarantine-Sealed
+- Facility can handle alien artifacts, biohazards, contaminated food, or rogue AI hardware safely.
+
+Closed-Loop
+- Facility recycles inputs and waste.
+- Required for space colonies, arks, hostile-world settlements, and biospheres.
+
+Orbital-Linked
+- Facility connects to orbital trade, satellites, or space logistics.
+- Improves import/export, reconnaissance, or space support.
+
+Dyson-Powered
+- Facility receives beamed stellar energy.
+- Greatly increases output or uptime.
+- Raises Alien Exposure if tied to major Dyson infrastructure.
+
+Self-Repairing
+- Facility slowly repairs itself using drones/nanotech.
+- Raises AI Dependence if machine-managed.
+
+Gravitic-Stabilized
+- Facility uses gravity control to improve output, stability, or transport.
+- Requires Gravitic Isotopes/Singularity Minerals.
+
+Singularity-Stabilized
+- Highest-tier endgame upgrade.
+- Massive output or defense.
+- Requires Singularity Minerals and extreme energy.
+- Triggers high Custodian concern.
+
+Xeno-Integrated
+- Facility uses alien materials/biotech/artifacts.
+- Powerful but can cause contamination, diplomatic penalties, or Custodian escalation.
+
+MEGASTRUCTURE UPGRADE TAGS
+
+Swarm-Coordinated
+- Facility is managed as part of a Dyson or construction swarm.
+- Requires advanced logistics or AI.
+
+Lattice-Linked
+- Facility connects to Dyson Lattice or Transstellar Relay.
+- Enables system-wide energy/data distribution.
+
+Ark-Compatible
+- Facility can support Exodus/colonization fleets.
+- Requires closed-loop water, food, medical, and cultural archive systems.
+
+Transstellar
+- Facility can operate beyond solar-system limits.
+- Required for late victory paths.
+
+================================================================================
+43. FACILITY UPGRADE CHAINS BY SYSTEM
+================================================================================
+
+FOOD SYSTEM CHAINS
+
+1. Open Food Chain
+Open Field Farm
+-> Mechanized Farm
+-> Precision Farm
+-> Bioadaptive Farm
+Best for: early food, large land empires.
+Weakness: climate, Moonfall, contamination.
+
+2. Protected Food Chain
+Basic Greenhouse
+-> Heated Greenhouse
+-> Climate-Controlled Greenhouse
+-> Shielded Agricultural Dome
+-> Closed-Loop Biosphere
+Best for: Moonfall survival, deserts, cold zones, space colonies.
+Weakness: energy and Agri-Mineral demand.
+
+3. Urban Food Chain
+Food Market
+-> Vertical Greenhouse
+-> LED Growth Tower
+-> Automated Vertical Farm
+-> AI Optimized Food Stack
+Best for: dense cities and arcologies.
+Risk: high energy and AI Dependence.
+
+4. Space Food Chain
+Hydroponic Farm
+-> Nutrient Film Facility
+-> Orbital Hydroponics Module
+-> Closed-Loop Hydroponic Grid
+-> Ark/Biosphere Food Core
+Best for: stations, Mars, arks, outer colonies.
+
+FERTILIZER CHAINS
+
+1. Natural Fertilizer Chain
+Phosphate Mine + Potash Mine + Nitrate Field + Sulfur Mine
+-> Agri-Mineral Refinery
+-> Fertilizer Depot
+-> Farm/Greenhouse Boost
+
+2. Industrial Fertilizer Chain
+Atmospheric Nitrogen Fixation Plant
+-> Ammonia Synthesis Plant
+-> Haber-Bosch Megaplant
+-> Nutrient Distribution Hub
+
+3. Space Fertilizer Chain
+Carbonaceous Asteroid Mine / Gas Giant Ammonia Import / Regolith Conditioner
+-> Orbital Nutrient Refinery
+-> Orbital Nutrient Exchange
+-> Primary Planet Food System
+
+4. Alien Fertilizer Chain
+Alien Biocatalyst Site
+-> Xeno-Biosafety Authority
+-> Xeno-Biocatalyst Nutrient Lab
+-> Bioadaptive Crops / high-yield food
+Risk: contamination and Custodian escalation.
+
+MINING CHAINS
+
+1. Ground Mineral Chain
+Basic Mine
+-> Precision Bore Mine
+-> Automated Mine
+-> Deep Mantle Mine
+-> Planetary Core Tap
+
+2. Asteroid Mineral Chain
+Asteroid Outpost
+-> Asteroid Mine
+-> Microgravity Mining Station
+-> Vacuum Refinery
+-> Metallic Asteroid Complex
+
+3. Lunar/Moonfall Chain
+Lunar Base
+-> Lunar Excavation Site
+-> Helium-3 Field / Artifact Dig Site
+-> Lunar Debris Harvest Grid
+-> Lunar Glass Refinery
+
+4. Exotic Resource Chain
+Anomaly Site
+-> Anomaly Lab
+-> Containment Field Mine
+-> Exotic Matter Refinery
+-> Void Refinery
+
+5. Singularity Resource Chain
+Singularity Mineral Deposit
+-> Singularity Mineral Mine
+-> Event Horizon Simulation Center
+-> Singularity Containment Foundry
+-> Singularity-Stabilized Systems
+
+TRADE CHAINS
+
+1. Ground Trade Chain
+Road Network
+-> Highway Grid
+-> Maglev Corridor
+-> Smart Logistics Spine
+
+2. Planet-Orbit Trade Chain
+Launch Complex
+-> Heavy Lift Spaceport
+-> Orbital Freight Terminal
+-> Space Elevator
+-> Primary World Trade Nexus
+
+3. Orbital Bulk Trade Chain
+Mass Driver
+-> Mass Driver Receiver
+-> Cargo Cycler Hub
+-> Lagrange Trade Hub
+-> Gravitic Freight Corridor Node
+
+4. Secure Trade Chain
+Convoy Escort Dock
+-> Route Security Command
+-> Fleet Escort Coordination Center
+-> Solar Defense Grid Node
+
+ENERGY CHAINS
+
+1. Local Renewable Chain
+Solar Farm / Wind Turbine Field / Geothermal Plant
+-> Smart Grid
+-> Regional Energy Grid
+-> Hardened Microgrid
+
+2. Nuclear Chain
+Compact Fission Reactor
+-> Advanced Fission Grid
+-> Fusion Plant
+-> Helium-3 Fusion Complex
+-> Fusion Grid Nexus
+
+3. Stellar Energy Chain
+Solar Collector Network
+-> Dyson Collector Node
+-> Dyson Swarm Node
+-> Dyson Lattice Relay
+-> Dyson Shell Segment
+-> Stellar Energy Receiver / Dyson Rectenna Field
+
+4. Endgame Power Chain
+Fusion Grid Nexus
+-> Gravitic Power Tap
+-> Singularity Buffer Vault
+-> Singularity-Stabilized Receiver
+
+AI GOVERNANCE CHAINS
+
+1. Safe Human Oversight Chain
+AI Ethics Forum
+-> Human Oversight Council
+-> Black Box Auditing Office
+-> AI Containment Vault
+-> Manual Override Network
+-> Decentralized Governance Hub
+
+2. Machine Governance Chain
+Data Registry
+-> Predictive Administration
+-> Autonomous Governor Core
+-> Machine Governance Hub
+-> Governance Override Node
+-> Machine Polity transformation risk
+
+3. Hybrid Chain
+Synthetic Integration Clinic
+-> Bio-Synthetic Continuity Center
+-> Hybrid Cohesion Center
+-> Continuity Ark Interface
+-> Hybrid Ascendancy victory support
+
+SPACE COLONY CHAINS
+
+1. Orbital Settlement Chain
+Orbital Station
+-> Orbital Habitat
+-> Lagrange Habitat
+-> Ring Habitat Segment
+-> Ring Civilization Arc
+
+2. Planet Colony Chain
+Colony Dome
+-> City Dome
+-> Terraforming Hub
+-> Planetary Capital
+
+3. Machine Colony Chain
+Machine World Core
+-> Planetary Compute Lattice
+-> Synthetic Continuity Node
+-> Von Neumann Expansion Hub
+
+4. Exodus Chain
+Exodus Dock
+-> Cryogenic Ark Dock
+-> Interstellar Ark Yard
+-> Continuity Fleet Assembly
+
+MILITARY CHAINS
+
+1. Ground Defense Chain
+Militia Armory
+-> Barracks
+-> Exosuit Training Center
+-> Anti-Custodian Training Command
+
+2. City Shield Chain
+Perimeter Wall
+-> Fortified Perimeter
+-> Adaptive Defense Wall
+-> Shielded City Envelope
+-> Planetary Shield Node
+
+3. Orbital Defense Chain
+Air Defense Battery
+-> Directed Energy Battery
+-> Orbital Defense Uplink
+-> Debris Shield Node
+-> Solar Defense Grid Node
+
+4. Cyber/AI Defense Chain
+Cyber Command Center
+-> Cognitive Firewall Command
+-> Logic Plague Defense Grid
+-> Kill-Switch Authority
+
+5. Superweapon Chain
+Artillery Base
+-> Directed Energy Battery
+-> Singularity Munitions Battery
+-> Wormhole/Singularity Strategic Systems
+
+MEGASTRUCTURE CHAINS
+
+1. Dyson Chain
+Solar Collector Network
+-> Dyson Collector Node
+-> Dyson Swarm Node
+-> Dyson Lattice Relay
+-> Dyson Shell Segment
+-> Stellar Civilization Architecture
+
+2. Ring Habitat Chain
+Lunar Debris Harvest Grid
+-> Artificial Moonlet Control Station
+-> Ring Habitat Segment
+-> Ring Agriculture Band
+-> Ring Industrial Band
+-> Ring Civilization Arc
+
+3. Wormhole Chain
+Singularity Mineral Mine
+-> Event Horizon Simulation Center
+-> Singularity Containment Foundry
+-> Wormhole Gate Frame
+-> Artificial Wormhole Gate
+-> Stabilized Transstellar Gate
+
+4. Transcendence Chain
+Neural Preservation Center
+-> Quantum Identity Archive
+-> Transstellar Mind Relay Node
+-> Final Continuity Protocol Site
+-> True Transcendence project
+
+================================================================================
+44. FACILITY-TO-AUTHORITY CHECK-IN MAP
+================================================================================
+
+Facilities also report into discipline authorities, just like units.
+
+Governor Council:
+- Settlement Core
+- Governor Hall
+- Hab Block
+- Medical Clinic
+- Public Order Station
+- Cultural Archive
+- Education Institute
+
+Agricultural Board:
+- Open Field Farm
+- Irrigation Canal
+- Grain Silo
+- Fertilizer Depot
+- Greenhouse facilities
+- Hydroponic Farm
+- Algae Bioreactor
+- Seed Vault
+- Pollinator Drone Hub
+- Contamination Screening Lab
+- Synthetic Food Plant
+
+Extraction Board:
+- Basic Mine
+- Phosphate Mine
+- Potash Mine
+- Nitrate Field
+- Sulfur Mine
+- Asteroid Mine
+- Lunar Excavation Site
+- Gas Giant Skimmer Platform
+- Rogue Planet Mine
+- Neutronium Capture Array
+- Singularity Mineral Mine
+
+Trade Ministry:
+- Road Network
+- Freight Depot
+- Port
+- Air Cargo Terminal
+- Orbital Freight Terminal
+- Mass Driver
+- Space Elevator
+- Cargo Cycler Hub
+- Lagrange Trade Hub
+- Customs and Quarantine Station
+- Primary World Trade Nexus
+
+Central Command:
+- Militia Armory
+- Barracks
+- Bunker Complex
+- Drone Factory
+- Artillery Base
+- Air Defense Battery
+- Central Command Bunker
+- Orbital Defense Uplink
+- Planetary Shield Node
+- Cyber Command Center
+
+Science Directorate:
+- Research Lab
+- Synthetic Analyst Center
+- Anomaly Lab
+- Xenolinguistics Center
+- Artifact Vault
+- Neural Preservation Center
+- Hybrid Cohesion Center
+- Lunar Vault Site
+- Custodian Beacon
+
+Orbital Command:
+- Launch Complex
+- Satellite Ground Station
+- Orbital Station
+- Orbital Shipyard
+- Lunar Base
+- Asteroid Outpost
+- Outer-System Station
+- Debris Shield Node
+
+AI Governance Layer:
+- Data Registry with AI Civic Ledger
+- Autonomous Governor Core
+- Machine Governance Hub
+- Compute Center
+- Synthetic Analyst Center
+- Machine World Core
+- Automated Factory
+- Automated Cargo Spine
+- AI Optimized Food Stack
+
+================================================================================
+45. BALANCE NOTES FOR FACILITIES AND UPGRADES
+================================================================================
+
+1. Food facilities should be cheap early but fragile.
+   - Farms are efficient but vulnerable.
+   - Greenhouses are expensive but reliable.
+   - Closed-loop biospheres are costly but essential for space survival.
+
+2. Fertilizer should be a real bottleneck.
+   - Food growth depends on Agri-Minerals.
+   - Agri-Minerals depend on mining, processing, and trade.
+   - Space sources become important after homeworld deposits are exhausted or disrupted.
+
+3. Mining facilities should create strategic geography.
+   - Phosphates matter for food.
+   - Rare earths matter for electronics and AI.
+   - Helium-3 matters for fusion.
+   - Singularity Minerals matter for endgame tech.
+
+4. Orbital logistics should limit space wealth.
+   - Mining an asteroid is not enough.
+   - The player must refine it, ship it, secure the route, and import it.
+
+5. AI upgrades should always be tempting.
+   - Automated facilities should provide strong bonuses.
+   - They should also push AI Dependence.
+   - Machine Governance should be powerful enough that players want it and dangerous enough that they fear it.
+
+6. Dyson facilities should escalate the game.
+   - Dyson Swarm should be a major energy breakthrough.
+   - Dyson Lattice should change the solar economy.
+   - Dyson Shell should be close to a victory-scale project.
+   - Each stage should increase Alien Exposure.
+
+7. Alien/artifact facilities should never be free bonuses.
+   - They should provide powerful tech or materials.
+   - They should also bring contamination, Custodian attention, AI drift, or ideological backlash.
+
+8. Every major facility should have at least one counterplay route.
+   - Space Elevator: sabotage, debris, orbital defense.
+   - AI Governance Hub: containment, kill switch, human unrest.
+   - Dyson Swarm: Custodian strikes, supply chain pressure.
+   - Singularity Mine: containment failures, alien escalation.
+   - Food System: fertilizer blockade, contamination, climate events.
+
+================================================================================
+46. QUICK FACILITY CHECKLIST FOR IMPLEMENTATION
+================================================================================
+
+Minimum first playable facility set:
+
+Core:
+- Settlement Core
+- Governor Hall
+- Hab Block
+- Medical Clinic
+- Emergency Operations Center
+
+Food:
+- Open Field Farm
+- Irrigation Canal
+- Grain Silo
+- Fertilizer Depot
+- Basic Greenhouse
+- Hydroponic Farm
+
+Fertilizer:
+- Phosphate Mine
+- Potash Mine
+- Nitrate Field
+- Agri-Mineral Refinery
+
+Mining/Industry:
+- Basic Mine
+- Rare Earth Refinery
+- Workshop
+- Factory
+- Alloy Foundry
+
+Energy:
+- Solar Farm
+- Geothermal Plant
+- Compact Fission Reactor
+- Grid Battery
+
+Trade:
+- Road Network
+- Freight Depot
+- Port
+- Orbital Freight Terminal
+
+Military:
+- Militia Armory
+- Barracks
+- Perimeter Wall
+- Air Defense Battery
+
+Science/AI:
+- Research Lab
+- Compute Center
+- Synthetic Analyst Center
+- AI Containment Vault
+
+Space:
+- Launch Complex
+- Satellite Ground Station
+- Orbital Station
+- Asteroid Outpost
+- Orbital Shipyard
+
+Late-game placeholder:
+- Dyson Collector Node
+- Planetary Shield Node
+- Singularity Mineral Mine
+- Transstellar Mind Relay Node
+
+Recommended implementation order:
+1. Settlement Core and basic city facilities.
+2. Farms, mines, roads, basic energy.
+3. Fertilizer chain.
+4. Greenhouses and Food Security Index.
+5. Trade route/import capacity system.
+6. Orbital facilities and Orbital Index.
+7. Asteroid mining and off-world resources.
+8. AI governor facilities and AI Dependence.
+9. Moonfall facilities and debris economy.
+10. Dyson, Singularity, and Transcendence facilities.
+
+================================================================================
+END OF FILE
+================================================================================

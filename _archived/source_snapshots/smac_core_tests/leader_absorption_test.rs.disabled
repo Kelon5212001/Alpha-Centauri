@@ -1,0 +1,14 @@
+use smac_core::factions::*;
+use smac_core::player::*;
+
+#[test]
+fn test_absorb_leader_and_enforce_personality() {
+    let leaders = load_leaders_from_file("data/leaders.json").unwrap();
+    let mut player = Player::new("UnitTest Commander");
+    player.absorb_leader(leaders[0].clone());
+
+    assert!(player.absorbed_leaders.len() == 1);
+    assert!(player.current_personality.is_some());
+    assert!(!player.can_perform_action("Initiate Unprovoked War"));
+    assert!(player.required_actions().contains(&"Build Labs every 5 turns".to_string()));
+}

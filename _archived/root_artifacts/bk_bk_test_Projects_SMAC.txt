@@ -1,0 +1,80 @@
+bk@bk-test:~/Projects/SMAC_Rust_AI/project_spec$ tree ~/Projects/SMAC_Rust_AI
+/home/bk/Projects/SMAC_Rust_AI
+├── ai_development_framework
+│   ├── ai_coordinator
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       ├── agents
+│   │       ├── main.rs
+│   │       ├── main.rs.backup
+│   │       ├── orchestration
+│   │       └── tasks
+│   ├── code_generators
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   └── content_generators
+│       ├── Cargo.toml
+│       └── src
+│           └── lib.rs
+├── Cargo.lock
+├── Cargo.toml
+├── data
+│   ├── buildings.json
+│   ├── societies.json
+│   ├── technology_tree.json
+│   └── units.json
+├── data_processing
+│   ├── content_pipeline
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   └── extraction_tools
+│       ├── Cargo.toml
+│       └── src
+│           └── lib.rs
+├── deployment
+│   ├── build_tools
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   └── ci_cd
+├── documentation
+│   ├── api_documentation
+│   ├── player_guides
+│   └── technical_docs
+├── examples
+│   └── basic_game.rs
+├── networking
+│   ├── Cargo.toml
+│   └── src
+│       └── lib.rs
+├── project_spec
+│   ├── data_files.txt
+│   ├── dependencies.txt
+│   ├── game_flow.txt
+│   ├── modules.txt
+│   ├── mvp.txt
+│   ├── smac_project_spec.tar.gz
+│   └── ui_and_requirements.txt
+├── rendering_engine
+│   ├── Cargo.toml
+│   └── src
+│       └── lib.rs
+├── ROADMAP.md
+├── rust-toolchain.toml
+├── smac_core
+│   ├── Cargo.toml
+│   ├── faction_systems
+│   │   ├── Cargo.toml
+│   │   └── src
+│   │       └── lib.rs
+│   ├── src
+│   │   ├── lib.rs
+│   │   ├── technology_tree.rs
+│   │   ├── technology_tree.rs.backup
+│   │   └── units
+│   │       ├── components.rs
+│   │       ├── definitions.rs
+│   │       ├── mod.rs
+│   │       └── native.rs

@@ -1,0 +1,6 @@
+#!/bin/sh
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+export ZIG_LOCAL_CACHE_DIR="${SCRIPT_DIR}/.zig-cache/local"
+export ZIG_GLOBAL_CACHE_DIR="${SCRIPT_DIR}/.zig-cache/global"
+mkdir -p "$ZIG_LOCAL_CACHE_DIR" "$ZIG_GLOBAL_CACHE_DIR"
+exec /home/bk/Projects/SMAC_Rust_AI/.zig/zig-x86_64-linux-0.16.0/zig cc "$@"
