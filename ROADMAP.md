@@ -8,7 +8,7 @@ This file is the live status tracker for the active Rust workspace.
 
 Current phase: `Phase 4: Advanced Strategy And World Mechanics`
 
-The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: keep the simulation baseline strong, fix the remaining Sparta low-expansion outlier, then expand strategic depth through council-aware AI and richer midgame conflict.
+The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the Sprint O Sparta fix, preserve the restored sweep baseline from Sprint P, then eliminate the last AI low-expansion outliers before broadening strategy again.
 
 ## Current Status
 
@@ -23,31 +23,32 @@ The repository is past the initial cleanup and stabilization recovery work. The 
 
 Locally reverified in this shell on 2026-05-17:
 
+- `cargo test --workspace --quiet`: passed
+- `cargo test -p smac_bevy --quiet`: passed
 - `cargo test -p smac_core --quiet`: passed
 - `cargo test -p smac_gui --quiet`: passed
 - `cargo run -p smac_core --bin validate_content --quiet`: passed
 
-Last reported full-workspace green state:
+Current workspace test count:
 
-- `266` passing tests
+- `275` passing tests
 
-Current shell caveats:
+Current Bevy verification notes:
 
-- `cargo test --workspace --quiet` could not be re-run end-to-end because `smac_bevy` needs dependencies that are not fully cached here and this shell has no working DNS access to `crates.io`
-- `cargo test -p smac_bevy --quiet` is also blocked here by missing host tooling for `alsa-sys` (`pkg-config`, and likely ALSA development headers)
-- the local `smac_core` test pass surfaced a warning in `save.rs`; that warning has been cleaned up in the current working tree
+- default workspace verification now passes because `smac_bevy` desktop/audio dependencies are feature-gated off the default test path
+- the interactive Bevy desktop binary still needs the `desktop` feature and host windowing/audio packages
 
 Still true at the repo level:
 
 - content validation count remains `5 factions, 17 techs, 14 units, 19 facilities, 41 production items`
 - the default autoplay demo remains `100` turns on `20x20` with seed `7`
-- the verified 10-seed sweep aggregate remains:
+- the currently verified 10-seed sweep aggregate is:
   - `terminal 0 / 10`
   - `famines 0`
   - `starvation 0`
   - `support 0`
   - `player low-expansion 0`
-  - `ai low-expansion 1`
+  - `ai low-expansion 3`
 
 ## Completed Sprint Batches
 
@@ -80,29 +81,30 @@ For the detailed per-sprint breakdown, use the sprint log instead of this status
 - advanced-warfare AI groundwork exists for:
   - air-superiority patrolling
   - Planet Buster deployment logic
-- the remaining measured sim weakness is the Sparta seed-`7` turtle case, not broad support or famine collapse
+- the remaining measured sim weakness is no longer broad support collapse; Sprint P restored the no-famine/no-support baseline, and the remaining issue is a smaller set of AI low-expansion seeds
 
 ## Immediate Next Tasks
 
-1. Eliminate the remaining Sparta seed-`7` low-expansion outlier.
-2. Preserve the current `0/10` famine, starvation, and support-collapse sweep result while doing it.
-3. After Sparta is fixed, implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
-4. Harden the `smac_bevy` build path so missing host audio/system packages are documented or feature-gated.
+1. Preserve the new seed-`7` Sparta survival/expansion fix and the restored `0/10` famine/support baseline.
+2. Reduce AI low-expansion from the current `3/10` by targeting the remaining colony/settlement outlier seeds.
+3. After the expansion baseline improves again, implement council-aware AI strategy so the new political layer becomes a live strategic system instead of only persisted mechanics.
+4. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
 
 ## Recommended Near-Term Order
 
 1. Use `autoplay_sweep` as the baseline diagnostic for gameplay changes instead of tuning against one seed.
-2. Fix Sparta’s seed-`7` colony behavior before broadening diplomacy again.
+2. Restore and hold the multi-seed economy/support baseline while removing the last AI low-expansion outliers.
 3. Teach AI factions to call and vote in council based on power, relations, and victory posture.
 4. Only then resume terrain-transition polish and broader Bevy presentation work.
 
 ## Current Milestone Slice
 
-Current slice: `Simulation Hardening Before Deeper Strategy`
+Current slice: `Simulation Recovery After Sprint P`
 
 - keep the core deterministic and green
-- maintain the no-famine/no-support-collapse sweep baseline
-- remove the last measured expansion outlier
+- preserve the seed-`7` Sparta fix
+- restore the no-famine/no-support-collapse sweep baseline
+- reduce the remaining AI low-expansion drift
 - then deepen diplomacy and council behavior from a stable base
 
 ## Prior History

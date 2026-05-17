@@ -11934,7 +11934,7 @@ impl GameState {
         }
 
         if remaining_minerals > 0 {
-            let emergency_support_reserve = 25;
+            let emergency_support_reserve = 10;
             let emergency_payment = self
                 .faction(owner)
                 .map(|faction| (faction.energy - emergency_support_reserve).max(0))

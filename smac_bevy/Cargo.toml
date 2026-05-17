@@ -3,8 +3,31 @@ name = "smac_bevy"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+desktop = [
+    "bevy/bevy_asset",
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_render",
+    "bevy/bevy_scene",
+    "bevy/bevy_sprite",
+    "bevy/bevy_text",
+    "bevy/bevy_ui",
+    "bevy/bevy_winit",
+    "bevy/default_font",
+    "bevy/multi-threaded",
+    "bevy/png",
+    "bevy/wayland",
+    "bevy/x11",
+]
+audio = ["desktop", "bevy/bevy_audio"]
+
+[[bin]]
+name = "smac_bevy"
+path = "src/main.rs"
+required-features = ["desktop"]
+
 [dependencies]
-bevy = "0.13"
+bevy = { version = "0.13", default-features = false }
 bevy_egui = "0.27"
 smac_core = { path = "../smac_core" }
-

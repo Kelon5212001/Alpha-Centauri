@@ -1,3 +1,4 @@
+#[cfg(feature = "audio")]
 mod audio;
 mod camera;
 mod map_view;
@@ -17,23 +18,26 @@ pub struct SelectionState {
 }
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "SMAC Rust AI - Bevy Client".to_string(),
-                resolution: (1280.0, 720.0).into(),
-                ..default()
-            }),
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            title: "SMAC Rust AI - Bevy Client".to_string(),
+            resolution: (1280.0, 720.0).into(),
             ..default()
-        }))
-        .insert_resource(GameStateResource(GameState::new_game(20, 20, 42)))
-        .init_resource::<SelectionState>()
-        .add_systems(Startup, setup)
-        .add_plugins(camera::CameraPlugin)
-        .add_plugins(ui::UiPlugin)
-        .add_plugins(map_view::MapViewPlugin)
-        .add_plugins(audio::AudioPlugin)
-        .run();
+        }),
+        ..default()
+    }))
+    .insert_resource(GameStateResource(GameState::new_game(20, 20, 42)))
+    .init_resource::<SelectionState>()
+    .add_systems(Startup, setup)
+    .add_plugins(camera::CameraPlugin)
+    .add_plugins(ui::UiPlugin)
+    .add_plugins(map_view::MapViewPlugin);
+
+    #[cfg(feature = "audio")]
+    app.add_plugins(audio::AudioPlugin);
+
+    app.run();
 }
 
 fn setup(mut commands: Commands) {

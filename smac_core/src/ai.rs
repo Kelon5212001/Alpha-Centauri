@@ -790,12 +790,15 @@ fn maybe_assign_ai_convoy_route(state: &mut GameState, base_id: usize, owner: us
     if !should_route {
         return;
     }
-    let kind = if (base.facilities.contains(&crate::Facility::CommandCenter)
+    let faction_support_pressure = state.faction_support_summary(owner).supported_units > 0;
+    let has_military_support_infra = base.facilities.contains(&crate::Facility::CommandCenter)
         || base.facilities.contains(&crate::Facility::FieldHospital)
         || base.facilities.contains(&crate::Facility::MilitaryAcademy)
-        || base.facilities.contains(&crate::Facility::ForwardDepot))
+        || base.facilities.contains(&crate::Facility::ForwardDepot);
+    let kind = if has_military_support_infra
         && (state.base_local_military_pressure(base_id) >= 1
-            || state.damaged_garrison_count_for_base(base_id) > 0)
+            || state.damaged_garrison_count_for_base(base_id) > 0
+            || faction_support_pressure)
     {
         crate::ConvoyRouteKind::MilitarySupply
     } else if base.facilities.contains(&crate::Facility::FreightDepot)
@@ -895,7 +898,7 @@ fn choose_ai_support_production(
 
     let base_count = state.bases_for(owner).len() as i32;
     let severe_support_pressure =
-        support.supported_units > base_count.max(1) || support.unit_upkeep >= 3;
+        support.supported_units >= base_count.max(1) || support.unit_upkeep >= 2;
 
     if severe_support_pressure
         && state.is_production_available(owner, crate::ProductionItem::TransitHub)
@@ -1005,7 +1008,11 @@ fn choose_ai_production_for_base(
     let owned_bases = state.bases_for(owner).len();
     let expansion_frontier = desired_ai_expansion_target(state, owner).min(4).max(2);
     let underexpanded = owned_bases + active_colony_pods < expansion_frontier;
-    let colony_support_tolerance = if owned_bases <= 2 || underexpanded {
+    let colony_support_tolerance = if owned_bases == 2 {
+        2
+    } else if owned_bases == 1 {
+        1
+    } else if underexpanded {
         1
     } else {
         0
@@ -1078,7 +1085,7 @@ fn choose_ai_production_for_base(
         && base.population >= 6
         && state.turn >= 35
         && signals.military_pressure < 2
-        && active_colony_pods < 1
+        && active_colony_pods < 2
         && can_push_colony_pod
     {
         if state.is_production_available(owner, crate::ProductionItem::ColonyPod)
@@ -1095,8 +1102,23 @@ fn choose_ai_production_for_base(
         && faction.energy >= 35
         && faction.known_techs.len() >= 2
         && signals.military_pressure < 2
-        && active_colony_pods < 1
+        && active_colony_pods < 2
         && can_push_colony_pod
+    {
+        if state.is_production_available(owner, crate::ProductionItem::ColonyPod)
+            && state.base_food_margin(base.id).unwrap_or(0) >= -1
+        {
+            return crate::ProductionItem::ColonyPod;
+        }
+    }
+
+    if owned_bases == 2
+        && underexpanded
+        && base.population >= 2
+        && state.turn >= 50
+        && signals.military_pressure < 3
+        && psi_pressure < 3
+        && active_colony_pods < 2
     {
         if state.is_production_available(owner, crate::ProductionItem::ColonyPod)
             && state.base_food_margin(base.id).unwrap_or(0) >= -1
@@ -1157,7 +1179,7 @@ fn choose_ai_production_for_base(
     }
 
     if underexpanded
-        && active_colony_pods == 0
+        && active_colony_pods < if owned_bases <= 2 { 2 } else { 1 }
         && signals.support_deficit > 0
         && signals.military_pressure < 2
         && psi_pressure < 2
@@ -1933,9 +1955,14 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         }
     }
 
+    // Keep one credible defender on each owned base so high-aggression factions
+    // do not walk every garrison into attack groups and leave their capital open.
+    let reserved_defender_ids = reserve_base_defender_ids(state, owner, &combat_unit_ids);
+    combat_unit_ids.retain(|id| !reserved_defender_ids.contains(id));
+
     // b. Check if we can launch an attack
     let signals = tactical_signals_for_owner(state, owner);
-    if signals.attack_bias >= 5 && !combat_unit_ids.is_empty() {
+    if signals.attack_bias >= 5 && combat_unit_ids.len() >= 3 {
         let rival = rival_owner(state, owner);
         if let Some(target_base) = state.bases.iter().find(|b| b.owner == rival) {
             let mut group_units = Vec::new();
@@ -2242,6 +2269,10 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
             }
         }
 
+        if reserved_defender_ids.contains(&unit.id) && is_unit_on_friendly_base(state, &unit) {
+            continue;
+        }
+
         if unit.kind == UnitKind::Former && try_ai_terraform(state, unit_id) {
             continue;
         }
@@ -2284,6 +2315,45 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
             let _ = try_ai_move_toward(state, unit.id, unit.x, unit.y, tx, ty);
         }
     }
+}
+
+fn reserve_base_defender_ids(
+    state: &GameState,
+    owner: usize,
+    candidate_unit_ids: &[usize],
+) -> std::collections::HashSet<usize> {
+    let candidate_set: std::collections::HashSet<usize> =
+        candidate_unit_ids.iter().copied().collect();
+    let mut reserved = std::collections::HashSet::new();
+
+    for base in state.bases_for(owner) {
+        let Some(best_defender) = state
+            .units
+            .iter()
+            .filter(|unit| {
+                unit.alive
+                    && unit.owner == owner
+                    && unit.x == base.x
+                    && unit.y == base.y
+                    && candidate_set.contains(&unit.id)
+            })
+            .max_by_key(|unit| {
+                (
+                    !state.unit_is_aircraft(unit.id),
+                    !state.unit_has_ability(unit.id, Ability::Transport),
+                    state.unit_defense_strength(unit.id),
+                    unit.hp,
+                    unit.experience,
+                )
+            })
+        else {
+            continue;
+        };
+
+        reserved.insert(best_defender.id);
+    }
+
+    reserved
 }
 
 fn live_colony_pod_count(state: &GameState, owner: usize) -> usize {
@@ -3353,10 +3423,10 @@ mod tests {
         best_scored_target, choose_ai_colony_target, choose_ai_production_for_base,
         choose_ai_raider_target, desired_ai_base_spacing, desired_ai_expansion_target,
         economy_signals_for_base, exploratory_target, is_ai_colony_site_acceptable,
-        run_ai_economy_for_owner, run_ai_tactics_for_owner, score_player_base_target,
-        score_player_unit_target, score_raider_base_target, score_unexplored_tile_target,
-        tactical_signals, update_ai_research, update_ai_social_engineering, update_ai_unit_designs,
-        AiTacticalSignals,
+        maybe_assign_ai_convoy_route, run_ai_economy_for_owner, run_ai_tactics_for_owner,
+        score_player_base_target, score_player_unit_target, score_raider_base_target,
+        score_unexplored_tile_target, tactical_signals, update_ai_research,
+        update_ai_social_engineering, update_ai_unit_designs, AiTacticalSignals,
     };
     use crate::{
         Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
@@ -4264,6 +4334,142 @@ mod tests {
     }
 
     #[test]
+    fn two_base_faction_uses_colony_pod_to_escape_moderate_support_pressure() {
+        let mut game = GameState::new_game(20, 20, 27);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        for (id, x, y) in [(0usize, 6usize, 6usize), (1usize, 12usize, 12usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Base {id}"),
+                x,
+                y,
+                population: 2,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+
+        for (unit_id, kind, x, y) in [
+            (100usize, UnitKind::Former, 6usize, 6usize),
+            (101usize, UnitKind::ScoutPatrol, 5usize, 6usize),
+            (102usize, UnitKind::ScoutPatrol, 7usize, 6usize),
+            (103usize, UnitKind::ScoutPatrol, 12usize, 12usize),
+            (104usize, UnitKind::ScoutPatrol, 11usize, 12usize),
+            (105usize, UnitKind::ScoutPatrol, 12usize, 11usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert_eq!(game.faction_support_summary(owner).supported_units, 2);
+
+        let choice = choose_ai_production_for_base(&game, 0, owner);
+
+        assert_eq!(choice, ProductionItem::ColonyPod);
+    }
+
+    #[test]
+    fn two_base_faction_can_queue_second_colony_pod_when_first_is_already_active() {
+        let mut game = GameState::new_game(20, 20, 29);
+        let owner = game.ai_owner();
+        game.turn = 40;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        for (id, x, y) in [(0usize, 6usize, 6usize), (1usize, 12usize, 12usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Base {id}"),
+                x,
+                y,
+                population: 4,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 80;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+
+        for (unit_id, kind, x, y) in [
+            (100usize, UnitKind::Former, 6usize, 6usize),
+            (101usize, UnitKind::ScoutPatrol, 5usize, 6usize),
+            (102usize, UnitKind::ScoutPatrol, 7usize, 6usize),
+            (103usize, UnitKind::ScoutPatrol, 12usize, 12usize),
+            (104usize, UnitKind::ScoutPatrol, 11usize, 12usize),
+            (105usize, UnitKind::ColonyPod, 8usize, 8usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        let choice = choose_ai_production_for_base(&game, 0, owner);
+
+        assert_eq!(choice, ProductionItem::ColonyPod);
+    }
+
+    #[test]
     fn underexpanded_autoplay_ai_defers_secrets_of_planet_research() {
         let mut game = GameState::new_game(20, 20, 17);
         let owner = game.player_owner();
@@ -4367,6 +4573,156 @@ mod tests {
     }
 
     #[test]
+    fn command_center_support_pressure_prefers_military_supply_route() {
+        let mut game = GameState::new_game(16, 16, 41);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        game.convoy_routes.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Supply Hub".to_string(),
+            x: 6,
+            y: 6,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![crate::Facility::CommandCenter],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner,
+            name: "Frontier".to_string(),
+            x: 10,
+            y: 10,
+            population: 3,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[10 * game.width + 10].base = Some(1);
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 10usize, 10usize),
+            (104usize, 9usize, 10usize),
+            (105usize, 10usize, 9usize),
+            (106usize, 11usize, 10usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert!(game.faction_support_summary(owner).supported_units > 0);
+
+        maybe_assign_ai_convoy_route(&mut game, 0, owner);
+
+        assert_eq!(game.convoy_routes.len(), 1);
+        assert_eq!(
+            game.convoy_routes[0].kind,
+            crate::ConvoyRouteKind::MilitarySupply
+        );
+    }
+
+    #[test]
+    fn sole_base_defender_stays_home_despite_high_attack_bias() {
+        let mut game = GameState::new_game(16, 16, 31);
+        let owner = game.ai_owner();
+        let rival = game.player_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Sparta Command".to_string(),
+            x: 10,
+            y: 10,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[10 * game.width + 10].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner: rival,
+            name: "Landing Point".to_string(),
+            x: 2,
+            y: 2,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[2 * game.width + 2].base = Some(1);
+
+        game.units.push(Unit {
+            id: 100,
+            owner,
+            kind: UnitKind::ScoutPatrol,
+            design_index: 0,
+            x: 10,
+            y: 10,
+            moves_left: 1,
+            hp: 10,
+            experience: 0,
+            alive: true,
+            cargo_unit_ids: Vec::new(),
+            activity: UnitActivity::None,
+        });
+        game.tiles[10 * game.width + 10].unit = Some(100);
+
+        run_ai_tactics_for_owner(&mut game, owner);
+
+        let unit = game.unit(100).expect("garrison should still exist");
+        assert_eq!((unit.x, unit.y), (10, 10));
+    }
+
+    #[test]
     fn two_base_autoplay_ai_pushes_third_colony_when_stalled_and_safe() {
         let mut game = GameState::new_game(20, 20, 23);
         let owner = game.ai_owner();
@@ -4408,6 +4764,49 @@ mod tests {
         }
         if !faction.known_techs.contains(&Tech::SocialPsych) {
             faction.known_techs.push(Tech::SocialPsych);
+        }
+
+        let choice = choose_ai_production_for_base(&game, 0, owner);
+
+        assert_eq!(choice, ProductionItem::ColonyPod);
+    }
+
+    #[test]
+    fn low_energy_two_base_ai_still_pushes_third_colony_when_safe_late() {
+        let mut game = GameState::new_game(20, 20, 33);
+        let owner = game.ai_owner();
+        game.turn = 60;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        for (id, x, y) in [(0usize, 6usize, 6usize), (1usize, 12usize, 12usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Base {id}"),
+                x,
+                y,
+                population: 2,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 8;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
         }
 
         let choice = choose_ai_production_for_base(&game, 0, owner);

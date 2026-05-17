@@ -8,15 +8,17 @@ This document is the detailed sprint-by-sprint summary for the current Rust work
 
 Locally reverified in this shell on 2026-05-17:
 
+- `cargo test --workspace --quiet`: passed
+- `cargo test -p smac_bevy --quiet`: passed
 - `cargo test -p smac_core --quiet`: passed
 - `cargo test -p smac_gui --quiet`: passed
 - `cargo run -p smac_core --bin validate_content --quiet`: passed
 
-Verification caveats in this shell:
+Verification notes in this shell:
 
-- `cargo test --workspace --quiet` could not be re-run end-to-end because `smac_bevy` needs crates that are not fully cached and this shell currently has no working DNS access to `crates.io`.
-- `cargo test -p smac_bevy --quiet` is additionally blocked here by missing system tooling for `alsa-sys` (`pkg-config`, and likely ALSA development headers).
-- The last reported full-workspace green state from the active repo docs and recent checkpoint flow is `266` passing tests.
+- The default workspace test path is now green because `smac_bevy` desktop/audio dependencies are feature-gated off the default test path.
+- The interactive Bevy desktop client still requires the `desktop` feature and host windowing/audio packages.
+- The current full-workspace test count is `275` passing tests.
 
 ## Sprint A: Cleanup And Workspace Recovery
 
@@ -285,15 +287,59 @@ Next-sprint handoff that should happen now:
 - stop broadening diplomacy for one sprint
 - return to the remaining Sparta expansion outlier so the simulation baseline is strong before council AI policy gets more complex
 
+## Sprint O: Sparta Survival And Bevy Verification Hardening
+
+Scope:
+
+- traced the default seed-`7` Sparta collapse instead of assuming it was still only a mild `2`-base turtle case
+- reserved one on-base defender per AI base so coordinated attack logic no longer strips the sole capital garrison
+- raised the minimum unit count for offensive attack-group launches so tiny forces stop suiciding into open-front aggression
+- feature-gated `smac_bevy` desktop and audio dependencies so default workspace tests no longer require ALSA/windowing libraries
+
+Key outcomes:
+
+- the default seed-`7` demo now reaches turn `100` with `Sparta 3 bases / 15 units` instead of collapsing to `1` base / `0` units
+- full `cargo test --workspace --quiet` now passes in this shell
+- `smac_bevy` default tests now verify without pulling in desktop/audio host dependencies
+- the broader `10`-seed sweep no longer has terminal outcomes, but it did regress to `4/10` famine, `4/10` support, and `4/10` AI low-expansion
+
+Next-sprint handoff that should happen now:
+
+- keep the new defender-reservation behavior intact
+- restore the earlier no-famine/no-support-collapse sweep baseline
+- reduce the renewed AI-side low-expansion rate before resuming broader diplomacy work
+
+## Sprint P: Sweep Baseline Recovery And Expansion Re-tuning
+
+Scope:
+
+- restored the support-economy proving baseline after Sprint O by lowering the emergency mineral-support reserve threshold
+- promoted military-supply convoy routing under faction-wide support pressure once command infrastructure exists
+- relaxed two-base colony-pod escape logic so underexpanded factions can queue a second colony pod and force a third base under late safe-stall conditions
+- added regression tests for moderate-support colony escape, second active colony-pod queuing, low-energy two-base expansion, and support-driven military-supply convoy routing
+
+Key outcomes:
+
+- the `10`-seed proving sweep returned to `0/10` famine, starvation, and support-collapse outcomes
+- terminal outcomes remained at `0/10`
+- AI low-expansion improved from `4/10` to `3/10`
+- the default seed-`7` demo still reaches turn `100` with both factions at `3` bases
+
+Next-sprint handoff that should happen now:
+
+- preserve the restored no-famine/no-support baseline
+- target the remaining AI low-expansion seeds as colony/settlement-quality outliers
+- only move back to council policy work once the remaining expansion drift is reduced again
+
 ## Immediate Gemini Handoff
 
 Use this exact sprint order next.
 
-### Sprint O: Fix Sparta Seed-7 Turtling
+### Sprint Q: Remove Remaining AI Low-Expansion Outliers
 
 Goal:
 
-- eliminate the remaining sampled `2`-base Sparta outcome on the default `20x20`, `100`-turn, seed `7` demo
+- keep the restored sweep baseline while reducing the remaining `3/10` AI low-expansion cases
 
 Where to work:
 
@@ -304,18 +350,18 @@ Where to work:
 
 What to inspect first:
 
-- whether Sparta builds colony pods but fails to settle
-- whether garrison/escort priorities crowd out expansion in seed `7`
-- whether unrest recovery over-prioritizes static infrastructure once Sparta reaches `2` bases
-- whether colony targeting is too conservative around local psi/native pressure
+- the remaining low-expansion seeds in the current sampled sweep: `4`, `5`, and `9`
+- whether colony pods are failing to settle, not being built, or being vetoed by local pressure/site filters too aggressively
+- whether the remaining outliers need looser site acceptance, better escort assignment, or less conservative late frontier production
+- whether local psi/military pressure is still blocking expansion too long after the support baseline is healthy
 
 Acceptance criteria:
 
-- default seed `7` reaches `3` Sparta bases by turn `100`
+- default seed `7` still reaches `3` Sparta bases by turn `100`
 - verified 10-seed sweep stays at `0/10` terminal, famine, starvation, and support failures
-- verified 10-seed sweep reaches `0/10` AI low-expansion if possible, or at minimum does not regress from `1/10`
+- verified 10-seed sweep reduces AI low-expansion materially from the current `3/10`
 
-### Sprint P: Council-Aware AI Strategy
+### Sprint R: Council-Aware AI Strategy
 
 Goal:
 
@@ -339,7 +385,7 @@ Acceptance criteria:
 - autoplay logs show factions making non-random council choices
 - new council decisions do not break save/load or 100-turn sim stability
 
-### Sprint Q: Bevy Build Hardening
+### Sprint S: Bevy Build Hardening
 
 Goal:
 
@@ -362,7 +408,7 @@ Acceptance criteria:
 - `smac_bevy` build instructions are explicit
 - if audio remains optional, headless/client verification paths should stop failing on missing ALSA tooling
 
-### Sprint R: Terrain Transitions And Visual Readability
+### Sprint T: Terrain Transitions And Visual Readability
 
 Goal:
 
@@ -378,4 +424,3 @@ Acceptance criteria:
 
 - terrain edges read more cleanly at gameplay zoom levels
 - visuals improve readability without coupling new rules into presentation code
-
