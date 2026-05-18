@@ -130,7 +130,7 @@ fn default_starting_scenario_contains_expected_opening_units() {
     let scenario = default_starting_scenario(16, 16);
     let roles = runtime_roles();
 
-    assert_eq!(scenario.forced_land_positions.len(), 2);
+    assert_eq!(scenario.forced_land_positions.len(), 3);
     assert!(scenario
         .starting_units
         .iter()
@@ -153,9 +153,16 @@ fn scenario_anchor_offsets_resolve_expected_ai_positions() {
     assert!(scenario
         .forced_land_positions
         .iter()
+        .any(|position| position.x == 8 && position.y == 8));
+    assert!(scenario
+        .forced_land_positions
+        .iter()
         .any(|position| position.x == 11 && position.y == 11));
     assert!(scenario.starting_units.iter().any(|unit| {
-        unit.owner == roles.ai && unit.kind == UnitKind::ScoutPatrol && unit.x == 10 && unit.y == 11
+        unit.owner == roles.ai
+            && unit.kind == UnitKind::ScoutPatrol
+            && unit.x == 10
+            && unit.y == 11
     }));
 }
 
@@ -163,7 +170,7 @@ fn scenario_anchor_offsets_resolve_expected_ai_positions() {
 fn fallible_starting_scenario_loader_resolves_current_bundle() {
     let scenario =
         try_default_starting_scenario(16, 16).expect("bundled scenario should resolve cleanly");
-    assert_eq!(scenario.forced_land_positions.len(), 2);
+    assert_eq!(scenario.forced_land_positions.len(), 3);
     assert_eq!(scenario.starting_units.len(), 5);
 }
 

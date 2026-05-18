@@ -598,6 +598,12 @@ fn ai_prefers_scouts_when_player_military_pressure_is_nearby() {
     let mut game = GameState::new_game(16, 16, 7);
     let ai_owner = game.ai_owner();
     let player_owner = game.player_owner();
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+    }
 
     let base_x: usize = 11;
     let base_y: usize = 11;
@@ -625,6 +631,22 @@ fn ai_prefers_scouts_when_player_military_pressure_is_nearby() {
         facilities: Vec::new(),
         governor_mode: GovernorMode::Off,
     });
+
+    game.units.push(Unit {
+        id: game.units.len(),
+        owner: ai_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: base_x,
+        y: base_y,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[center_idx].unit = Some(0);
 
     let player_unit_id = game.units.len();
     let pressure_x = base_x.saturating_sub(2);
@@ -677,6 +699,12 @@ fn ai_can_choose_garrison_guard_under_frontline_pressure_without_facility_need()
     let mut game = GameState::new_game(16, 16, 7);
     let ai_owner = game.ai_owner();
     let player_owner = game.player_owner();
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+    }
 
     let base_x: usize = 11;
     let base_y: usize = 11;
@@ -708,6 +736,22 @@ fn ai_can_choose_garrison_guard_under_frontline_pressure_without_facility_need()
         ],
         governor_mode: GovernorMode::Off,
     });
+
+    game.units.push(Unit {
+        id: game.units.len(),
+        owner: ai_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: base_x,
+        y: base_y,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[center_idx].unit = Some(0);
 
     if let Some(faction) = game.faction_mut(ai_owner) {
         faction.known_techs.push(smac_core::Tech::IndustrialBase);
@@ -764,6 +808,12 @@ fn ai_prefers_raider_speeders_when_mobility_and_attack_pressure_are_available() 
     let mut game = GameState::new_game(16, 16, 7);
     let ai_owner = game.ai_owner();
     let player_owner = game.player_owner();
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+    }
 
     let base_x: usize = 11;
     let base_y: usize = 11;
@@ -795,6 +845,22 @@ fn ai_prefers_raider_speeders_when_mobility_and_attack_pressure_are_available() 
         ],
         governor_mode: GovernorMode::Off,
     });
+
+    game.units.push(Unit {
+        id: game.units.len(),
+        owner: ai_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: base_x,
+        y: base_y,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[center_idx].unit = Some(0);
 
     if let Some(faction) = game.faction_mut(ai_owner) {
         faction.known_techs.push(smac_core::Tech::DoctrineMobility);
@@ -851,6 +917,12 @@ fn ai_prefers_standard_speeders_when_terrain_is_poor_for_raiding() {
     let mut game = GameState::new_game(16, 16, 7);
     let ai_owner = game.ai_owner();
     let player_owner = game.player_owner();
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+    }
 
     let base_x: usize = 11;
     let base_y: usize = 11;
@@ -878,6 +950,22 @@ fn ai_prefers_standard_speeders_when_terrain_is_poor_for_raiding() {
         facilities: vec![smac_core::Facility::PerimeterDefense],
         governor_mode: GovernorMode::Off,
     });
+
+    game.units.push(Unit {
+        id: game.units.len(),
+        owner: ai_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: base_x,
+        y: base_y,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[center_idx].unit = Some(0);
 
     if let Some(faction) = game.faction_mut(ai_owner) {
         faction.known_techs.push(smac_core::Tech::DoctrineMobility);

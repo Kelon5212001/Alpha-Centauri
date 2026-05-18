@@ -1,6 +1,7 @@
 {
   "forced_land_positions": [
-    { "x": 3, "y": 3 },
+    { "anchor": "player", "x_offset": 0, "y_offset": 0 },
+    { "anchor": "midline", "x_offset": 0, "y_offset": 0 },
     { "anchor": "ai", "x_offset": 0, "y_offset": 0 }
   ],
   "starting_units": [

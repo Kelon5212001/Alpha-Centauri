@@ -712,16 +712,36 @@ pub fn try_default_starting_scenario(
 }
 
 fn scenario_anchors(width: usize, height: usize) -> Vec<(&'static str, ScenarioAnchorPoint)> {
+    let player_x = 3.min(width.saturating_sub(5));
+    let player_y = 3.min(height.saturating_sub(5));
+    let ai_x = width
+        .saturating_sub(5)
+        .max(player_x.saturating_add(4))
+        .min(width.saturating_sub(2));
+    let ai_y = height
+        .saturating_sub(5)
+        .max(player_y.saturating_add(4))
+        .min(height.saturating_sub(2));
     vec![
         (
             RuntimeRole::Player.as_str(),
-            ScenarioAnchorPoint { x: 3, y: 3 },
+            ScenarioAnchorPoint {
+                x: player_x,
+                y: player_y,
+            },
         ),
         (
             RuntimeRole::Ai.as_str(),
             ScenarioAnchorPoint {
-                x: width.saturating_sub(5),
-                y: height.saturating_sub(5),
+                x: ai_x,
+                y: ai_y,
+            },
+        ),
+        (
+            "midline",
+            ScenarioAnchorPoint {
+                x: width / 2,
+                y: height / 2,
             },
         ),
     ]

@@ -25,9 +25,11 @@ impl Default for Config {
 struct OwnerMetrics {
     bases: usize,
     units: usize,
+    combat_units: usize,
     energy: i32,
     known_techs: usize,
     food_security: i32,
+    frontier_bases: usize,
     unrested_bases: usize,
     max_unrest: i32,
     supported_units: i32,
@@ -40,6 +42,10 @@ struct RunSummary {
     outcome: Option<GameOver>,
     routes: usize,
     projects: usize,
+    nearest_base_gap: i32,
+    combats: usize,
+    captures: usize,
+    war_declarations: usize,
     bankruptcies: usize,
     famines: usize,
     starvation_famines: usize,
@@ -58,6 +64,9 @@ fn main() {
 fn run() -> Result<(), String> {
     let config = parse_args()?;
     let mut terminal_runs = 0usize;
+    let mut total_combats = 0usize;
+    let mut total_captures = 0usize;
+    let mut total_wars = 0usize;
     let mut total_bankruptcies = 0usize;
     let mut total_famines = 0usize;
     let mut total_starvation_famines = 0usize;
@@ -78,6 +87,9 @@ fn run() -> Result<(), String> {
         if summary.outcome.is_some() {
             terminal_runs += 1;
         }
+        total_combats += summary.combats;
+        total_captures += summary.captures;
+        total_wars += summary.war_declarations;
         total_bankruptcies += summary.bankruptcies;
         total_famines += summary.famines;
         total_starvation_famines += summary.starvation_famines;
@@ -96,7 +108,7 @@ fn run() -> Result<(), String> {
         }
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} | p bases {:>2} units {:>2} tech {:>2} energy {:>4} food {:>4} unrest {:>2}/{:<2} supp {:>2}/{:<2} | ai bases {:>2} units {:>2} tech {:>2} energy {:>4} food {:>4} unrest {:>2}/{:<2} supp {:>2}/{:<2} | bankruptcy {:>2} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} combats {:>3} caps {:>2} wars {:>2} | p bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} | ai bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} | bankruptcy {:>2} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -105,20 +117,28 @@ fn run() -> Result<(), String> {
                 .unwrap_or("none"),
             summary.routes,
             summary.projects,
+            summary.nearest_base_gap,
+            summary.combats,
+            summary.captures,
+            summary.war_declarations,
             summary.player.bases,
             summary.player.units,
+            summary.player.combat_units,
             summary.player.known_techs,
             summary.player.energy,
             summary.player.food_security,
+            summary.player.frontier_bases,
             summary.player.unrested_bases,
             summary.player.max_unrest,
             summary.player.supported_units,
             summary.player.unit_upkeep,
             summary.ai.bases,
             summary.ai.units,
+            summary.ai.combat_units,
             summary.ai.known_techs,
             summary.ai.energy,
             summary.ai.food_security,
+            summary.ai.frontier_bases,
             summary.ai.unrested_bases,
             summary.ai.max_unrest,
             summary.ai.supported_units,
@@ -131,9 +151,12 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | bankruptcies {} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | combats {} | captures {} | wars {} | bankruptcies {} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
+        total_combats,
+        total_captures,
+        total_wars,
         total_bankruptcies,
         total_famines,
         total_starvation_famines,
@@ -150,6 +173,9 @@ fn run() -> Result<(), String> {
 fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut game = GameState::new_game(config.width, config.height, seed);
     let mut completed_turns = 0usize;
+    let mut combats = 0usize;
+    let mut captures = 0usize;
+    let mut war_declarations = 0usize;
     let mut bankruptcies = 0usize;
     let mut famines = 0usize;
     let mut starvation_famines = 0usize;
@@ -161,6 +187,17 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         completed_turns += 1;
 
         for entry in &game.log[log_start.min(game.log.len())..] {
+            if entry.message.contains("COMBAT:") || entry.message.contains("BOMBARDMENT:") {
+                combats += 1;
+            }
+            if entry.message.contains("captured") {
+                captures += 1;
+            }
+            if entry.message.contains("DIPLOMACY:")
+                && entry.message.contains("signed a War")
+            {
+                war_declarations += 1;
+            }
             if entry.message.contains("BANKRUPTCY:") {
                 bankruptcies += 1;
             }
@@ -184,6 +221,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         outcome: game.game_over,
         routes: game.convoy_routes.len(),
         projects: game.built_secret_projects.len(),
+        nearest_base_gap: nearest_base_gap(&game, game.player_owner(), game.ai_owner()),
+        combats,
+        captures,
+        war_declarations,
         bankruptcies,
         famines,
         starvation_famines,
@@ -198,18 +239,48 @@ fn owner_metrics(game: &GameState, owner: usize) -> OwnerMetrics {
     let unrest_values: Vec<i32> = bases.iter().map(|base| game.base_unrest(base.id)).collect();
     let faction = game.faction(owner);
     let support = game.faction_support_summary(owner);
+    let live_units = game.live_units_for(owner);
 
     OwnerMetrics {
         bases: bases.len(),
-        units: game.live_units_for(owner).len(),
+        units: live_units.len(),
+        combat_units: live_units
+            .iter()
+            .filter(|unit| {
+                !matches!(
+                    unit.kind,
+                    smac_core::UnitKind::ColonyPod
+                        | smac_core::UnitKind::Former
+                        | smac_core::UnitKind::ProbeTeam
+                )
+            })
+            .count(),
         energy: faction.map(|f| f.energy).unwrap_or_default(),
         known_techs: faction.map(|f| f.known_techs.len()).unwrap_or_default(),
         food_security: faction.map(|f| f.food_security).unwrap_or_default(),
+        frontier_bases: bases
+            .iter()
+            .filter(|base| game.base_local_military_pressure(base.id) >= 1)
+            .count(),
         unrested_bases: unrest_values.iter().filter(|value| **value > 0).count(),
         max_unrest: unrest_values.into_iter().max().unwrap_or_default(),
         supported_units: support.supported_units,
         unit_upkeep: support.unit_upkeep,
     }
+}
+
+fn nearest_base_gap(game: &GameState, owner: usize, other: usize) -> i32 {
+    let our_bases = game.bases_for(owner);
+    let their_bases = game.bases_for(other);
+    our_bases
+        .iter()
+        .flat_map(|base| {
+            their_bases
+                .iter()
+                .map(move |other_base| game.distance(base.x, base.y, other_base.x, other_base.y))
+        })
+        .min()
+        .unwrap_or(99)
 }
 
 fn parse_args() -> Result<Config, String> {
