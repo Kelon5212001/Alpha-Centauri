@@ -536,11 +536,11 @@ fn frontier_tension_between(state: &GameState, owner: usize, other_id: usize) ->
     for base in state.bases.iter().filter(|base| base.owner == owner) {
         for other_base in state.bases.iter().filter(|base| base.owner == other_id) {
             let distance = state.distance(base.x, base.y, other_base.x, other_base.y);
-            if distance <= 4 {
+            if distance <= 5 {
+                tension += 5;
+            } else if distance <= 8 {
                 tension += 3;
-            } else if distance <= 7 {
-                tension += 2;
-            } else if distance <= 10 {
+            } else if distance <= 12 {
                 tension += 1;
             }
         }
@@ -548,13 +548,18 @@ fn frontier_tension_between(state: &GameState, owner: usize, other_id: usize) ->
         for unit in state
             .units
             .iter()
-            .filter(|unit| unit.owner == other_id && is_ai_combat_unit(state, unit))
+            .filter(|unit| unit.alive && unit.owner == other_id)
         {
             let distance = state.distance(base.x, base.y, unit.x, unit.y);
-            if distance <= 3 {
+            if is_ai_combat_unit(state, unit) {
+                if distance <= 3 {
+                    tension += 3;
+                } else if distance <= 6 {
+                    tension += 2;
+                }
+            } else if unit.kind == UnitKind::ColonyPod && distance <= 8 {
+                // Enemy colony pods near our borders are threatening expansion
                 tension += 2;
-            } else if distance <= 5 {
-                tension += 1;
             }
         }
     }
@@ -724,24 +729,24 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
         let their_strength = combat_strength_for_owner(state, other_id);
         let strength_margin = our_strength - their_strength;
 
+        let our_pop: i32 = state
+            .bases
+            .iter()
+            .filter(|b| b.owner == owner)
+            .map(|b| b.population)
+            .sum();
+        let their_pop: i32 = state
+            .bases
+            .iter()
+            .filter(|b| b.owner == other_id)
+            .map(|b| b.population)
+            .sum();
+
         // Proactive Demands: Extort weaker neighbors if aggressive
         if personality.aggression >= 7
             && state.turn % 20 == 0
             && current_status != crate::DiplomacyStatus::Pact
         {
-            let our_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == owner)
-                .map(|b| b.population)
-                .sum();
-            let their_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == other_id)
-                .map(|b| b.population)
-                .sum();
-
             if our_pop > their_pop * 2 && attitude <= 10 {
                 // Try to find a tech they have
                 let other_techs = &state.factions[other_id].known_techs;
@@ -826,8 +831,8 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                         status: crate::DiplomacyStatus::Pact,
                     });
                 }
-            } else if (attitude <= -20 && personality.aggression > 5)
-                || (frontier_tension >= 4 && attitude <= 15 && hostility_bias >= 6)
+            } else if (attitude <= -15 && personality.aggression > 4)
+                || (frontier_tension >= 3 && attitude <= 20 && hostility_bias >= 5)
             {
                 // Break Treaty
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -837,7 +842,7 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                 });
             }
         } else if current_status == crate::DiplomacyStatus::Pact {
-            if attitude <= 0 || (frontier_tension >= 5 && attitude < 25 && hostility_bias >= 7)
+            if attitude <= 10 || (frontier_tension >= 4 && attitude < 30 && hostility_bias >= 6)
             {
                 // Break Pact
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -847,12 +852,14 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                 });
             }
         } else if current_status == crate::DiplomacyStatus::Truce {
-            if (attitude <= -40 && personality.aggression > 6)
-                || (state.turn >= 35
-                    && frontier_tension >= 5
-                    && attitude <= 5
-                    && hostility_bias >= 6
-                    && strength_margin >= -2)
+            let expansionism_threat = their_pop > our_pop + 2 || state.bases_for(other_id).len() > state.bases_for(owner).len() + 1;
+            
+            if (attitude <= -30 && personality.aggression > 5)
+                || (state.turn >= 30
+                    && frontier_tension >= 4
+                    && attitude <= 10
+                    && (hostility_bias >= 5 || expansionism_threat)
+                    && strength_margin >= -4)
             {
                 // Declare War
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1116,13 +1123,14 @@ fn maybe_assign_ai_convoy_route(state: &mut GameState, base_id: usize, owner: us
     if base.owner != owner {
         return;
     }
-    let should_route = base.facilities.contains(&crate::Facility::TradeExchange)
+    let should_route = (base.facilities.contains(&crate::Facility::TradeExchange)
         || base.facilities.contains(&crate::Facility::FreightDepot)
         || base.facilities.contains(&crate::Facility::CommandCenter)
         || base.facilities.contains(&crate::Facility::FieldHospital)
         || base.facilities.contains(&crate::Facility::MilitaryAcademy)
         || base.facilities.contains(&crate::Facility::ForwardDepot)
-        || state.base_potential_trade_links(base_id) >= 1 && state.bases_for(owner).len() >= 2;
+        || state.base_potential_trade_links(base_id) >= 1 && state.bases_for(owner).len() >= 2)
+        && state.faction(owner).map(|f| f.energy >= 20).unwrap_or(false);
     if !should_route {
         return;
     }
@@ -1387,14 +1395,17 @@ fn choose_ai_production_for_base(
         Some(f) => f,
         None => return content::ai_preferred_production(owner),
     };
+    let low_energy = faction.energy < 20;
+    let support_summary = state.faction_support_summary(owner);
+    let overpopulated_with_units = support_summary.unit_upkeep > 4;
 
-    // CRITICAL DEFENSE: If base has no garrison and is under threat
+    // CRITICAL DEFENSE: If base has no garrison
     let local_units = state
         .units
         .iter()
         .filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y)
         .count();
-    if local_units == 0 && signals.military_pressure >= 1 {
+    if local_units == 0 {
         if let Some(item) = choose_ai_garrison_production(state, owner, psi_pressure) {
             return item;
         }
@@ -1485,6 +1496,7 @@ fn choose_ai_production_for_base(
         || (yields.nutrients <= base.population as i32 + 1 && signals.expansion_pressure))
         && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
         && !base.facilities.contains(&crate::Facility::Greenhouse)
+        && !low_energy
     {
         return crate::ProductionItem::Greenhouse;
     }
@@ -1494,6 +1506,7 @@ fn choose_ai_production_for_base(
         && !base
             .facilities
             .contains(&crate::Facility::RecreationCommons)
+        && !low_energy
     {
         return crate::ProductionItem::RecreationCommons;
     }
@@ -1507,6 +1520,7 @@ fn choose_ai_production_for_base(
     if signals.mineral_pressure
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
+        && !low_energy
     {
         return crate::ProductionItem::RecyclingTanks;
     }
@@ -1515,13 +1529,27 @@ fn choose_ai_production_for_base(
         if state.is_production_available(owner, crate::ProductionItem::PerimeterDefense)
             && !base.facilities.contains(&crate::Facility::PerimeterDefense)
             && (yields.minerals >= 4 || signals.military_pressure >= 2)
+            && !low_energy
         {
             return crate::ProductionItem::PerimeterDefense;
         }
         if state.is_production_available(owner, crate::ProductionItem::GarrisonGuard)
             && (yields.minerals >= yields.energy || signals.military_pressure >= 2)
+            && !overpopulated_with_units
         {
             return crate::ProductionItem::GarrisonGuard;
+        }
+
+        // PROACTIVE MILITARY: If at war or high tension, ensure we have combat units
+        let is_at_war = state.relations[owner].iter().any(|r| r.status == crate::DiplomacyStatus::War);
+        let high_frontier_tension = state.relations[owner].iter().enumerate().any(|(other_id, _)| other_id != owner && frontier_tension_between(state, owner, other_id) >= 6);
+        if (is_at_war || high_frontier_tension) && yields.minerals >= 3 && !overpopulated_with_units {
+             if prefer_raider && state.is_production_available(owner, crate::ProductionItem::RaiderSpeeder) {
+                 return crate::ProductionItem::RaiderSpeeder;
+             }
+             if state.is_production_available(owner, crate::ProductionItem::Speeder) {
+                 return crate::ProductionItem::Speeder;
+             }
         }
     }
 
@@ -1540,6 +1568,7 @@ fn choose_ai_production_for_base(
         && base.population >= 2
         && state.base_food_margin(base.id).unwrap_or(0) >= -1
         && state.is_production_available(owner, crate::ProductionItem::ColonyPod)
+        && !overpopulated_with_units
     {
         return crate::ProductionItem::ColonyPod;
     }
@@ -1555,6 +1584,7 @@ fn choose_ai_production_for_base(
             .facilities
             .contains(&crate::Facility::RecreationCommons)
         && (base.population >= 3 || (unrest > 0 && yields.energy >= 4))
+        && !low_energy
     {
         return crate::ProductionItem::RecreationCommons;
     }
@@ -1562,6 +1592,7 @@ fn choose_ai_production_for_base(
     if yields.nutrients <= base.population.max(1) + 1
         && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
         && !base.facilities.contains(&crate::Facility::Greenhouse)
+        && !low_energy
     {
         return crate::ProductionItem::Greenhouse;
     }
@@ -1569,6 +1600,7 @@ fn choose_ai_production_for_base(
     if state.base_mineral_margin(base.id).unwrap_or_default() <= 0
         && state.is_production_available(owner, crate::ProductionItem::MineralRefinery)
         && !base.facilities.contains(&crate::Facility::MineralRefinery)
+        && !low_energy
     {
         return crate::ProductionItem::MineralRefinery;
     }
@@ -1577,6 +1609,7 @@ fn choose_ai_production_for_base(
         && trade_links >= 1
         && state.is_production_available(owner, crate::ProductionItem::TradeExchange)
         && !base.facilities.contains(&crate::Facility::TradeExchange)
+        && !low_energy
     {
         return crate::ProductionItem::TradeExchange;
     }
@@ -1585,6 +1618,7 @@ fn choose_ai_production_for_base(
         && state.base_convoy_escort_count(base.id) == 0
         && state.is_production_available(owner, crate::ProductionItem::EscortSpeeder)
         && convoy_pressure
+        && !overpopulated_with_units
     {
         return crate::ProductionItem::EscortSpeeder;
     }
@@ -1594,6 +1628,7 @@ fn choose_ai_production_for_base(
         && !base.facilities.contains(&crate::Facility::PatrolGrid)
         && (state.base_local_military_pressure(base.id) >= 1
             || state.base_local_psi_pressure(base.id) >= 1)
+        && !low_energy
     {
         return crate::ProductionItem::PatrolGrid;
     }
@@ -1603,6 +1638,7 @@ fn choose_ai_production_for_base(
         && !base.facilities.contains(&crate::Facility::FreightDepot)
         && (base.facilities.contains(&crate::Facility::TradeExchange)
             || state.base_mineral_margin(base.id).unwrap_or(1) <= 1)
+        && !low_energy
     {
         return crate::ProductionItem::FreightDepot;
     }
@@ -1614,7 +1650,9 @@ fn choose_ai_production_for_base(
         {
             return crate::ProductionItem::NetworkNode;
         }
-        return crate::ProductionItem::Former;
+        if !overpopulated_with_units {
+            return crate::ProductionItem::Former;
+        }
     }
 
     if signals.expansion_pressure
@@ -2216,7 +2254,10 @@ fn desired_frontier_defender_count(pressure: i32) -> usize {
 }
 
 fn minimum_attack_group_size_for_owner(state: &GameState, owner: usize) -> usize {
-    if tactical_signals_for_owner(state, owner).attack_bias >= 7 {
+    let bias = tactical_signals_for_owner(state, owner).attack_bias;
+    if bias >= 8 {
+        1
+    } else if bias >= 4 {
         2
     } else {
         3
@@ -2379,7 +2420,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     // b. Check if we can launch an attack
     let signals = tactical_signals_for_owner(state, owner);
     let minimum_attack_group_size = minimum_attack_group_size_for_owner(state, owner);
-    if signals.attack_bias >= 5 && combat_unit_ids.len() >= minimum_attack_group_size {
+    if signals.attack_bias >= 2 && combat_unit_ids.len() >= minimum_attack_group_size {
         if let Some(target_base_id) = choose_ai_offensive_base_target(state, owner) {
             let mut group_units = Vec::new();
             combat_unit_ids.retain(|&id| {
@@ -2461,6 +2502,14 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 objective: AiObjective::SupportColony(target_transport_id), // Reuse SupportColony for generic escort
                 unit_ids: vec![sea_id],
             });
+        }
+    }
+
+    if true {
+        state.push_event_log(crate::EventCategory::Diplomacy, format!("TACTICAL DEBUG: {} has {} battle groups. Available combat units: {}", 
+            state.faction_name(owner), battle_groups.len(), combat_unit_ids.len()));
+        for group in &battle_groups {
+            state.push_event_log(crate::EventCategory::Diplomacy, format!("  - Group obj: {:?}, units: {}", group.objective, group.unit_ids.len()));
         }
     }
 
