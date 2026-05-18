@@ -208,5 +208,35 @@
     "attack": 1,
     "defense": 1,
     "base_hp": 10
+  },
+  {
+    "id": "sea_colony_pod",
+    "name": "Sea Colony Pod",
+    "chassis": "sea",
+    "weapon_kind": "hand_laser",
+    "weapon_power": 0,
+    "armor_kind": "synth_metal",
+    "armor_power": 1,
+    "cost": 40,
+    "abilities": [],
+    "max_moves": 1,
+    "attack": 0,
+    "defense": 1,
+    "base_hp": 10
+  },
+  {
+    "id": "sea_transport",
+    "name": "Sea Transport",
+    "chassis": "sea",
+    "weapon_kind": "hand_laser",
+    "weapon_power": 0,
+    "armor_kind": "synth_metal",
+    "armor_power": 1,
+    "cost": 20,
+    "abilities": ["transport"],
+    "max_moves": 3,
+    "attack": 0,
+    "defense": 1,
+    "base_hp": 10
   }
 ]

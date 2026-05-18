@@ -77,6 +77,20 @@
     "unit_kind": "probe_team"
   },
   {
+    "id": "sea_colony_pod",
+    "name": "Sea Colony Pod",
+    "cost": 40,
+    "build_kind": "unit",
+    "unit_kind": "sea_colony_pod"
+  },
+  {
+    "id": "sea_transport",
+    "name": "Sea Transport",
+    "cost": 20,
+    "build_kind": "unit",
+    "unit_kind": "sea_transport"
+  },
+  {
     "id": "recycling_tanks",
     "name": "Recycling Tanks",
     "cost": 20,

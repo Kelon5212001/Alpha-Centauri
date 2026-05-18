@@ -231,6 +231,7 @@ pub fn unit_name(kind: UnitKind) -> &'static str {
 pub fn unit_role_summary(kind: UnitKind) -> &'static str {
     match kind {
         UnitKind::ColonyPod => "Expansion unit for founding new bases.",
+        UnitKind::SeaColonyPod => "Naval expansion unit for founding new sea bases.",
         UnitKind::ScoutPatrol => "Baseline infantry for cheap garrison and early skirmishing.",
         UnitKind::Former => "Terraforming unit for improving yields and roads.",
         UnitKind::Speeder => "Fast line unit for mobility and flexible response.",
@@ -248,6 +249,7 @@ pub fn unit_role_summary(kind: UnitKind) -> &'static str {
         UnitKind::ProbeTeam => {
             "Covert operatives capable of infiltrating bases and subverting enemy units."
         }
+        UnitKind::SeaTransport => "Naval transport unit for moving land-based units across the ocean.",
         UnitKind::CustomUnit(_) => "A specialized unit built to faction specifications.",
     }
 }
@@ -255,6 +257,7 @@ pub fn unit_role_summary(kind: UnitKind) -> &'static str {
 pub fn unit_role_badge(kind: UnitKind) -> &'static str {
     match kind {
         UnitKind::ColonyPod => "COL",
+        UnitKind::SeaColonyPod => "SCOL",
         UnitKind::ScoutPatrol => "INF",
         UnitKind::Former => "ENG",
         UnitKind::Speeder => "MOB",
@@ -268,6 +271,7 @@ pub fn unit_role_badge(kind: UnitKind) -> &'static str {
         UnitKind::IsleOfTheDeep => "SEA",
         UnitKind::Needlejet => "AIR",
         UnitKind::ProbeTeam => "ESP",
+        UnitKind::SeaTransport => "TRAN",
         UnitKind::CustomUnit(_) => "SPEC",
     }
 }
@@ -284,6 +288,7 @@ pub fn unit_rank_name(experience: i32) -> &'static str {
 pub fn unit_map_symbol(kind: UnitKind, _owner: usize) -> String {
     let symbol = match kind {
         UnitKind::ColonyPod => "○",
+        UnitKind::SeaColonyPod => "◌",
         UnitKind::ScoutPatrol => "▲",
         UnitKind::Former => "⚒",
         UnitKind::Speeder => "»",
@@ -297,6 +302,7 @@ pub fn unit_map_symbol(kind: UnitKind, _owner: usize) -> String {
         UnitKind::IsleOfTheDeep => "🦑",
         UnitKind::Needlejet => "✈",
         UnitKind::ProbeTeam => "👁",
+        UnitKind::SeaTransport => "⛴",
         UnitKind::CustomUnit(_) => "✧",
     };
 
@@ -446,6 +452,7 @@ pub fn production_role_badge(item: ProductionItem) -> &'static str {
     match item {
         ProductionItem::ScoutPatrol => unit_role_badge(UnitKind::ScoutPatrol),
         ProductionItem::ColonyPod => unit_role_badge(UnitKind::ColonyPod),
+        ProductionItem::SeaColonyPod => unit_role_badge(UnitKind::SeaColonyPod),
         ProductionItem::Former => unit_role_badge(UnitKind::Former),
         ProductionItem::Speeder => unit_role_badge(UnitKind::Speeder),
         ProductionItem::ResonanceLaser => unit_role_badge(UnitKind::ResonanceLaser),
@@ -481,6 +488,7 @@ pub fn production_role_badge(item: ProductionItem) -> &'static str {
         | ProductionItem::SingularityContainment
         | ProductionItem::BlackHoleHarvester => "✧WP",
         ProductionItem::ProbeTeam => "ESP",
+        ProductionItem::SeaTransport => unit_role_badge(UnitKind::SeaTransport),
         ProductionItem::CustomUnit(_) => "✧CST",
         ProductionItem::StockpileEnergy => "✧WLT",
         ProductionItem::SkyHydroponics => "ORB",
@@ -491,7 +499,7 @@ pub fn production_role_badge(item: ProductionItem) -> &'static str {
 
 pub fn production_role_category(item: ProductionItem) -> &'static str {
     match item {
-        ProductionItem::ColonyPod => "Expansion",
+        ProductionItem::ColonyPod | ProductionItem::SeaColonyPod => "Expansion",
         ProductionItem::Former => "Infrastructure",
         ProductionItem::ScoutPatrol
         | ProductionItem::ResonanceLaser
@@ -511,7 +519,7 @@ pub fn production_role_category(item: ProductionItem) -> &'static str {
         ProductionItem::Greenhouse => "Food",
         ProductionItem::MineralRefinery => "Extraction",
         ProductionItem::TradeExchange => "Trade",
-        ProductionItem::FreightDepot => "Logistics",
+        ProductionItem::FreightDepot | ProductionItem::SeaTransport => "Logistics",
         ProductionItem::PatrolGrid => "Security",
         ProductionItem::HologramTheatre => "Morale",
         ProductionItem::BioenhancementCenter => "Biotech",
@@ -538,6 +546,7 @@ pub fn production_role_summary(item: ProductionItem) -> &'static str {
     match item {
         ProductionItem::ScoutPatrol => unit_role_summary(UnitKind::ScoutPatrol),
         ProductionItem::ColonyPod => unit_role_summary(UnitKind::ColonyPod),
+        ProductionItem::SeaColonyPod => unit_role_summary(UnitKind::SeaColonyPod),
         ProductionItem::Former => unit_role_summary(UnitKind::Former),
         ProductionItem::Speeder => unit_role_summary(UnitKind::Speeder),
         ProductionItem::ResonanceLaser => unit_role_summary(UnitKind::ResonanceLaser),
@@ -547,6 +556,7 @@ pub fn production_role_summary(item: ProductionItem) -> &'static str {
         ProductionItem::GarrisonGuard => unit_role_summary(UnitKind::GarrisonGuard),
         ProductionItem::PsiSentinel => unit_role_summary(UnitKind::PsiSentinel),
         ProductionItem::ProbeTeam => unit_role_summary(UnitKind::ProbeTeam),
+        ProductionItem::SeaTransport => unit_role_summary(UnitKind::SeaTransport),
         ProductionItem::RecyclingTanks => {
             "Economic facility that stabilizes early growth and mineral flow."
         }

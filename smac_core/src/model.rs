@@ -195,6 +195,7 @@ pub struct Tile {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnitKind {
     ColonyPod,
+    SeaColonyPod,
     ScoutPatrol,
     Former,
     Speeder,
@@ -208,6 +209,7 @@ pub enum UnitKind {
     IsleOfTheDeep,
     Needlejet,
     ProbeTeam,
+    SeaTransport,
     CustomUnit(UnitDesign),
 }
 
@@ -215,6 +217,7 @@ impl UnitKind {
     pub fn content_id(self) -> &'static str {
         match self {
             UnitKind::ColonyPod => "colony_pod",
+            UnitKind::SeaColonyPod => "sea_colony_pod",
             UnitKind::ScoutPatrol => "scout_patrol",
             UnitKind::Former => "former",
             UnitKind::Speeder => "speeder",
@@ -228,13 +231,15 @@ impl UnitKind {
             UnitKind::IsleOfTheDeep => "isle_of_the_deep",
             UnitKind::Needlejet => "needlejet",
             UnitKind::ProbeTeam => "probe_team",
+            UnitKind::SeaTransport => "sea_transport",
             UnitKind::CustomUnit(_) => "custom_unit",
         }
     }
 
-    pub fn all() -> [UnitKind; 14] {
+    pub fn all() -> [UnitKind; 16] {
         [
             UnitKind::ColonyPod,
+            UnitKind::SeaColonyPod,
             UnitKind::ScoutPatrol,
             UnitKind::Former,
             UnitKind::Speeder,
@@ -248,6 +253,7 @@ impl UnitKind {
             UnitKind::IsleOfTheDeep,
             UnitKind::Needlejet,
             UnitKind::ProbeTeam,
+            UnitKind::SeaTransport,
         ]
     }
 
@@ -264,7 +270,7 @@ impl UnitKind {
     }
 
     pub fn can_found_base(self) -> bool {
-        self == UnitKind::ColonyPod
+        self == UnitKind::ColonyPod || self == UnitKind::SeaColonyPod
     }
 
     pub fn can_terraform(self) -> bool {
@@ -274,6 +280,7 @@ impl UnitKind {
     pub fn from_content_id(value: &str) -> Option<Self> {
         match value {
             "colony_pod" => Some(UnitKind::ColonyPod),
+            "sea_colony_pod" => Some(UnitKind::SeaColonyPod),
             "scout_patrol" => Some(UnitKind::ScoutPatrol),
             "former" => Some(UnitKind::Former),
             "speeder" => Some(UnitKind::Speeder),
@@ -287,6 +294,7 @@ impl UnitKind {
             "isle_of_the_deep" => Some(UnitKind::IsleOfTheDeep),
             "needlejet" => Some(UnitKind::Needlejet),
             "probe_team" => Some(UnitKind::ProbeTeam),
+            "sea_transport" => Some(UnitKind::SeaTransport),
             _ => None,
         }
     }
@@ -323,6 +331,7 @@ pub struct Unit {
 pub enum ProductionItem {
     ScoutPatrol,
     ColonyPod,
+    SeaColonyPod,
     Former,
     Speeder,
     ResonanceLaser,
@@ -358,6 +367,7 @@ pub enum ProductionItem {
     SingularityContainment,
     BlackHoleHarvester,
     ProbeTeam,
+    SeaTransport,
     CustomUnit(usize),
     StockpileEnergy,
     SkyHydroponics,
@@ -381,6 +391,7 @@ impl ProductionItem {
         match self {
             ProductionItem::ScoutPatrol => "scout_patrol",
             ProductionItem::ColonyPod => "colony_pod",
+            ProductionItem::SeaColonyPod => "sea_colony_pod",
             ProductionItem::Former => "former",
             ProductionItem::Speeder => "speeder",
             ProductionItem::ResonanceLaser => "resonance_laser",
@@ -416,6 +427,7 @@ impl ProductionItem {
             ProductionItem::SingularityContainment => "singularity_containment",
             ProductionItem::BlackHoleHarvester => "black_hole_harvester",
             ProductionItem::ProbeTeam => "probe_team",
+            ProductionItem::SeaTransport => "sea_transport",
             ProductionItem::CustomUnit(_) => "custom_unit",
             ProductionItem::StockpileEnergy => "stockpile_energy",
             ProductionItem::SkyHydroponics => "sky_hydroponics",
@@ -536,6 +548,7 @@ impl ProductionItem {
         match value {
             "scout_patrol" => Some(ProductionItem::ScoutPatrol),
             "colony_pod" => Some(ProductionItem::ColonyPod),
+            "sea_colony_pod" => Some(ProductionItem::SeaColonyPod),
             "former" => Some(ProductionItem::Former),
             "speeder" => Some(ProductionItem::Speeder),
             "resonance_laser" => Some(ProductionItem::ResonanceLaser),
@@ -571,6 +584,7 @@ impl ProductionItem {
             "singularity_containment" => Some(ProductionItem::SingularityContainment),
             "black_hole_harvester" => Some(ProductionItem::BlackHoleHarvester),
             "probe_team" => Some(ProductionItem::ProbeTeam),
+            "sea_transport" => Some(ProductionItem::SeaTransport),
             "stockpile_energy" => Some(ProductionItem::StockpileEnergy),
             "sky_hydroponics" => Some(ProductionItem::SkyHydroponics),
             "solar_transmitter" => Some(ProductionItem::SolarTransmitter),
@@ -1198,7 +1212,7 @@ pub struct DiplomaticRelation {
 impl Default for DiplomaticRelation {
     fn default() -> Self {
         Self {
-            status: DiplomacyStatus::War, // Default to war for now, or maybe Truce?
+            status: DiplomacyStatus::Truce, // Start at Truce until they meet
             attitude: 0,
         }
     }
@@ -1360,6 +1374,8 @@ pub enum GameAction {
     UnloadUnit {
         unit_id: usize,
         transport_id: usize,
+        target_x: usize,
+        target_y: usize,
     },
     SetUnitActivity {
         unit_id: usize,

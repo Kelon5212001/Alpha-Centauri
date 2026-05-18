@@ -1326,6 +1326,7 @@ pub fn unit_defense(kind: UnitKind) -> i32 {
 pub fn unit_base_chassis(kind: UnitKind) -> crate::Chassis {
     match kind {
         UnitKind::ColonyPod => crate::Chassis::Infantry,
+        UnitKind::SeaColonyPod => crate::Chassis::Sea,
         UnitKind::ScoutPatrol => crate::Chassis::Infantry,
         UnitKind::Former => crate::Chassis::Infantry,
         UnitKind::Speeder => crate::Chassis::Speeder,
@@ -1339,6 +1340,7 @@ pub fn unit_base_chassis(kind: UnitKind) -> crate::Chassis {
         UnitKind::IsleOfTheDeep => crate::Chassis::Sea,
         UnitKind::Needlejet => crate::Chassis::Aircraft,
         UnitKind::ProbeTeam => crate::Chassis::Infantry,
+        UnitKind::SeaTransport => crate::Chassis::Sea,
         UnitKind::CustomUnit(design) => design.chassis,
     }
 }

@@ -655,7 +655,7 @@ fn combat_strength_for_owner(state: &GameState, owner: usize) -> i32 {
     state
         .units
         .iter()
-        .filter(|unit| unit.owner == owner && is_ai_combat_unit(state, unit))
+        .filter(|unit| is_ai_ally(state, owner, unit.owner) && is_ai_combat_unit(state, unit))
         .map(|unit| {
             let mut strength = 2 + state.unit_attack_strength(unit.id).min(8) / 2;
             strength += state.unit_defense_strength(unit.id).min(6) / 3;
@@ -681,11 +681,11 @@ fn frontier_tension_between(state: &GameState, owner: usize, other_id: usize) ->
     for base in state.bases.iter().filter(|base| base.owner == owner) {
         for other_base in state.bases.iter().filter(|base| base.owner == other_id) {
             let distance = state.distance(base.x, base.y, other_base.x, other_base.y);
-            if distance <= 4 {
+            if distance <= 5 {
+                tension += 5;
+            } else if distance <= 8 {
                 tension += 3;
-            } else if distance <= 7 {
-                tension += 2;
-            } else if distance <= 10 {
+            } else if distance <= 12 {
                 tension += 1;
             }
         }
@@ -698,12 +698,13 @@ fn frontier_tension_between(state: &GameState, owner: usize, other_id: usize) ->
             let distance = state.distance(base.x, base.y, unit.x, unit.y);
             if is_ai_combat_unit(state, unit) {
                 if distance <= 3 {
+                    tension += 3;
+                } else if distance <= 6 {
                     tension += 2;
-                } else if distance <= 5 {
-                    tension += 1;
                 }
-            } else if unit.kind == UnitKind::ColonyPod && distance <= 6 {
-                tension += 1;
+            } else if unit.kind == UnitKind::ColonyPod && distance <= 8 {
+                // Enemy colony pods near our borders are threatening expansion
+                tension += 2;
             }
         }
     }
@@ -751,20 +752,42 @@ fn offensive_base_priority(state: &GameState, owner: usize, base_id: usize) -> i
 }
 
 fn choose_ai_offensive_base_target(state: &GameState, owner: usize) -> Option<usize> {
-    let rival = rival_owner(state, owner);
     state
         .bases
         .iter()
-        .filter(|base| base.owner == rival)
+        .filter(|base| !is_ai_ally(state, owner, base.owner))
         .min_by_key(|base| offensive_base_priority(state, owner, base.id))
         .map(|base| base.id)
 }
 
+fn choose_ai_naval_invasion_target(state: &GameState, owner: usize) -> Option<usize> {
+    state
+        .bases
+        .iter()
+        .filter(|base| !is_ai_ally(state, owner, base.owner) && is_base_coastal(state, base.id))
+        .min_by_key(|base| {
+            let priority = offensive_base_priority(state, owner, base.id);
+            // Prefer coastal bases for naval invasion
+            priority - 10
+        })
+        .map(|base| base.id)
+        .or_else(|| choose_ai_offensive_base_target(state, owner))
+}
+
+fn choose_ai_naval_colonization_target(state: &GameState, unit: &crate::Unit) -> Option<(usize, usize)> {
+    // Similar to choose_ai_colony_target but specifically looks for sites NOT on the same landmass
+    // For now, just pick the best target
+    choose_ai_colony_target(state, unit)
+}
+
 fn choose_ai_offensive_position_target(state: &GameState, owner: usize) -> Option<(usize, usize)> {
-    let rival = rival_owner(state, owner);
     let mut best: Option<(usize, usize, i32)> = None;
 
-    for unit in state.units.iter().filter(|unit| unit.alive && unit.owner == rival) {
+    for unit in state
+        .units
+        .iter()
+        .filter(|unit| unit.alive && !is_ai_ally(state, owner, unit.owner))
+    {
         let nearest_owned_base = state
             .bases_for(owner)
             .iter()
@@ -918,24 +941,24 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
         let their_strength = combat_strength_for_owner(state, other_id);
         let strength_margin = our_strength - their_strength;
 
+        let our_pop: i32 = state
+            .bases
+            .iter()
+            .filter(|b| b.owner == owner)
+            .map(|b| b.population)
+            .sum();
+        let their_pop: i32 = state
+            .bases
+            .iter()
+            .filter(|b| b.owner == other_id)
+            .map(|b| b.population)
+            .sum();
+
         // Proactive Demands: Extort weaker neighbors if aggressive
         if personality.aggression >= 7
             && state.turn % 20 == 0
             && current_status != crate::DiplomacyStatus::Pact
         {
-            let our_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == owner)
-                .map(|b| b.population)
-                .sum();
-            let their_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == other_id)
-                .map(|b| b.population)
-                .sum();
-
             if our_pop > their_pop * 2 && attitude <= 10 {
                 // Try to find a tech they have
                 let other_techs = &state.factions[other_id].known_techs;
@@ -1020,8 +1043,8 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                         status: crate::DiplomacyStatus::Pact,
                     });
                 }
-            } else if (attitude <= -20 && personality.aggression > 5)
-                || (frontier_tension >= 4 && attitude <= 15 && hostility_bias >= 6)
+            } else if (attitude <= -15 && personality.aggression > 4)
+                || (frontier_tension >= 3 && attitude <= 20 && hostility_bias >= 5)
             {
                 // Break Treaty
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1031,7 +1054,7 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                 });
             }
         } else if current_status == crate::DiplomacyStatus::Pact {
-            if attitude <= 0 || (frontier_tension >= 5 && attitude < 25 && hostility_bias >= 7)
+            if attitude <= 10 || (frontier_tension >= 4 && attitude < 30 && hostility_bias >= 6)
             {
                 // Break Pact
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1041,27 +1064,15 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                 });
             }
         } else if current_status == crate::DiplomacyStatus::Truce {
-            let our_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == owner)
-                .map(|b| b.population)
-                .sum();
-            let their_pop: i32 = state
-                .bases
-                .iter()
-                .filter(|b| b.owner == other_id)
-                .map(|b| b.population)
-                .sum();
             let expansionism_threat = their_pop > our_pop + 2
                 || state.bases_for(other_id).len() > state.bases_for(owner).len() + 1;
 
-            if (attitude <= -40 && personality.aggression > 6)
-                || (state.turn >= 35
-                    && frontier_tension >= 5
-                    && attitude <= 5
-                    && (hostility_bias >= 6 || expansionism_threat)
-                    && strength_margin >= -2)
+            if (attitude <= -30 && personality.aggression > 5)
+                || (state.turn >= 30
+                    && frontier_tension >= 4
+                    && attitude <= 10
+                    && (hostility_bias >= 5 || expansionism_threat)
+                    && strength_margin >= -4)
             {
                 // Declare War
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1325,13 +1336,14 @@ fn maybe_assign_ai_convoy_route(state: &mut GameState, base_id: usize, owner: us
     if base.owner != owner {
         return;
     }
-    let should_route = base.facilities.contains(&crate::Facility::TradeExchange)
+    let should_route = (base.facilities.contains(&crate::Facility::TradeExchange)
         || base.facilities.contains(&crate::Facility::FreightDepot)
         || base.facilities.contains(&crate::Facility::CommandCenter)
         || base.facilities.contains(&crate::Facility::FieldHospital)
         || base.facilities.contains(&crate::Facility::MilitaryAcademy)
         || base.facilities.contains(&crate::Facility::ForwardDepot)
-        || state.base_potential_trade_links(base_id) >= 1 && state.bases_for(owner).len() >= 2;
+        || state.base_potential_trade_links(base_id) >= 1 && state.bases_for(owner).len() >= 2)
+        && state.faction(owner).map(|f| f.energy >= 20).unwrap_or(false);
     if !should_route {
         return;
     }
@@ -1437,7 +1449,7 @@ fn choose_ai_support_production(
     base: &crate::Base,
     owner: usize,
     yields: Yields,
-    trade_links: usize,
+    _trade_links: usize,
 ) -> Option<crate::ProductionItem> {
     let support = state.faction_support_summary(owner);
     if support.supported_units <= 0 {
@@ -1468,34 +1480,8 @@ fn choose_ai_support_production(
     }
 
     if severe_support_pressure
-        && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
-        && !base.facilities.contains(&crate::Facility::RecyclingTanks)
-    {
-        return Some(crate::ProductionItem::RecyclingTanks);
-    }
-
-    if severe_support_pressure
-        && !maintenance_overbuilt
-        && !base_optional_overbuilt
-        && trade_links >= 1
-        && state.is_production_available(owner, crate::ProductionItem::TradeExchange)
-        && !base.facilities.contains(&crate::Facility::TradeExchange)
-    {
-        return Some(crate::ProductionItem::TradeExchange);
-    }
-
-    if severe_support_pressure
-        && !maintenance_overbuilt
-        && !base_optional_overbuilt
-        && state.is_production_available(owner, crate::ProductionItem::NetworkNode)
-        && !base.facilities.contains(&crate::Facility::NetworkNode)
-        && yields.energy >= yields.minerals
-    {
-        return Some(crate::ProductionItem::NetworkNode);
-    }
-
-    if severe_support_pressure
         && state.is_production_available(owner, crate::ProductionItem::StockpileEnergy)
+        && state.faction(owner).map(|f| f.energy < 0).unwrap_or(false)
     {
         return Some(crate::ProductionItem::StockpileEnergy);
     }
@@ -1508,48 +1494,35 @@ fn choose_ai_support_relief_fallback(
     base: &crate::Base,
     owner: usize,
     yields: Yields,
-    trade_links: usize,
+    _trade_links: usize,
 ) -> Option<crate::ProductionItem> {
+    let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
+    let low_energy = state.faction(owner).map(|f| f.energy < 20).unwrap_or(true);
 
-    if !base.facilities.contains(&crate::Facility::RecyclingTanks)
-        && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
+    if !base.facilities.contains(&crate::Facility::CommandCenter)
+        && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && !maintenance_overbuilt
     {
-        return Some(crate::ProductionItem::RecyclingTanks);
-    }
-
-    if trade_links >= 1
-        && !base_optional_overbuilt
-        && !base.facilities.contains(&crate::Facility::TradeExchange)
-        && state.is_production_available(owner, crate::ProductionItem::TradeExchange)
-    {
-        return Some(crate::ProductionItem::TradeExchange);
+        return Some(crate::ProductionItem::CommandCenter);
     }
 
     if !base.facilities.contains(&crate::Facility::NetworkNode)
         && !base_optional_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::NetworkNode)
-        && yields.energy >= yields.minerals
+        && (yields.energy >= yields.minerals || low_energy)
     {
         return Some(crate::ProductionItem::NetworkNode);
     }
 
-    if !base.facilities.contains(&crate::Facility::Greenhouse)
-        && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
-        && yields.nutrients <= base.population.max(1) + 1
+    if !base.facilities.contains(&crate::Facility::RecyclingTanks)
+        && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
+        && !low_energy
     {
-        return Some(crate::ProductionItem::Greenhouse);
+        return Some(crate::ProductionItem::RecyclingTanks);
     }
 
-    if state.is_production_available(owner, crate::ProductionItem::Former)
-        && yields.nutrients >= yields.minerals
-    {
-        return Some(crate::ProductionItem::Former);
-    }
-
-    state
-        .is_production_available(owner, crate::ProductionItem::StockpileEnergy)
-        .then_some(crate::ProductionItem::StockpileEnergy)
+    None
 }
 
 fn is_ai_maintenance_overbuilt(state: &GameState, owner: usize) -> bool {
@@ -1646,6 +1619,9 @@ fn choose_ai_production_for_base(
     let psi_pressure = state.base_local_psi_pressure(base.id);
     let trade_links = state.base_potential_trade_links(base.id);
     let active_colony_pods = live_colony_pod_count(state, owner);
+    let active_sea_colony_pods = live_sea_colony_pod_count(state, owner);
+    let active_transports = live_sea_transport_count(state, owner);
+    let is_coastal = is_base_coastal(state, base.id);
     let active_formers = live_former_count(state, owner);
     let owned_bases = state.bases_for(owner).len();
     let expansion_frontier = desired_ai_expansion_target(state, owner).min(4).max(2);
@@ -1678,13 +1654,17 @@ fn choose_ai_production_for_base(
     };
     let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
-    // CRITICAL DEFENSE: If base has no garrison and is under threat
+    let low_energy = faction.energy < 20;
+    let support_summary = state.faction_support_summary(owner);
+    let overpopulated_with_units = support_summary.unit_upkeep > 4;
+
+    // CRITICAL DEFENSE: If base has no garrison
     let local_units = state
         .units
         .iter()
         .filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y)
         .count();
-    if local_units == 0 && signals.military_pressure >= 1 {
+    if local_units == 0 {
         if let Some(item) = choose_ai_garrison_production(state, owner, psi_pressure) {
             return item;
         }
@@ -1770,11 +1750,30 @@ fn choose_ai_production_for_base(
         }
     }
 
+    // NAVAL EXPANSION: Coastal or sea bases should build sea units
+    let is_sea_base = is_base_on_ocean(state, base.id);
+    if (is_coastal || is_sea_base) && can_push_colony_pod && !overpopulated_with_units {
+        if active_sea_colony_pods < 1
+            && underexpanded
+            && state.is_production_available(owner, crate::ProductionItem::SeaColonyPod)
+            && state.base_food_margin(base.id).unwrap_or(0) >= -1
+        {
+            return crate::ProductionItem::SeaColonyPod;
+        }
+        if active_transports < 1
+            && owned_bases >= 3
+            && state.is_production_available(owner, crate::ProductionItem::SeaTransport)
+        {
+            return crate::ProductionItem::SeaTransport;
+        }
+    }
+
     // CRITICAL SURVIVAL: Famine or extreme unrest prevention
     if (yields.nutrients < base.population as i32
         || (yields.nutrients <= base.population as i32 + 1 && signals.expansion_pressure))
         && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
         && !base.facilities.contains(&crate::Facility::Greenhouse)
+        && !low_energy
     {
         return crate::ProductionItem::Greenhouse;
     }
@@ -1784,6 +1783,7 @@ fn choose_ai_production_for_base(
         && !base
             .facilities
             .contains(&crate::Facility::RecreationCommons)
+        && !low_energy
     {
         return crate::ProductionItem::RecreationCommons;
     }
@@ -1791,6 +1791,7 @@ fn choose_ai_production_for_base(
     if signals.mineral_pressure
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
+        && !low_energy
     {
         return crate::ProductionItem::RecyclingTanks;
     }
@@ -1799,11 +1800,13 @@ fn choose_ai_production_for_base(
         if state.is_production_available(owner, crate::ProductionItem::PerimeterDefense)
             && !base.facilities.contains(&crate::Facility::PerimeterDefense)
             && (yields.minerals >= 4 || signals.military_pressure >= 2)
+            && !low_energy
         {
             return crate::ProductionItem::PerimeterDefense;
         }
         if state.is_production_available(owner, crate::ProductionItem::GarrisonGuard)
             && (yields.minerals >= yields.energy || signals.military_pressure >= 2)
+            && !overpopulated_with_units
         {
             return crate::ProductionItem::GarrisonGuard;
         }
@@ -2046,6 +2049,7 @@ fn choose_ai_production_for_base(
     if signals.mineral_pressure
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
+        && !low_energy
     {
         return crate::ProductionItem::RecyclingTanks;
     }
@@ -2498,7 +2502,7 @@ fn frontline_military_pressure_near_base(
     for unit in state
         .units
         .iter()
-        .filter(|unit| unit.alive && unit.owner != owner)
+        .filter(|unit| unit.alive && !is_ai_ally(state, owner, unit.owner))
     {
         if matches!(
             unit.kind,
@@ -2547,7 +2551,7 @@ pub(crate) fn psi_pressure_near_base(state: &GameState, x: usize, y: usize, owne
     for unit in state
         .units
         .iter()
-        .filter(|unit| unit.alive && unit.owner != owner)
+        .filter(|unit| unit.alive && !is_ai_ally(state, owner, unit.owner))
     {
         let is_psi_threat = matches!(
             unit.kind,
@@ -2580,6 +2584,7 @@ enum AiObjective {
     SupportColony(usize),
     BoardTransport(usize),
     NavalInvasion(usize),
+    NavalColonization(usize, usize),
     LaunchPlanetBuster(usize, usize),
 }
 
@@ -2588,7 +2593,7 @@ struct AiBattleGroup {
     unit_ids: Vec<usize>,
 }
 
-fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
+pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     let mut battle_groups: Vec<AiBattleGroup> = Vec::new();
 
     // 1. Identify all available combat units (excluding those in cargo)
@@ -2729,7 +2734,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         }
     }
 
-    // d. Naval Invasion Logic
+    // d. Naval Invasion & Colonization Logic
     let transport_ids: Vec<usize> = combat_unit_ids
         .iter()
         .filter(|&&id| state.unit_has_ability(id, Ability::Transport))
@@ -2737,6 +2742,19 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         .collect();
 
     let mut escortable_transports = Vec::new();
+
+    // Identify land-based colony pods that might need transport
+    let land_colony_pod_ids: Vec<usize> = state
+        .units
+        .iter()
+        .filter(|u| {
+            u.alive
+                && u.owner == owner
+                && u.kind == UnitKind::ColonyPod
+                && !cargo_ids.contains(&u.id)
+        })
+        .map(|u| u.id)
+        .collect();
 
     for transport_id in transport_ids.clone() {
         combat_unit_ids.retain(|&id| id != transport_id);
@@ -2747,14 +2765,26 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         // If transport is empty, try to fill it
         if transport.cargo_unit_ids.is_empty() {
             let mut boarders = Vec::new();
-            combat_unit_ids.retain(|&id| {
+
+            // Prioritize Colony Pods for empty transports
+            for &cp_id in &land_colony_pod_ids {
                 if boarders.len() < 2 {
-                    boarders.push(id);
-                    false
-                } else {
-                    true
+                    boarders.push(cp_id);
                 }
-            });
+            }
+
+            // Fill remaining space with combat units
+            if boarders.len() < 2 {
+                combat_unit_ids.retain(|&id| {
+                    if boarders.len() < 2 {
+                        boarders.push(id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+            }
+
             if !boarders.is_empty() {
                 battle_groups.push(AiBattleGroup {
                     objective: AiObjective::BoardTransport(transport_id),
@@ -2763,9 +2793,40 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
             }
         }
 
-        // If transport has cargo, find a naval invasion target
+        // If transport has cargo, find a mission
         if !transport.cargo_unit_ids.is_empty() {
-            if let Some(target_base_id) = choose_ai_offensive_base_target(state, owner) {
+            // Check if we have a colony pod on board
+            let has_colony_pod = transport.cargo_unit_ids.iter().any(|&cid| {
+                state
+                    .unit(cid)
+                    .map(|u| u.kind == UnitKind::ColonyPod)
+                    .unwrap_or(false)
+            });
+
+            if has_colony_pod {
+                // Find a colonization target across the water
+                // For now, reuse choose_ai_colony_target but we need to ensure it's not on current continent
+                // Simpler for now: just pick the best colony target
+                if let Some(cp_id) = transport.cargo_unit_ids.iter().find(|&&cid| {
+                    state
+                        .unit(cid)
+                        .map(|u| u.kind == UnitKind::ColonyPod)
+                        .unwrap_or(false)
+                }) {
+                    let cp = state.unit(*cp_id).unwrap();
+                    if let Some((tx, ty)) = choose_ai_naval_colonization_target(state, cp) {
+                        battle_groups.push(AiBattleGroup {
+                            objective: AiObjective::NavalColonization(tx, ty),
+                            unit_ids: vec![transport_id],
+                        });
+                        escortable_transports.push(transport_id);
+                        continue;
+                    }
+                }
+            }
+
+            // Otherwise or if no colony target, find a naval invasion target
+            if let Some(target_base_id) = choose_ai_naval_invasion_target(state, owner) {
                 battle_groups.push(AiBattleGroup {
                     objective: AiObjective::NavalInvasion(target_base_id),
                     unit_ids: vec![transport_id],
@@ -2887,11 +2948,37 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
     // 3. Process Battle Groups
     for group in &battle_groups {
         let Some((tx, ty)) = (match group.objective {
-            AiObjective::Assemble(ax, ay) | AiObjective::AssembleNaval(ax, ay) => Some((ax, ay)),
+            AiObjective::AssembleNaval(ax, ay) => {
+                // Find nearest coastal tile to (ax, ay) for naval units to assemble
+                let mut best_tile = (ax, ay);
+                let mut min_dist = 99;
+                for dy in -2isize..=2 {
+                    for dx in -2isize..=2 {
+                        let nx = ax as isize + dx;
+                        let ny = ay as isize + dy;
+                        if nx < 0 || ny < 0 || nx >= state.width as isize || ny >= state.height as isize {
+                            continue;
+                        }
+                        let (nx, ny) = (nx as usize, ny as usize);
+                        if let Some(tile) = state.tile(nx, ny) {
+                            if !tile.terrain.is_land() {
+                                let dist = state.distance(nx, ny, ax, ay);
+                                if dist < min_dist {
+                                    min_dist = dist;
+                                    best_tile = (nx, ny);
+                                }
+                            }
+                        }
+                    }
+                }
+                Some(best_tile)
+            }
+            AiObjective::Assemble(ax, ay) => Some((ax, ay)),
             AiObjective::AttackPosition(ax, ay) => Some((ax, ay)),
             AiObjective::NavalInvasion(base_id) => {
                 state.base(base_id).map(|base| (base.x, base.y))
             }
+            AiObjective::NavalColonization(tx, ty) => Some((tx, ty)),
             AiObjective::DefendBase(base_id) => state.base(base_id).map(|base| (base.x, base.y)),
             AiObjective::SupportColony(unit_id) | AiObjective::BoardTransport(unit_id) => {
                 state.unit(unit_id).map(|unit| (unit.x, unit.y))
@@ -2912,7 +2999,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
             if unit.moves_left > 0 {
                 // Boarding logic
                 if let AiObjective::BoardTransport(transport_id) = group.objective {
-                    if unit.x == tx && unit.y == ty {
+                    if state.distance(unit.x, unit.y, tx, ty) <= 1 {
                         let _ = state.apply_action(GameAction::LoadUnit {
                             unit_id,
                             transport_id,
@@ -2934,7 +3021,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                 }
 
                 // Unloading logic
-                if let AiObjective::NavalInvasion(_) = group.objective {
+                if matches!(group.objective, AiObjective::NavalInvasion(_) | AiObjective::NavalColonization(_, _)) {
                     if !unit.cargo_unit_ids.is_empty()
                         && state.distance(unit.x, unit.y, tx, ty) <= 1
                     {
@@ -2943,6 +3030,8 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                             let _ = state.apply_action(GameAction::UnloadUnit {
                                 unit_id: cid,
                                 transport_id: unit_id,
+                                target_x: tx,
+                                target_y: ty,
                             });
                         }
                         continue;
@@ -2968,13 +3057,15 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     }
                 }
 
-                // If attacking, only advance if we have a sufficient force (at least 3 units)
-                // Or if we are already very close to the target
+                // If attacking, only advance if we have a sufficient force (at least 2 units)
+                // Or if we are already very close to the target or very aggressive
                 let dist = state.distance(unit.x, unit.y, tx, ty);
+                let aggression = state.faction(owner).map(|f| f.personality.aggression).unwrap_or(5);
                 if is_attacking
                     && group_size < minimum_attack_group_size
-                    && dist <= 4
+                    && dist <= 2
                     && dist > 1
+                    && aggression < 8
                 {
                     // Stage nearby instead of charging in solo
                     continue;
@@ -3066,7 +3157,7 @@ fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
             continue;
         }
 
-        if unit.kind == UnitKind::ColonyPod {
+        if unit.kind == UnitKind::ColonyPod || unit.kind == UnitKind::SeaColonyPod {
             let base_count = state.bases_for(owner).len() as i32;
             let limit = state.base_expansion_limit(owner);
             let expansion_target = desired_ai_expansion_target(state, owner) as i32;
@@ -3233,14 +3324,10 @@ fn combat_garrison_count_for_base(state: &GameState, owner: usize, base_id: usiz
         .iter()
         .filter(|unit| {
             unit.alive
-                && unit.owner == owner
+                && is_ai_ally(state, owner, unit.owner)
                 && unit.x == base.x
                 && unit.y == base.y
-                && !matches!(
-                    unit.kind,
-                    UnitKind::ColonyPod | UnitKind::Former | UnitKind::ProbeTeam
-                )
-                && !state.unit_has_ability(unit.id, crate::Ability::Probe)
+                && is_ai_combat_unit(state, unit)
         })
         .count()
 }
@@ -3307,7 +3394,27 @@ fn live_colony_pod_count(state: &GameState, owner: usize) -> usize {
     state
         .units
         .iter()
-        .filter(|unit| unit.alive && unit.owner == owner && unit.kind == UnitKind::ColonyPod)
+        .filter(|u| {
+            u.alive
+                && u.owner == owner
+                && (u.kind == UnitKind::ColonyPod || u.kind == UnitKind::SeaColonyPod)
+        })
+        .count()
+}
+
+fn live_sea_colony_pod_count(state: &GameState, owner: usize) -> usize {
+    state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner && u.kind == UnitKind::SeaColonyPod)
+        .count()
+}
+
+fn live_sea_transport_count(state: &GameState, owner: usize) -> usize {
+    state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner && u.kind == UnitKind::SeaTransport)
         .count()
 }
 
@@ -3342,8 +3449,9 @@ fn is_ai_colony_site_acceptable(state: &GameState, owner: usize, x: usize, y: us
     }
 
     let nearest_friendly_base = state
-        .bases_for(owner)
+        .bases
         .iter()
+        .filter(|base| is_ai_ally(state, owner, base.owner))
         .map(|base| manhattan(x, y, base.x, base.y))
         .min();
 
@@ -3359,11 +3467,10 @@ fn is_ai_colony_site_acceptable(state: &GameState, owner: usize, x: usize, y: us
 }
 
 fn choose_ai_planet_buster_target(state: &GameState, unit: &crate::Unit) -> Option<(usize, usize)> {
-    let rival = rival_owner(state, unit.owner);
     let mut best_target = None;
     let mut best_score = 0;
 
-    for base in state.bases.iter().filter(|b| b.owner == rival) {
+    for base in state.bases.iter().filter(|b| !is_ai_ally(state, unit.owner, b.owner)) {
         let dist = state.distance(unit.x, unit.y, base.x, base.y);
         if dist > 20 {
             continue;
@@ -3388,7 +3495,6 @@ fn choose_adjacent_frontier_raid_target(
         return None;
     }
 
-    let rival = rival_owner(state, unit.owner);
     let mut best: Option<(usize, usize, i32)> = None;
 
     for dy in -1isize..=1 {
@@ -3411,7 +3517,7 @@ fn choose_adjacent_frontier_raid_target(
                 let Some(other_unit) = state.unit(other_unit_id) else {
                     continue;
                 };
-                if other_unit.owner != rival {
+                if is_ai_ally(state, unit.owner, other_unit.owner) {
                     continue;
                 }
 
@@ -3440,7 +3546,7 @@ fn choose_adjacent_frontier_raid_target(
                 let Some(base) = state.base(base_id) else {
                     continue;
                 };
-                if base.owner == rival {
+                if !is_ai_ally(state, unit.owner, base.owner) {
                     let score = 3;
                     if best.map(|(_, _, best_score)| score < best_score).unwrap_or(true) {
                         best = Some((tx, ty, score));
@@ -3455,7 +3561,11 @@ fn choose_adjacent_frontier_raid_target(
 
 fn choose_ai_colony_target(state: &GameState, unit: &crate::Unit) -> Option<(usize, usize)> {
     let owner = unit.owner;
-    let friendly_bases = state.bases_for(owner);
+    let friendly_bases: Vec<_> = state
+        .bases
+        .iter()
+        .filter(|base| is_ai_ally(state, owner, base.owner))
+        .collect();
     let hostility_bias = content::ai_attack_bias(owner) as i32;
     let contested_frontier_expansion = friendly_bases.len() >= 3 && hostility_bias >= 5;
     let minimum_spacing = if friendly_bases.len() < 4 {
@@ -3466,13 +3576,23 @@ fn choose_ai_colony_target(state: &GameState, unit: &crate::Unit) -> Option<(usi
     let mut best_spaced: Option<(usize, usize, i32)> = None;
     let mut best_relaxed: Option<(usize, usize, i32)> = None;
 
+    let is_sea_unit = state.unit_is_sea_unit(unit.id);
+
     for y in 0..state.height {
         for x in 0..state.width {
             let Some(tile) = state.tile(x, y) else {
                 continue;
             };
 
-            if !tile.terrain.is_land() || tile.base.is_some() {
+            if tile.base.is_some() {
+                continue;
+            }
+
+            if is_sea_unit {
+                if tile.terrain.is_land() {
+                    continue;
+                }
+            } else if !tile.terrain.is_land() {
                 continue;
             }
 
@@ -3565,6 +3685,15 @@ fn try_ai_move_toward(
     target_y: usize,
 ) -> bool {
     let current_distance = manhattan(from_x, from_y, target_x, target_y);
+    
+    // If we are a sea unit targeting land, we might want to stay adjacent (dist 1)
+    let is_sea_unit = state.unit_is_sea_unit(unit_id);
+    let target_is_land = state.tile(target_x, target_y).map(|t| t.terrain.is_land()).unwrap_or(true);
+    
+    if is_sea_unit && target_is_land && current_distance <= 1 {
+        return true; // Already adjacent to land target
+    }
+
     let step_x = step_toward(from_x, target_x);
     let step_y = step_toward(from_y, target_y);
 
@@ -3573,6 +3702,11 @@ fn try_ai_move_toward(
 
     if nx == from_x && ny == from_y {
         return false;
+    }
+
+    // Don't move to distance 0 if sea unit and target is land
+    if is_sea_unit && target_is_land && nx == target_x && ny == target_y {
+        return true; 
     }
 
     if state
@@ -3611,6 +3745,12 @@ fn try_ai_move_toward(
             }
 
             let distance = manhattan(alt_x, alt_y, target_x, target_y);
+            
+            // Don't move to distance 0 if sea unit and target is land
+            if is_sea_unit && target_is_land && distance == 0 {
+                continue;
+            }
+
             let alignment_penalty = (step_x != 0 && step_toward(from_x, alt_x) != step_x) as usize
                 + (step_y != 0 && step_toward(from_y, alt_y) != step_y) as usize;
             if distance <= current_distance {
@@ -3671,49 +3811,92 @@ fn try_ai_retreat(state: &mut GameState, unit: &crate::Unit) -> bool {
         return true;
     }
 
+    let current_id = unit.id;
+    let mut moved = false;
+
     if let Some((tx, ty)) = nearest_friendly_base(state, unit.owner, unit.x, unit.y) {
-        if let Some((nx, ny)) = safest_retreat_step(state, unit, tx, ty) {
-            let _ = state.apply_action(GameAction::MoveUnit {
-                unit_id: unit.id,
-                target_x: nx,
-                target_y: ny,
-            });
-        }
-        return true;
-    } else {
-        // If no friendly base exists, move away from the nearest enemy
-        let rival = rival_owner(state, unit.owner);
-        let nearest_enemy = state
-            .units
-            .iter()
-            .filter(|u| u.alive && u.owner == rival)
-            .map(|u| (u.x, u.y, state.distance(unit.x, unit.y, u.x, u.y)))
-            .min_by_key(|&(_, _, d)| d);
-
-        if let Some((ex, ey, _)) = nearest_enemy {
-            // Find a step that increases distance from (ex, ey)
-            let candidates = [
-                (unit.x.saturating_add(1), unit.y),
-                (unit.x.saturating_sub(1), unit.y),
-                (unit.x, unit.y.saturating_add(1)),
-                (unit.x, unit.y.saturating_sub(1)),
-            ];
-
-            let best_step = candidates
-                .into_iter()
-                .filter(|&(cx, cy)| cx < state.width && cy < state.height)
-                .max_by_key(|&(cx, cy)| state.distance(cx, cy, ex, ey));
-
-            if let Some((nx, ny)) = best_step {
-                let _ = state.apply_action(GameAction::MoveUnit {
-                    unit_id: unit.id,
+        while let Some(u) = state.unit(current_id) {
+            if u.moves_left <= 0 || is_unit_on_friendly_base(state, u) {
+                break;
+            }
+            if let Some((nx, ny)) = safest_retreat_step(state, u, tx, ty) {
+                let res = state.apply_action(GameAction::MoveUnit {
+                    unit_id: current_id,
                     target_x: nx,
                     target_y: ny,
                 });
+                if res.is_ok() {
+                    moved = true;
+                } else {
+                    break;
+                }
+            } else {
+                break;
             }
         }
-        return true;
+        return moved;
+    } else {
+        // If no friendly base exists, move away from the nearest enemy
+        let mut best_move: Option<(usize, usize)> = None;
+        let mut max_dist = 0;
+
+        if let Some(u) = state.unit(current_id) {
+            let rival_ids: Vec<usize> = state
+                .units
+                .iter()
+                .filter(|ru| ru.alive && !is_ai_ally(state, u.owner, ru.owner))
+                .map(|ru| ru.id)
+                .collect();
+
+            if let Some(&nearest_enemy_id) = rival_ids.iter().min_by_key(|&&rid| {
+                let ru = state.unit(rid).unwrap();
+                state.distance(u.x, u.y, ru.x, ru.y)
+            }) {
+                let enemy = state.unit(nearest_enemy_id).unwrap();
+                let (ex, ey) = (enemy.x, enemy.y);
+                for dy in -1isize..=1 {
+                    for dx in -1isize..=1 {
+                        if dx == 0 && dy == 0 {
+                            continue;
+                        }
+                        let nx = u.x as isize + dx;
+                        let ny = u.y as isize + dy;
+                        if nx < 0
+                            || ny < 0
+                            || nx >= state.width as isize
+                            || ny >= state.height as isize
+                        {
+                            continue;
+                        }
+                        let (nx, ny) = (nx as usize, ny as usize);
+
+                        if !state.tile(nx, ny).map(|t| t.terrain.is_land()).unwrap_or(false) {
+                            continue;
+                        }
+                        if state.tile(nx, ny).and_then(|t| t.unit).is_some() {
+                            continue;
+                        }
+                        let dist = state.distance(nx, ny, ex, ey);
+                        if dist > max_dist {
+                            max_dist = dist;
+                            best_move = Some((nx, ny));
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some((nx, ny)) = best_move {
+            let _ = state.apply_action(GameAction::MoveUnit {
+                unit_id: current_id,
+                target_x: nx,
+                target_y: ny,
+            });
+            return true;
+        }
     }
+
+    false
 }
 
 fn try_ai_probe_action(state: &mut GameState, unit: &crate::Unit) -> bool {
@@ -7505,4 +7688,43 @@ fn step_toward(current: usize, target: usize) -> isize {
 
 fn manhattan(ax: usize, ay: usize, bx: usize, by: usize) -> usize {
     ax.abs_diff(bx) + ay.abs_diff(by)
+}
+
+fn is_ai_ally(state: &GameState, owner: usize, other_id: usize) -> bool {
+    if owner == other_id {
+        return true;
+    }
+    let status = state.relations[owner][other_id].status;
+    status == crate::DiplomacyStatus::Treaty || status == crate::DiplomacyStatus::Pact
+}
+
+fn is_base_coastal(state: &GameState, base_id: usize) -> bool {
+    let Some(base) = state.base(base_id) else {
+        return false;
+    };
+    for dy in -1isize..=1 {
+        for dx in -1isize..=1 {
+            let nx = base.x as isize + dx;
+            let ny = base.y as isize + dy;
+            if nx < 0 || ny < 0 || nx >= state.width as isize || ny >= state.height as isize {
+                continue;
+            }
+            if let Some(tile) = state.tile(nx as usize, ny as usize) {
+                if !tile.terrain.is_land() {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn is_base_on_ocean(state: &GameState, base_id: usize) -> bool {
+    let Some(base) = state.base(base_id) else {
+        return false;
+    };
+    state
+        .tile(base.x, base.y)
+        .map(|t| !t.terrain.is_land())
+        .unwrap_or(false)
 }

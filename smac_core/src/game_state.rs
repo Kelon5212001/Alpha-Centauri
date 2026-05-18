@@ -1473,7 +1473,9 @@ impl GameState {
             GameAction::UnloadUnit {
                 unit_id,
                 transport_id,
-            } => self.unload_unit(unit_id, transport_id),
+                target_x,
+                target_y,
+            } => self.unload_unit(unit_id, transport_id, target_x, target_y),
             GameAction::SetUnitActivity { unit_id, activity } => {
                 self.set_unit_activity(unit_id, activity);
                 Ok(())
@@ -1522,7 +1524,7 @@ impl GameState {
             message,
             turn: self.turn,
         });
-        if self.log.len() > 100 {
+        if self.log.len() > 10000 {
             self.log.remove(0);
         }
     }
@@ -9173,6 +9175,15 @@ impl GameState {
                 return Err("Another friendly unit is already on that tile.".to_string());
             }
 
+            // Block combat between allies (Treaty or Pact)
+            let status = self.relations[unit_snapshot.owner][defender.owner].status;
+            if status == DiplomacyStatus::Treaty || status == DiplomacyStatus::Pact {
+                return Err(format!(
+                    "Cannot attack ally (status: {:?}).",
+                    status
+                ));
+            }
+
             self.resolve_combat(unit_id, defender_id, target_x, target_y);
             self.update_player_visibility();
             self.check_game_over();
@@ -9189,6 +9200,34 @@ impl GameState {
         if let Some(base_id) = self.tiles[target_idx].base {
             let owner = self.bases[base_id].owner;
             if owner != unit_snapshot.owner {
+                // AUTO-DECLARE WAR on Capture
+                if owner != self.native_owner()
+                    && unit_snapshot.owner != self.native_owner()
+                {
+                    if self.relations[unit_snapshot.owner][owner].status != DiplomacyStatus::War {
+                        let _ = self.update_diplomacy(
+                            unit_snapshot.owner,
+                            owner,
+                            DiplomacyStatus::War,
+                        );
+                    }
+
+                    // MUTUAL DEFENSE: Allies of the defender declare war on the attacker
+                    let previous_owner_allies: Vec<usize> = (0..self.factions.len())
+                        .filter(|&id| {
+                            id != owner 
+                                && id != unit_snapshot.owner
+                                && self.relations[owner][id].status == DiplomacyStatus::Pact
+                        })
+                        .collect();
+                    
+                    for ally_id in previous_owner_allies {
+                        if self.relations[unit_snapshot.owner][ally_id].status != DiplomacyStatus::War {
+                            let _ = self.update_diplomacy(unit_snapshot.owner, ally_id, DiplomacyStatus::War);
+                        }
+                    }
+                }
+
                 self.bases[base_id].owner = unit_snapshot.owner;
                 let faction_name = self.faction_name(unit_snapshot.owner).to_string();
                 let base_name = self.bases[base_id].name.clone();
@@ -9251,8 +9290,8 @@ impl GameState {
 
         let idx = self.tile_index(unit_snapshot.x, unit_snapshot.y);
 
-        if !self.tiles[idx].terrain.is_land() {
-            return Err("Cannot found a base in the ocean.".to_string());
+        if !self.tiles[idx].terrain.is_land() && !self.unit_is_sea_unit(unit_id) {
+            return Err("Only sea units can found bases in the ocean.".to_string());
         }
 
         if self.tiles[idx].base.is_some() {
@@ -9292,7 +9331,7 @@ impl GameState {
         }
 
         let faction_name = self.faction_name(unit_snapshot.owner).to_string();
-        self.push_log(format!("{faction_name} founded {name}."));
+        self.push_log(format!("{faction_name} founded {name} at ({}, {}).", unit_snapshot.x, unit_snapshot.y));
 
         self.update_player_visibility();
         self.check_game_over();
@@ -9905,6 +9944,10 @@ impl GameState {
             ),
         );
 
+        if faction_a == self.player_owner() || faction_b == self.player_owner() {
+            self.update_player_visibility();
+        }
+
         Ok(())
     }
 
@@ -9951,17 +9994,39 @@ impl GameState {
         }
     }
 
-    pub fn unload_unit(&mut self, unit_id: usize, transport_id: usize) -> Result<(), String> {
+    pub fn unload_unit(
+        &mut self,
+        unit_id: usize,
+        transport_id: usize,
+        target_x: usize,
+        target_y: usize,
+    ) -> Result<(), String> {
         let (tx, ty, owner) = {
             let transport = self.unit(transport_id).ok_or("Transport not found")?;
             (transport.x, transport.y, transport.owner)
         };
+
+        if self.distance(tx, ty, target_x, target_y) > 1 {
+            return Err("Cannot unload to a non-adjacent tile.".to_string());
+        }
 
         let unit_index = self
             .units
             .iter()
             .position(|u| u.id == unit_id)
             .ok_or("Unit not found")?;
+
+        // Check if unit can enter the target terrain
+        if !self.tiles[self.tile_index(target_x, target_y)].terrain.is_land()
+            && !self.unit_can_enter_ocean(unit_id)
+        {
+            return Err("That unit cannot enter the ocean.".to_string());
+        }
+        if self.tiles[self.tile_index(target_x, target_y)].terrain.is_land()
+            && !self.unit_can_enter_land(unit_id)
+        {
+            return Err("That unit cannot enter land.".to_string());
+        }
 
         let transport_index = self
             .units
@@ -9977,26 +10042,24 @@ impl GameState {
         }
 
         // Move unit to map if tile is available
-        let tile_index = self.tile_index(tx, ty);
-        if self.tiles[tile_index].unit.is_some()
-            && self.tiles[tile_index].unit != Some(transport_id)
-        {
+        let tile_index = self.tile_index(target_x, target_y);
+        if self.tiles[tile_index].unit.is_some() {
             return Err("Destination tile already occupied".to_string());
         }
 
         self.units[transport_index]
             .cargo_unit_ids
             .retain(|&id| id != unit_id);
-        self.units[unit_index].x = tx;
-        self.units[unit_index].y = ty;
+        self.units[unit_index].x = target_x;
+        self.units[unit_index].y = target_y;
         self.units[unit_index].moves_left = 0;
         self.tiles[tile_index].unit = Some(unit_id);
 
         self.push_log(format!(
             "{} unloaded a unit at ({}, {}).",
             self.faction_name(owner),
-            tx,
-            ty
+            target_x,
+            target_y
         ));
 
         Ok(())
@@ -10019,8 +10082,8 @@ impl GameState {
             (unit.x, unit.y, transport.x, transport.y, unit.owner)
         };
 
-        if ux != tx || uy != ty {
-            return Err("Units must be in the same tile to load".to_string());
+        if self.distance(ux, uy, tx, ty) > 1 {
+            return Err("Units must be adjacent or in the same tile to load".to_string());
         }
 
         let unit_index = self
@@ -10044,10 +10107,6 @@ impl GameState {
         let tile_index = self.tile_index(ux, uy);
         if self.tiles[tile_index].unit == Some(unit_id) {
             self.tiles[tile_index].unit = None;
-            // Restore transport or another unit to the tile if present
-            if self.units[transport_index].x == ux && self.units[transport_index].y == uy {
-                self.tiles[tile_index].unit = Some(transport_id);
-            }
         }
 
         self.units[transport_index].cargo_unit_ids.push(unit_id);
@@ -10205,7 +10264,7 @@ impl GameState {
             return false;
         };
         match &unit.kind {
-            UnitKind::IsleOfTheDeep => true,
+            UnitKind::IsleOfTheDeep | UnitKind::SeaColonyPod | UnitKind::SeaTransport => true,
             UnitKind::CustomUnit(design) => design.chassis == Chassis::Sea,
             _ => false,
         }
@@ -10276,7 +10335,7 @@ impl GameState {
             .unwrap_or_else(|| unit.kind.clone().defense())
     }
 
-    fn spawn_unit_near(
+    pub fn spawn_unit_near(
         &mut self,
         owner: usize,
         kind: UnitKind,
@@ -11135,6 +11194,36 @@ impl GameState {
         let Some(attacker) = self.unit(attacker_id).cloned() else {
             return;
         };
+        
+        let Some(defender) = self.unit(defender_id).cloned() else {
+            return;
+        };
+
+        // AUTO-DECLARE WAR on Attack
+        // If factions are not the same, not Native, and are not currently at War
+        if attacker.owner != defender.owner 
+            && attacker.owner != self.native_owner() 
+            && defender.owner != self.native_owner() 
+        {
+            if self.relations[attacker.owner][defender.owner].status != DiplomacyStatus::War {
+                let _ = self.update_diplomacy(attacker.owner, defender.owner, DiplomacyStatus::War);
+            }
+
+            // MUTUAL DEFENSE: Allies of the defender declare war on the attacker
+            let defender_allies: Vec<usize> = (0..self.factions.len())
+                .filter(|&id| {
+                    id != defender.owner 
+                        && id != attacker.owner
+                        && self.relations[defender.owner][id].status == DiplomacyStatus::Pact
+                })
+                .collect();
+            
+            for ally_id in defender_allies {
+                if self.relations[attacker.owner][ally_id].status != DiplomacyStatus::War {
+                    let _ = self.update_diplomacy(attacker.owner, ally_id, DiplomacyStatus::War);
+                }
+            }
+        }
 
         // PLANET BUSTER: Massive destructive power
         if matches!(self.unit_weapon(attacker_id), Some(Weapon::PlanetBuster(_))) {
@@ -11221,10 +11310,6 @@ impl GameState {
                 return;
             }
         }
-
-        let Some(defender) = self.unit(defender_id).cloned() else {
-            return;
-        };
 
         let roll =
             (self.sample_noise(attacker.x as i32, defender.y as i32, self.turn as u32) % 6) as i32;

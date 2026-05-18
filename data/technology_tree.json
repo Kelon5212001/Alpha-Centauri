@@ -59,7 +59,7 @@
     "cost": 60,
     "prerequisites": ["doctrine_mobility"],
     "enables": {
-      "units": [],
+      "units": ["sea_colony_pod", "sea_transport"],
       "facilities": [],
       "weapons": [],
       "armor": [],

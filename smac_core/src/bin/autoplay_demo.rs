@@ -201,11 +201,12 @@ fn print_turn_summary(game: &GameState, completed_turns: usize) {
                     || entry.message.contains("COMBAT:")
                     || entry.message.contains("BOMBARDMENT:")
                     || entry.message.contains("TACTICS:")
+                    || entry.message.contains("DIPLOMACY:")
                     || entry.message.contains("VICTORY")
                     || entry.message.contains("DEFEAT")
             })
             .map(|entry| entry.message.as_str())
-            .take(3)
+            .take(10)
             .collect();
         if !highlights.is_empty() {
             println!("  Highlights: {}", highlights.join(" | "));
