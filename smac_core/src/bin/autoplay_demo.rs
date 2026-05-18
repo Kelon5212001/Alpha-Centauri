@@ -1,5 +1,5 @@
 use smac_core::content_api::tech_name;
-use smac_core::{EventCategory, GameOver, GameState, GameStateSnapshot};
+use smac_core::{offense_readiness_for_owner, EventCategory, GameOver, GameState, GameStateSnapshot};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -41,11 +41,10 @@ fn run() -> Result<(), String> {
         "Autoplay demo starting: {} turns on {}x{} map with seed {}.",
         config.turns, config.width, config.height, config.seed
     );
-    print_turn_summary(&game, 0, 0);
+    print_turn_summary(&game, 0);
 
     let mut completed_turns = 0usize;
     while completed_turns < config.turns && game.game_over.is_none() {
-        let log_start = game.log.len();
         game.run_autoplay_mission_year();
         completed_turns += 1;
 
@@ -53,7 +52,7 @@ fn run() -> Result<(), String> {
             || completed_turns % config.summary_every == 0
             || game.game_over.is_some()
         {
-            print_turn_summary(&game, completed_turns, log_start);
+            print_turn_summary(&game, completed_turns);
         }
     }
 
@@ -134,7 +133,7 @@ fn print_usage() {
     );
 }
 
-fn print_turn_summary(game: &GameState, completed_turns: usize, log_start: usize) {
+fn print_turn_summary(game: &GameState, completed_turns: usize) {
     println!(
         "Turn {:>3} | Mission Year {} | routes {} | projects {}",
         completed_turns,
@@ -145,7 +144,11 @@ fn print_turn_summary(game: &GameState, completed_turns: usize, log_start: usize
     println!("  {}", owner_summary(game, game.player_owner()));
     println!("  {}", owner_summary(game, game.ai_owner()));
 
-    let new_entries = &game.log[log_start.min(game.log.len())..];
+    let new_entries: Vec<_> = game
+        .log
+        .iter()
+        .filter(|entry| entry.turn == game.turn)
+        .collect();
     if !new_entries.is_empty() {
         let general = new_entries
             .iter()
@@ -167,14 +170,26 @@ fn print_turn_summary(game: &GameState, completed_turns: usize, log_start: usize
             .iter()
             .filter(|entry| entry.category == EventCategory::SecretProject)
             .count();
+        let tactics = new_entries
+            .iter()
+            .filter(|entry| entry.message.contains("TACTICS:"))
+            .count();
+        let combats = new_entries
+            .iter()
+            .filter(|entry| {
+                entry.message.contains("COMBAT:") || entry.message.contains("BOMBARDMENT:")
+            })
+            .count();
         println!(
-            "  New events: {} total (general {}, crisis {}, diplomacy {}, economics {}, projects {})",
+            "  New events: {} total (general {}, crisis {}, diplomacy {}, economics {}, projects {}, tactics {}, combats {})",
             new_entries.len(),
             general,
             crisis,
             diplomacy,
             economics,
-            projects
+            projects,
+            tactics,
+            combats
         );
 
         let highlights: Vec<&str> = new_entries
@@ -183,6 +198,9 @@ fn print_turn_summary(game: &GameState, completed_turns: usize, log_start: usize
                 entry.category != EventCategory::General
                     || entry.message.contains("founded")
                     || entry.message.contains("captured")
+                    || entry.message.contains("COMBAT:")
+                    || entry.message.contains("BOMBARDMENT:")
+                    || entry.message.contains("TACTICS:")
                     || entry.message.contains("VICTORY")
                     || entry.message.contains("DEFEAT")
             })
@@ -205,15 +223,25 @@ fn owner_summary(game: &GameState, owner: usize) -> String {
         .research_progress(owner)
         .map(|(tech, progress, cost)| format!("{} {}/{}", tech_name(tech), progress, cost))
         .unwrap_or_else(|| "none".to_string());
+    let offense = offense_readiness_for_owner(game, owner);
 
     format!(
-        "{} -> bases {}, units {}, energy {}, known techs {}, research {}",
+        "{} -> bases {}, units {}, energy {}, known techs {}, research {}, offense atk {} min {} ready {} target {} free {}/{} mobile {} def {} res {}",
         faction.name,
         bases,
         units,
         faction.energy,
         faction.known_techs.len(),
-        research
+        research,
+        offense.attack_bias,
+        offense.minimum_attack_group_size,
+        offense.can_form_attack_group as u8,
+        offense.has_offensive_target as u8,
+        offense.available_attackers,
+        offense.total_combat_units,
+        offense.mobile_combat_units,
+        offense.units_committed_to_defense,
+        offense.reserved_defenders
     )
 }
 

@@ -1,4 +1,5 @@
-use smac_core::{GameOver, GameState};
+use smac_core::content_api::facility_maintenance;
+use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState};
 use std::env;
 
 struct Config {
@@ -34,6 +35,24 @@ struct OwnerMetrics {
     max_unrest: i32,
     supported_units: i32,
     unit_upkeep: i32,
+    facility_upkeep: i32,
+    convoy_upkeep: i32,
+    total_upkeep: i32,
+    current_max_base_facilities: usize,
+    current_max_base_facility_upkeep: i32,
+    current_max_base_optional_upkeep: i32,
+    peak_base_facilities: usize,
+    peak_base_facility_upkeep: i32,
+    peak_base_optional_upkeep: i32,
+    peak_base_stress_turn: usize,
+}
+
+#[derive(Clone, Copy, Default)]
+struct OwnerPeakBaseStress {
+    facilities: usize,
+    facility_upkeep: i32,
+    optional_upkeep: i32,
+    turn: usize,
 }
 
 struct RunSummary {
@@ -43,13 +62,22 @@ struct RunSummary {
     routes: usize,
     projects: usize,
     nearest_base_gap: i32,
+    raids: usize,
     combats: usize,
     captures: usize,
     war_declarations: usize,
     bankruptcies: usize,
+    facility_bankruptcies: usize,
+    unit_bankruptcies: usize,
     famines: usize,
     starvation_famines: usize,
     support_famines: usize,
+    emergency_support_payments: usize,
+    emergency_support_energy: i32,
+    player_ready_turns: usize,
+    player_target_turns: usize,
+    ai_ready_turns: usize,
+    ai_target_turns: usize,
     player: OwnerMetrics,
     ai: OwnerMetrics,
 }
@@ -64,17 +92,26 @@ fn main() {
 fn run() -> Result<(), String> {
     let config = parse_args()?;
     let mut terminal_runs = 0usize;
+    let mut total_raids = 0usize;
     let mut total_combats = 0usize;
     let mut total_captures = 0usize;
     let mut total_wars = 0usize;
     let mut total_bankruptcies = 0usize;
+    let mut total_facility_bankruptcies = 0usize;
+    let mut total_unit_bankruptcies = 0usize;
     let mut total_famines = 0usize;
     let mut total_starvation_famines = 0usize;
     let mut total_support_famines = 0usize;
+    let mut total_emergency_support_payments = 0usize;
+    let mut total_emergency_support_energy = 0i32;
     let mut player_zero_unit_runs = 0usize;
     let mut ai_zero_unit_runs = 0usize;
     let mut player_low_expansion_runs = 0usize;
     let mut ai_low_expansion_runs = 0usize;
+    let mut total_player_ready_turns = 0usize;
+    let mut total_player_target_turns = 0usize;
+    let mut total_ai_ready_turns = 0usize;
+    let mut total_ai_target_turns = 0usize;
 
     println!(
         "Autoplay sweep: {} seeds from {} on {}x{} for {} turns.",
@@ -87,13 +124,18 @@ fn run() -> Result<(), String> {
         if summary.outcome.is_some() {
             terminal_runs += 1;
         }
+        total_raids += summary.raids;
         total_combats += summary.combats;
         total_captures += summary.captures;
         total_wars += summary.war_declarations;
         total_bankruptcies += summary.bankruptcies;
+        total_facility_bankruptcies += summary.facility_bankruptcies;
+        total_unit_bankruptcies += summary.unit_bankruptcies;
         total_famines += summary.famines;
         total_starvation_famines += summary.starvation_famines;
         total_support_famines += summary.support_famines;
+        total_emergency_support_payments += summary.emergency_support_payments;
+        total_emergency_support_energy += summary.emergency_support_energy;
         if summary.player.units == 0 {
             player_zero_unit_runs += 1;
         }
@@ -106,9 +148,13 @@ fn run() -> Result<(), String> {
         if summary.ai.bases < 3 {
             ai_low_expansion_runs += 1;
         }
+        total_player_ready_turns += summary.player_ready_turns;
+        total_player_target_turns += summary.player_target_turns;
+        total_ai_ready_turns += summary.ai_ready_turns;
+        total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} combats {:>3} caps {:>2} wars {:>2} | p bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} | ai bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} | bankruptcy {:>2} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -118,9 +164,12 @@ fn run() -> Result<(), String> {
             summary.routes,
             summary.projects,
             summary.nearest_base_gap,
+            summary.raids,
             summary.combats,
             summary.captures,
             summary.war_declarations,
+            summary.player_ready_turns,
+            summary.player_target_turns,
             summary.player.bases,
             summary.player.units,
             summary.player.combat_units,
@@ -132,6 +181,18 @@ fn run() -> Result<(), String> {
             summary.player.max_unrest,
             summary.player.supported_units,
             summary.player.unit_upkeep,
+            summary.player.facility_upkeep,
+            summary.player.convoy_upkeep,
+            summary.player.total_upkeep,
+            summary.player.current_max_base_facilities,
+            summary.player.current_max_base_facility_upkeep,
+            summary.player.current_max_base_optional_upkeep,
+            summary.player.peak_base_facilities,
+            summary.player.peak_base_facility_upkeep,
+            summary.player.peak_base_optional_upkeep,
+            summary.player.peak_base_stress_turn,
+            summary.ai_ready_turns,
+            summary.ai_target_turns,
             summary.ai.bases,
             summary.ai.units,
             summary.ai.combat_units,
@@ -143,7 +204,21 @@ fn run() -> Result<(), String> {
             summary.ai.max_unrest,
             summary.ai.supported_units,
             summary.ai.unit_upkeep,
+            summary.ai.facility_upkeep,
+            summary.ai.convoy_upkeep,
+            summary.ai.total_upkeep,
+            summary.ai.current_max_base_facilities,
+            summary.ai.current_max_base_facility_upkeep,
+            summary.ai.current_max_base_optional_upkeep,
+            summary.ai.peak_base_facilities,
+            summary.ai.peak_base_facility_upkeep,
+            summary.ai.peak_base_optional_upkeep,
+            summary.ai.peak_base_stress_turn,
             summary.bankruptcies,
+            summary.facility_bankruptcies,
+            summary.unit_bankruptcies,
+            summary.emergency_support_payments,
+            summary.emergency_support_energy,
             summary.famines,
             summary.starvation_famines,
             summary.support_famines
@@ -151,13 +226,22 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | combats {} | captures {} | wars {} | bankruptcies {} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
+        total_raids,
         total_combats,
         total_captures,
         total_wars,
+        total_player_ready_turns,
+        total_player_target_turns,
+        total_ai_ready_turns,
+        total_ai_target_turns,
         total_bankruptcies,
+        total_facility_bankruptcies,
+        total_unit_bankruptcies,
+        total_emergency_support_payments,
+        total_emergency_support_energy,
         total_famines,
         total_starvation_famines,
         total_support_famines,
@@ -173,20 +257,55 @@ fn run() -> Result<(), String> {
 fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut game = GameState::new_game(config.width, config.height, seed);
     let mut completed_turns = 0usize;
+    let mut raids = 0usize;
     let mut combats = 0usize;
     let mut captures = 0usize;
     let mut war_declarations = 0usize;
     let mut bankruptcies = 0usize;
+    let mut facility_bankruptcies = 0usize;
+    let mut unit_bankruptcies = 0usize;
     let mut famines = 0usize;
     let mut starvation_famines = 0usize;
     let mut support_famines = 0usize;
+    let mut emergency_support_payments = 0usize;
+    let mut emergency_support_energy = 0i32;
+    let mut player_ready_turns = 0usize;
+    let mut player_target_turns = 0usize;
+    let mut ai_ready_turns = 0usize;
+    let mut ai_target_turns = 0usize;
+    let mut player_peak_base_stress = owner_peak_base_stress(&game, game.player_owner(), 0);
+    let mut ai_peak_base_stress = owner_peak_base_stress(&game, game.ai_owner(), 0);
 
     while completed_turns < config.turns && game.game_over.is_none() {
-        let log_start = game.log.len();
+        let player_readiness = offense_readiness_for_owner(&game, game.player_owner());
+        let ai_readiness = offense_readiness_for_owner(&game, game.ai_owner());
+        if player_readiness.has_offensive_target {
+            player_target_turns += 1;
+        }
+        if player_readiness.can_form_attack_group {
+            player_ready_turns += 1;
+        }
+        if ai_readiness.has_offensive_target {
+            ai_target_turns += 1;
+        }
+        if ai_readiness.can_form_attack_group {
+            ai_ready_turns += 1;
+        }
+
         game.run_autoplay_mission_year();
         completed_turns += 1;
+        player_peak_base_stress = player_peak_base_stress.max(owner_peak_base_stress(
+            &game,
+            game.player_owner(),
+            completed_turns,
+        ));
+        ai_peak_base_stress =
+            ai_peak_base_stress.max(owner_peak_base_stress(&game, game.ai_owner(), completed_turns));
 
-        for entry in &game.log[log_start.min(game.log.len())..] {
+        for entry in game.log.iter().filter(|entry| entry.turn == game.turn) {
+            if entry.message.contains("TACTICS:") {
+                raids += 1;
+            }
             if entry.message.contains("COMBAT:") || entry.message.contains("BOMBARDMENT:") {
                 combats += 1;
             }
@@ -200,6 +319,25 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
             }
             if entry.message.contains("BANKRUPTCY:") {
                 bankruptcies += 1;
+                if entry.message.contains("scrapped") {
+                    facility_bankruptcies += 1;
+                } else if entry.message.contains("unit disbanded") {
+                    unit_bankruptcies += 1;
+                }
+            }
+            if entry.message.contains("spent ")
+                && entry.message.contains(" energy reserves to cover mineral support")
+            {
+                emergency_support_payments += 1;
+                if let Some(amount) = entry
+                    .message
+                    .split(" spent ")
+                    .nth(1)
+                    .and_then(|tail| tail.split(" energy").next())
+                    .and_then(|digits| digits.parse::<i32>().ok())
+                {
+                    emergency_support_energy += amount;
+                }
             }
             if entry.message.contains("FAMINE:") {
                 famines += 1;
@@ -222,24 +360,45 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         routes: game.convoy_routes.len(),
         projects: game.built_secret_projects.len(),
         nearest_base_gap: nearest_base_gap(&game, game.player_owner(), game.ai_owner()),
+        raids,
         combats,
         captures,
         war_declarations,
         bankruptcies,
+        facility_bankruptcies,
+        unit_bankruptcies,
         famines,
         starvation_famines,
         support_famines,
-        player: owner_metrics(&game, game.player_owner()),
-        ai: owner_metrics(&game, game.ai_owner()),
+        emergency_support_payments,
+        emergency_support_energy,
+        player_ready_turns,
+        player_target_turns,
+        ai_ready_turns,
+        ai_target_turns,
+        player: owner_metrics(&game, game.player_owner(), player_peak_base_stress),
+        ai: owner_metrics(&game, game.ai_owner(), ai_peak_base_stress),
     }
 }
 
-fn owner_metrics(game: &GameState, owner: usize) -> OwnerMetrics {
+fn owner_metrics(game: &GameState, owner: usize, peak_base_stress: OwnerPeakBaseStress) -> OwnerMetrics {
     let bases = game.bases_for(owner);
     let unrest_values: Vec<i32> = bases.iter().map(|base| game.base_unrest(base.id)).collect();
     let faction = game.faction(owner);
     let support = game.faction_support_summary(owner);
     let live_units = game.live_units_for(owner);
+    let (facility_upkeep, convoy_upkeep, _, total_upkeep) = game.faction_upkeep_breakdown(owner);
+    let current_max_base_facilities = bases.iter().map(|base| base.facilities.len()).max().unwrap_or(0);
+    let current_max_base_facility_upkeep = bases
+        .iter()
+        .map(|base| base_facility_upkeep(base))
+        .max()
+        .unwrap_or_default();
+    let current_max_base_optional_upkeep = bases
+        .iter()
+        .map(|base| base_optional_facility_upkeep(base))
+        .max()
+        .unwrap_or_default();
 
     OwnerMetrics {
         bases: bases.len(),
@@ -266,7 +425,102 @@ fn owner_metrics(game: &GameState, owner: usize) -> OwnerMetrics {
         max_unrest: unrest_values.into_iter().max().unwrap_or_default(),
         supported_units: support.supported_units,
         unit_upkeep: support.unit_upkeep,
+        facility_upkeep,
+        convoy_upkeep,
+        total_upkeep,
+        current_max_base_facilities,
+        current_max_base_facility_upkeep,
+        current_max_base_optional_upkeep,
+        peak_base_facilities: peak_base_stress.facilities,
+        peak_base_facility_upkeep: peak_base_stress.facility_upkeep,
+        peak_base_optional_upkeep: peak_base_stress.optional_upkeep,
+        peak_base_stress_turn: peak_base_stress.turn,
     }
+}
+
+fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerPeakBaseStress {
+    game.bases_for(owner)
+        .into_iter()
+        .map(|base| OwnerPeakBaseStress {
+            facilities: base.facilities.len(),
+            facility_upkeep: base_facility_upkeep(base),
+            optional_upkeep: base_optional_facility_upkeep(base),
+            turn,
+        })
+        .max()
+        .unwrap_or(OwnerPeakBaseStress {
+            turn,
+            ..OwnerPeakBaseStress::default()
+        })
+}
+
+impl OwnerPeakBaseStress {
+    fn max(self, other: Self) -> Self {
+        if other > self {
+            other
+        } else {
+            self
+        }
+    }
+}
+
+impl PartialEq for OwnerPeakBaseStress {
+    fn eq(&self, other: &Self) -> bool {
+        self.facilities == other.facilities
+            && self.facility_upkeep == other.facility_upkeep
+            && self.optional_upkeep == other.optional_upkeep
+            && self.turn == other.turn
+    }
+}
+
+impl Eq for OwnerPeakBaseStress {}
+
+impl PartialOrd for OwnerPeakBaseStress {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OwnerPeakBaseStress {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.facility_upkeep, self.optional_upkeep, self.facilities, self.turn)
+            .cmp(&(other.facility_upkeep, other.optional_upkeep, other.facilities, other.turn))
+    }
+}
+
+fn base_facility_upkeep(base: &smac_core::Base) -> i32 {
+    base.facilities
+        .iter()
+        .copied()
+        .map(facility_maintenance)
+        .sum()
+}
+
+fn base_optional_facility_upkeep(base: &smac_core::Base) -> i32 {
+    base.facilities
+        .iter()
+        .copied()
+        .filter(|facility| is_optional_facility(*facility))
+        .map(facility_maintenance)
+        .sum()
+}
+
+fn is_optional_facility(facility: Facility) -> bool {
+    matches!(
+        facility,
+        Facility::NetworkNode
+            | Facility::TradeExchange
+            | Facility::FreightDepot
+            | Facility::PatrolGrid
+            | Facility::MilitaryAcademy
+            | Facility::SensorArray
+            | Facility::TransitHub
+            | Facility::PsiBeacon
+            | Facility::ForwardDepot
+            | Facility::HologramTheatre
+            | Facility::BioenhancementCenter
+            | Facility::ResearchHospital
+    )
 }
 
 fn nearest_base_gap(game: &GameState, owner: usize, other: usize) -> i32 {

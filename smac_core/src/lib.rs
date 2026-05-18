@@ -57,6 +57,8 @@ pub use units::definitions::UnitDesign;
 
 pub use content::RuntimeRole;
 pub use content::RuntimeRoles;
+pub use ai::AiOffenseReadiness;
+pub use ai::offense_readiness_for_owner;
 pub use game_state::base_focus_filter_label;
 pub use game_state::base_sort_mode_label;
 pub use game_state::logistics_route_filter_label;
