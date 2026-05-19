@@ -41,7 +41,8 @@ fn run() -> Result<(), String> {
         "Autoplay demo starting: {} turns on {}x{} map with seed {}.",
         config.turns, config.width, config.height, config.seed
     );
-    print_turn_summary(&game, 0);
+    let mut last_log_idx = 0;
+    print_turn_summary(&game, 0, &mut last_log_idx);
 
     let mut completed_turns = 0usize;
     while completed_turns < config.turns && game.game_over.is_none() {
@@ -52,7 +53,7 @@ fn run() -> Result<(), String> {
             || completed_turns % config.summary_every == 0
             || game.game_over.is_some()
         {
-            print_turn_summary(&game, completed_turns);
+            print_turn_summary(&game, completed_turns, &mut last_log_idx);
         }
     }
 
@@ -132,8 +133,7 @@ fn print_usage() {
         "Usage: cargo run -p smac_core --bin autoplay_demo -- [--turns N] [--width N] [--height N] [--seed N] [--summary-every N] [--save-path PATH]"
     );
 }
-
-fn print_turn_summary(game: &GameState, completed_turns: usize) {
+fn print_turn_summary(game: &GameState, completed_turns: usize, last_log_idx: &mut usize) {
     println!(
         "Turn {:>3} | Mission Year {} | routes {} | projects {}",
         completed_turns,
@@ -144,11 +144,9 @@ fn print_turn_summary(game: &GameState, completed_turns: usize) {
     println!("  {}", owner_summary(game, game.player_owner()));
     println!("  {}", owner_summary(game, game.ai_owner()));
 
-    let new_entries: Vec<_> = game
-        .log
-        .iter()
-        .filter(|entry| entry.turn == game.turn)
-        .collect();
+    let new_entries: Vec<_> = game.log.iter().skip(*last_log_idx).collect();
+    *last_log_idx = game.log.len();
+
     if !new_entries.is_empty() {
         let general = new_entries
             .iter()

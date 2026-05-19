@@ -171,7 +171,7 @@ fn fallible_starting_scenario_loader_resolves_current_bundle() {
     let scenario =
         try_default_starting_scenario(16, 16).expect("bundled scenario should resolve cleanly");
     assert_eq!(scenario.forced_land_positions.len(), 3);
-    assert_eq!(scenario.starting_units.len(), 5);
+    assert_eq!(scenario.starting_units.len(), 7);
 }
 
 #[test]
@@ -227,7 +227,7 @@ fn content_name_mapping_for_tech_and_units_is_stable() {
 fn production_definitions_load_and_match_runtime_mapping() {
     let definitions = load_production_definitions().expect("bundled production JSON should parse");
 
-    assert_eq!(definitions.len(), 41);
+    assert_eq!(definitions.len(), 43);
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "former"));
@@ -545,7 +545,7 @@ fn runtime_rules_and_unit_runtime_definitions_load_and_match_mappings() {
     assert_eq!(map_flat_moisture_threshold(), 52);
     assert_eq!(map_pod_spawn_threshold(), 94);
     assert_eq!(forced_land_patch_radius(), 3);
-    assert_eq!(unit_definitions.len(), 14);
+    assert_eq!(unit_definitions.len(), 16);
     assert!(unit_definitions
         .iter()
         .any(|definition| definition.id == "mind_worm"));
@@ -564,6 +564,12 @@ fn runtime_rules_and_unit_runtime_definitions_load_and_match_mappings() {
     assert!(unit_definitions
         .iter()
         .any(|definition| definition.id == "raider_speeder"));
+    assert!(unit_definitions
+        .iter()
+        .any(|definition| definition.id == "sea_colony_pod"));
+    assert!(unit_definitions
+        .iter()
+        .any(|definition| definition.id == "sea_transport"));
     assert!(unit_definitions
         .iter()
         .any(|definition| definition.id == "garrison_guard"));
@@ -609,7 +615,10 @@ fn runtime_faction_setup_and_base_names_are_content_driven() {
 
     assert_eq!(player.name, "Gaia's Stepdaughters");
     assert_eq!(ai.name, "Spartan Federation");
-    assert_eq!(player.known_tech_ids, vec!["centauri_ecology"]);
+    assert_eq!(
+        player.known_tech_ids,
+        vec!["centauri_ecology", "orbital_mechanics"]
+    );
     assert_eq!(ai.current_research_id.as_deref(), Some("industrial_base"));
     assert_eq!(ai_expansion_base_target(roles.ai), 3);
     assert_eq!(ai_attack_bias(roles.ai), 9);

@@ -226,43 +226,43 @@
   {
     "id": "weather_pattern",
     "name": "The Weather Pattern",
-    "cost": 200,
+    "cost": 120,
     "build_kind": "project"
   },
   {
     "id": "clinical_immortality",
-    "name": "The Clinical Immortality",
-    "cost": 300,
+    "name": "Clinical Immortality",
+    "cost": 150,
     "build_kind": "project"
   },
   {
     "id": "empath_guild",
     "name": "The Empath Guild",
-    "cost": 250,
+    "cost": 200,
     "build_kind": "project"
   },
   {
     "id": "orbital_elevator",
     "name": "The Orbital Elevator",
-    "cost": 400,
+    "cost": 300,
     "build_kind": "project"
   },
   {
     "id": "manifold_drive",
     "name": "The Manifold Drive",
-    "cost": 500,
+    "cost": 400,
     "build_kind": "project"
   },
   {
     "id": "singularity_containment",
     "name": "Singularity Containment",
-    "cost": 600,
+    "cost": 500,
     "build_kind": "project"
   },
   {
     "id": "black_hole_harvester",
     "name": "Black Hole Harvester",
-    "cost": 800,
+    "cost": 600,
     "build_kind": "project"
   },
   {

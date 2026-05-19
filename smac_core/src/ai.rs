@@ -1315,14 +1315,34 @@ fn run_ai_economy_for_owner(state: &mut GameState, owner: usize) {
             }
         }
 
-        if let Some(base) = state.base(base_id) {
-            if base.production_queue.is_empty() {
-                let queue_item = choose_ai_queue_follow_up(state, base.id, owner);
-                if queue_item != base.production {
+        if state.base(base_id).is_some() {
+            if state.base(base_id).unwrap().production_queue.is_empty() {
+                let queue_item = choose_ai_queue_follow_up(state, base_id, owner);
+                if queue_item != state.base(base_id).unwrap().production {
                     let _ = state.apply_action(GameAction::QueueBaseProduction {
                         base_id,
                         item: queue_item,
                     });
+                }
+            }
+
+            // RUSH SECRET PROJECTS
+            let base = state.base(base_id).unwrap();
+            if let Some(project) = base.production.secret_project() {
+                let cost = state.production_cost(owner, base.production);
+                let progress_pct = (base.minerals_stock * 100) / cost.max(1);
+
+                // Rush if significantly progressed (50%+) and have energy
+                // Or if there's competition and we're reasonably far (40%+)
+                let is_competing = state.is_other_faction_building_secret_project(owner, project);
+                let rush_threshold = if is_competing { 40 } else { 60 };
+
+                if progress_pct >= rush_threshold {
+                    if let Some(faction) = state.faction(owner) {
+                        if faction.energy >= 300 {
+                            let _ = state.apply_action(GameAction::RushBuild { base_id });
+                        }
+                    }
                 }
             }
         }
@@ -1336,6 +1356,11 @@ fn maybe_assign_ai_convoy_route(state: &mut GameState, base_id: usize, owner: us
     if base.owner != owner {
         return;
     }
+    let faction_support_pressure = state.faction_support_summary(owner).supported_units > 0;
+    let has_military_support_infra = base.facilities.contains(&crate::Facility::CommandCenter)
+        || base.facilities.contains(&crate::Facility::FieldHospital)
+        || base.facilities.contains(&crate::Facility::MilitaryAcademy)
+        || base.facilities.contains(&crate::Facility::ForwardDepot);
     let should_route = (base.facilities.contains(&crate::Facility::TradeExchange)
         || base.facilities.contains(&crate::Facility::FreightDepot)
         || base.facilities.contains(&crate::Facility::CommandCenter)
@@ -1343,15 +1368,11 @@ fn maybe_assign_ai_convoy_route(state: &mut GameState, base_id: usize, owner: us
         || base.facilities.contains(&crate::Facility::MilitaryAcademy)
         || base.facilities.contains(&crate::Facility::ForwardDepot)
         || state.base_potential_trade_links(base_id) >= 1 && state.bases_for(owner).len() >= 2)
-        && state.faction(owner).map(|f| f.energy >= 20).unwrap_or(false);
+        && (state.faction(owner).map(|f| f.energy >= 20).unwrap_or(false)
+            || (has_military_support_infra && faction_support_pressure));
     if !should_route {
         return;
     }
-    let faction_support_pressure = state.faction_support_summary(owner).supported_units > 0;
-    let has_military_support_infra = base.facilities.contains(&crate::Facility::CommandCenter)
-        || base.facilities.contains(&crate::Facility::FieldHospital)
-        || base.facilities.contains(&crate::Facility::MilitaryAcademy)
-        || base.facilities.contains(&crate::Facility::ForwardDepot);
     let kind = if has_military_support_infra
         && (state.base_local_military_pressure(base_id) >= 1
             || state.damaged_garrison_count_for_base(base_id) > 0
@@ -1658,13 +1679,13 @@ fn choose_ai_production_for_base(
     let support_summary = state.faction_support_summary(owner);
     let overpopulated_with_units = support_summary.unit_upkeep > 4;
 
-    // CRITICAL DEFENSE: If base has no garrison
+    // CRITICAL DEFENSE: Only force a garrison when an empty base is actually threatened.
     let local_units = state
         .units
         .iter()
         .filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y)
         .count();
-    if local_units == 0 {
+    if local_units == 0 && signals.military_pressure >= 1 {
         if let Some(item) = choose_ai_garrison_production(state, owner, psi_pressure) {
             return item;
         }
@@ -1800,7 +1821,6 @@ fn choose_ai_production_for_base(
         if state.is_production_available(owner, crate::ProductionItem::PerimeterDefense)
             && !base.facilities.contains(&crate::Facility::PerimeterDefense)
             && (yields.minerals >= 4 || signals.military_pressure >= 2)
-            && !low_energy
         {
             return crate::ProductionItem::PerimeterDefense;
         }
@@ -2077,9 +2097,8 @@ fn choose_ai_production_for_base(
 
     // Check for Secret Projects
     if base.population >= 3
-        && yields.minerals >= 12
-        && !signals.expansion_pressure
-        && signals.military_pressure < 1
+        && yields.minerals >= 8
+        && signals.military_pressure < 2
     {
         for project in crate::model::SecretProject::all() {
             let item = match project {
@@ -4123,21 +4142,7 @@ fn run_native_life_turn(state: &mut GameState) {
         let target = find_nearest_non_native_target(state, unit.x, unit.y);
 
         if let Some((tx, ty)) = target {
-            let step_x = step_toward(unit.x, tx);
-            let step_y = step_toward(unit.y, ty);
-
-            let nx = (unit.x as isize + step_x).clamp(0, state.width.saturating_sub(1) as isize)
-                as usize;
-            let ny = (unit.y as isize + step_y).clamp(0, state.height.saturating_sub(1) as isize)
-                as usize;
-
-            if nx != unit.x || ny != unit.y {
-                let _ = state.apply_action(crate::GameAction::MoveUnit {
-                    unit_id,
-                    target_x: nx,
-                    target_y: ny,
-                });
-            }
+            let _ = try_ai_move_toward(state, unit_id, unit.x, unit.y, tx, ty);
         }
     }
 }
@@ -5914,6 +5919,12 @@ mod tests {
         let player_owner = game.player_owner();
         let base_x = 10usize;
         let base_y = 10usize;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+        }
 
         for y in base_y.saturating_sub(1)..=(base_y + 1).min(game.height - 1) {
             for x in base_x.saturating_sub(1)..=(base_x + 1).min(game.width - 1) {

@@ -1241,6 +1241,16 @@ impl GameState {
             .any(|(p, o)| *p == project && *o == owner)
     }
 
+    pub fn is_other_faction_building_secret_project(
+        &self,
+        faction_id: usize,
+        project: SecretProject,
+    ) -> bool {
+        self.bases
+            .iter()
+            .any(|b| b.owner != faction_id && b.production.secret_project() == Some(project))
+    }
+
     pub fn is_border_tile(&self, x: usize, y: usize) -> bool {
         let owner = self.control_owner_at(x, y);
         let neighbors = [
@@ -2510,7 +2520,7 @@ impl GameState {
         })
     }
 
-    fn base_tile_yields_with_modifiers(
+    pub fn base_tile_yields_with_modifiers(
         &self,
         owner: Option<usize>,
         base_x: usize,
@@ -2529,6 +2539,15 @@ impl GameState {
         }
 
         if let Some(tile) = self.tile(tile_x, tile_y) {
+            if tile.terrain == Terrain::Fungus {
+                if let Some(faction_owner) = owner {
+                    if self.has_secret_project(faction_owner, SecretProject::WeatherPattern) {
+                        tile_yields.nutrients += 1;
+                        tile_yields.minerals += 1;
+                        tile_yields.energy += 1;
+                    }
+                }
+            }
             if tile.improvement == Some(Improvement::ThermalBorehole) {
                 if let Some(faction_owner) = owner {
                     if self.has_secret_project(faction_owner, SecretProject::SingularityContainment)
@@ -2553,7 +2572,7 @@ impl GameState {
         tile_yields
     }
 
-    fn apply_base_output_modifiers(&self, base_id: usize, mut yields: Yields) -> Yields {
+    pub fn apply_base_output_modifiers(&self, base_id: usize, mut yields: Yields) -> Yields {
         let Some(base) = self.base(base_id) else {
             return yields;
         };
@@ -2562,24 +2581,21 @@ impl GameState {
             yields = yields.add(content::facility_yield_bonus(*facility));
         }
 
-        for (project, owner) in &self.built_secret_projects {
-            if *owner == base.owner {
-                match project {
-                    SecretProject::WeatherPattern => {
-                        yields.nutrients += 1;
-                    }
-                    _ => {}
-                }
-            }
-        }
-
         if base.governor_mode == GovernorMode::MachinePolity {
             yields.minerals = (yields.minerals as f32 * 1.25) as i32;
         }
 
         if let Some(faction) = self.faction(base.owner) {
-            yields.nutrients += faction.sky_hydroponics;
-            yields.energy += faction.solar_transmitters;
+            let mut nutrition_gain = faction.sky_hydroponics;
+            let mut energy_gain = faction.solar_transmitters;
+
+            if self.has_secret_project(base.owner, SecretProject::OrbitalElevator) {
+                nutrition_gain *= 2;
+                energy_gain *= 2;
+            }
+
+            yields.nutrients += nutrition_gain;
+            yields.energy += energy_gain;
         }
 
         yields
@@ -2695,14 +2711,13 @@ impl GameState {
         let project_stability_bonus: i32 = self
             .built_secret_projects
             .iter()
-            .filter(|(p, o)| {
-                *o == base.owner
-                    && matches!(
-                        p,
-                        SecretProject::ClinicalImmortality | SecretProject::EmpathGuild
-                    )
+            .filter(|(_p, o)| *o == base.owner)
+            .map(|(p, _)| match p {
+                SecretProject::ClinicalImmortality => 2,
+                SecretProject::EmpathGuild => 1,
+                _ => 0,
             })
-            .count() as i32;
+            .sum();
 
         let mut police_bonus = 0;
         let mut bureaucracy_unrest = 0;
@@ -8687,11 +8702,19 @@ impl GameState {
         }
 
         if let Some(project) = item.secret_project() {
+            // Already built by someone
             if self
                 .built_secret_projects
                 .iter()
                 .any(|(p, _)| *p == project)
             {
+                return false;
+            }
+
+            // Already being built by this owner elsewhere
+            if self.bases.iter().any(|b| {
+                b.owner == owner && b.production.secret_project() == Some(project)
+            }) {
                 return false;
             }
         }
@@ -11564,7 +11587,7 @@ impl GameState {
             .sum()
     }
 
-    fn effective_unit_max_moves_at(
+    pub fn effective_unit_max_moves_at(
         &self,
         owner: usize,
         unit_kind: UnitKind,
@@ -11573,7 +11596,7 @@ impl GameState {
     ) -> i32 {
         let mut moves = unit_kind.clone().max_moves();
 
-        if self.has_secret_project(owner, SecretProject::ManifoldDrive) && moves > 1 {
+        if self.has_secret_project(owner, SecretProject::ManifoldDrive) {
             moves += 1;
         }
 
@@ -11726,8 +11749,13 @@ impl GameState {
 
         let mut reveal_centers: Vec<(usize, usize, isize)> = Vec::new();
 
+        let has_empath_guild = self.has_secret_project(player_owner, SecretProject::EmpathGuild);
+
         let pacted_factions: Vec<usize> = (0..self.factions.len())
-            .filter(|&id| self.relations[player_owner][id].status == DiplomacyStatus::Pact)
+            .filter(|&id| {
+                id != player_owner 
+                    && (has_empath_guild || self.relations[player_owner][id].status == DiplomacyStatus::Pact)
+            })
             .collect();
 
         for unit in self
@@ -11982,13 +12010,30 @@ impl GameState {
             format!("GLOBAL WONDER: {faction_name} has completed {project_name}!"),
         );
 
-        // Remove from all other queues and active production
+        // Notify competition and convert minerals
+        let mut notifications = Vec::new();
         for base in &mut self.bases {
             if base.production.secret_project() == Some(project) {
-                base.production = ProductionItem::ScoutPatrol; // Fallback to basic unit
+                if base.owner != owner {
+                    notifications.push((base.owner, base.name.clone()));
+                }
+                base.production = ProductionItem::StockpileEnergy;
             }
             base.production_queue
                 .retain(|item| item.secret_project() != Some(project));
+        }
+
+        let completed_faction_name = self.faction_name(owner).to_string();
+        for (notified_owner, base_name) in notifications {
+            let faction_name = self.faction_name(notified_owner).to_string();
+            self.push_event_log(
+                EventCategory::SecretProject,
+                format!("{faction_name} construction of {project_name} in {base_name} was aborted! {completed_faction_name} finished it first."),
+            );
+        }
+
+        if owner == self.player_owner() || project == SecretProject::EmpathGuild {
+            self.update_player_visibility();
         }
 
         true
@@ -12641,7 +12686,7 @@ impl GameState {
         threat
     }
 
-    pub(crate) fn tile_index(&self, x: usize, y: usize) -> usize {
+    pub fn tile_index(&self, x: usize, y: usize) -> usize {
         y * self.width + x
     }
 

@@ -6,8 +6,30 @@ fn native_unit_moves_toward_player_target_on_end_turn() {
     for f in game.factions.iter_mut() {
         f.base_attributes.morale = 0;
     }
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+    }
     let native_owner = game.native_owner();
     let player_owner = game.player_owner();
+
+    game.tiles[0].base = Some(0);
+    game.bases.push(smac_core::Base {
+        id: 0,
+        owner: player_owner,
+        name: "Dummy Player Base".to_string(),
+        x: 0,
+        y: 0,
+        population: 1,
+        nutrients_stock: 0,
+        minerals_stock: 0,
+        production: smac_core::ProductionItem::Former,
+        production_queue: Vec::new(),
+        facilities: Vec::new(),
+        governor_mode: smac_core::GovernorMode::Off,
+    });
 
     let native_id = game.units.len();
     let nx = 12;
@@ -15,6 +37,8 @@ fn native_unit_moves_toward_player_target_on_end_turn() {
     let nidx = ny * game.width + nx;
     game.tiles[nidx].terrain = Terrain::Fungus;
     game.tiles[nidx].unit = Some(native_id);
+    game.tiles[11 * game.width + 12].terrain = Terrain::Flat;
+    game.tiles[12 * game.width + 11].terrain = Terrain::Flat;
 
     game.units.push(Unit {
         id: native_id,
@@ -33,7 +57,7 @@ fn native_unit_moves_toward_player_target_on_end_turn() {
 
     let player_id = game.units.len();
     let px = 10;
-    let py = 10;
+    let py = 12;
     let pidx = py * game.width + px;
     game.tiles[pidx].terrain = Terrain::Flat;
     game.tiles[pidx].unit = Some(player_id);
@@ -56,7 +80,9 @@ fn native_unit_moves_toward_player_target_on_end_turn() {
     game.end_turn();
 
     let native = game.unit(native_id).expect("native should still exist");
-    assert_eq!((native.x, native.y), (11, 11));
+    let start_distance = game.distance(nx, ny, px, py);
+    let end_distance = game.distance(native.x, native.y, px, py);
+    assert!(end_distance < start_distance);
 }
 
 #[test]

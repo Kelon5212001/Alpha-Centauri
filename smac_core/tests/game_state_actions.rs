@@ -6179,7 +6179,8 @@ fn units_can_load_and_unload_from_transports() {
         .unwrap()
         .cargo_unit_ids
         .contains(&passenger_id));
-    assert!(game.tiles[5 * game.width + 5].unit == Some(transport_id));
+    assert_eq!(game.unit(transport_id).unwrap().x, 5);
+    assert_eq!(game.unit(transport_id).unwrap().y, 5);
 
     // 3. Move transport
     game.apply_action(smac_core::GameAction::MoveUnit {
@@ -6189,16 +6190,12 @@ fn units_can_load_and_unload_from_transports() {
     })
     .expect("Move should succeed");
 
-    // 4. Unload unit at new location
-    // Must clear tile first if occupied (transport is there)
-    // Actually, in SMAC you can unload to adjacent or same tile.
-    // My implementation unloads to same tile, but checks if occupied.
-    // Transport is in (5, 6).
-
-    // For test, move passenger out of cargo to (5, 6)
+    // 4. Unload unit onto adjacent land.
     game.apply_action(smac_core::GameAction::UnloadUnit {
         unit_id: passenger_id,
         transport_id,
+        target_x: 6,
+        target_y: 6,
     })
     .expect("Unloading should succeed");
 
@@ -6207,11 +6204,8 @@ fn units_can_load_and_unload_from_transports() {
         .unwrap()
         .cargo_unit_ids
         .contains(&passenger_id));
-    // Since transport and passenger are in same tile, and passenger was just added,
-    // it might have displaced the transport in the tile.unit if not careful.
-    // In our implementation, tile.unit = Some(unit_id) overwrites.
-    assert!(game.tiles[6 * game.width + 5].unit == Some(passenger_id));
-    assert_eq!(game.unit(passenger_id).unwrap().x, 5);
+    assert!(game.tiles[6 * game.width + 6].unit == Some(passenger_id));
+    assert_eq!(game.unit(passenger_id).unwrap().x, 6);
     assert_eq!(game.unit(passenger_id).unwrap().y, 6);
 }
 

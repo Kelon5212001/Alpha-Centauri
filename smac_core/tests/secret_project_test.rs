@@ -1,12 +1,13 @@
 use smac_core::{GameState, SecretProject, Terrain};
 
 #[test]
-fn weather_pattern_nutrient_bonus() {
+fn weather_pattern_boosts_fungus_tile_yields() {
     let mut game = GameState::new_game(12, 12, 7);
     let owner = game.player_owner();
 
     // Create a base at (5, 5)
     game.tiles[5 * game.width + 5].terrain = Terrain::Flat; // 2 nutrients
+    game.tiles[4 * game.width + 5].terrain = Terrain::Fungus;
     game.bases.push(smac_core::Base {
         id: 0,
         owner,
@@ -23,9 +24,6 @@ fn weather_pattern_nutrient_bonus() {
     });
     game.tiles[5 * game.width + 5].base = Some(0);
 
-    // Base yields (3x3 area around base)
-    // Center tile is Flat (2 nutrients). Others are also likely 1 or 2.
-    // Let's just check the change.
     let base_yields = game.base_yields(5, 5);
 
     // Build Weather Pattern
@@ -34,6 +32,8 @@ fn weather_pattern_nutrient_bonus() {
 
     let boosted_yields = game.base_yields(5, 5);
     assert_eq!(boosted_yields.nutrients, base_yields.nutrients + 1);
+    assert_eq!(boosted_yields.minerals, base_yields.minerals + 1);
+    assert_eq!(boosted_yields.energy, base_yields.energy + 1);
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn clinical_immortality_stability_bonus() {
         .push((SecretProject::ClinicalImmortality, owner));
 
     let reduced_unrest = game.base_unrest(0);
-    assert_eq!(reduced_unrest, 2); // 3 - 1
+    assert_eq!(reduced_unrest, 1); // 3 - 2
 }
 
 #[test]

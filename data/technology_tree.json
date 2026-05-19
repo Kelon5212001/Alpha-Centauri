@@ -10,6 +10,7 @@
     "enables": {
       "units": ["former"],
       "facilities": ["recycling_tanks"],
+      "secret_projects": ["weather_pattern"],
       "abilities": [],
       "terraforming": ["farm", "solar_collector", "forest"],
       "social_engineering": ["green"]
@@ -27,9 +28,10 @@
     "enables": {
       "units": [],
       "facilities": ["recreation_commons"],
+      "secret_projects": ["clinical_immortality"],
       "abilities": [],
       "terraforming": [],
-      "social_engineering": ["fundamentalist"]
+      "social_engineering": []
     },
     "quote": "If you can discover a better way of life ... - Plato"
   },
