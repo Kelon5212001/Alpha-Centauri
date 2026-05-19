@@ -1498,7 +1498,6 @@ fn choose_ai_support_production(
     let base_count = state.bases_for(owner).len() as i32;
     let severe_support_pressure =
         support.supported_units >= base_count.max(1) || support.unit_upkeep >= 2;
-
     if severe_support_pressure
         && !maintenance_overbuilt
         && !base_optional_overbuilt

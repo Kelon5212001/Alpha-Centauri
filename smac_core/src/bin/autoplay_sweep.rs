@@ -35,6 +35,10 @@ struct OwnerMetrics {
     max_unrest: i32,
     supported_units: i32,
     unit_upkeep: i32,
+    command_centers: usize,
+    transit_hubs: usize,
+    peak_supported_units: i32,
+    peak_unit_upkeep: i32,
     facility_upkeep: i32,
     convoy_upkeep: i32,
     total_upkeep: i32,
@@ -52,6 +56,13 @@ struct OwnerPeakBaseStress {
     facilities: usize,
     facility_upkeep: i32,
     optional_upkeep: i32,
+    turn: usize,
+}
+
+#[derive(Clone, Copy, Default)]
+struct OwnerPeakSupport {
+    supported_units: i32,
+    unit_upkeep: i32,
     turn: usize,
 }
 
@@ -154,7 +165,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -181,6 +192,10 @@ fn run() -> Result<(), String> {
             summary.player.max_unrest,
             summary.player.supported_units,
             summary.player.unit_upkeep,
+            summary.player.command_centers,
+            summary.player.transit_hubs,
+            summary.player.peak_supported_units,
+            summary.player.peak_unit_upkeep,
             summary.player.facility_upkeep,
             summary.player.convoy_upkeep,
             summary.player.total_upkeep,
@@ -204,6 +219,10 @@ fn run() -> Result<(), String> {
             summary.ai.max_unrest,
             summary.ai.supported_units,
             summary.ai.unit_upkeep,
+            summary.ai.command_centers,
+            summary.ai.transit_hubs,
+            summary.ai.peak_supported_units,
+            summary.ai.peak_unit_upkeep,
             summary.ai.facility_upkeep,
             summary.ai.convoy_upkeep,
             summary.ai.total_upkeep,
@@ -275,6 +294,8 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut ai_target_turns = 0usize;
     let mut player_peak_base_stress = owner_peak_base_stress(&game, game.player_owner(), 0);
     let mut ai_peak_base_stress = owner_peak_base_stress(&game, game.ai_owner(), 0);
+    let mut player_peak_support = owner_peak_support(&game, game.player_owner(), 0);
+    let mut ai_peak_support = owner_peak_support(&game, game.ai_owner(), 0);
 
     while completed_turns < config.turns && game.game_over.is_none() {
         let player_readiness = offense_readiness_for_owner(&game, game.player_owner());
@@ -301,6 +322,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         ));
         ai_peak_base_stress =
             ai_peak_base_stress.max(owner_peak_base_stress(&game, game.ai_owner(), completed_turns));
+        player_peak_support =
+            player_peak_support.max(owner_peak_support(&game, game.player_owner(), completed_turns));
+        ai_peak_support = ai_peak_support.max(owner_peak_support(&game, game.ai_owner(), completed_turns));
 
         for entry in game.log.iter().filter(|entry| entry.turn == game.turn) {
             if entry.message.contains("TACTICS:") {
@@ -376,12 +400,17 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         player_target_turns,
         ai_ready_turns,
         ai_target_turns,
-        player: owner_metrics(&game, game.player_owner(), player_peak_base_stress),
-        ai: owner_metrics(&game, game.ai_owner(), ai_peak_base_stress),
+        player: owner_metrics(&game, game.player_owner(), player_peak_base_stress, player_peak_support),
+        ai: owner_metrics(&game, game.ai_owner(), ai_peak_base_stress, ai_peak_support),
     }
 }
 
-fn owner_metrics(game: &GameState, owner: usize, peak_base_stress: OwnerPeakBaseStress) -> OwnerMetrics {
+fn owner_metrics(
+    game: &GameState,
+    owner: usize,
+    peak_base_stress: OwnerPeakBaseStress,
+    peak_support: OwnerPeakSupport,
+) -> OwnerMetrics {
     let bases = game.bases_for(owner);
     let unrest_values: Vec<i32> = bases.iter().map(|base| game.base_unrest(base.id)).collect();
     let faction = game.faction(owner);
@@ -425,6 +454,16 @@ fn owner_metrics(game: &GameState, owner: usize, peak_base_stress: OwnerPeakBase
         max_unrest: unrest_values.into_iter().max().unwrap_or_default(),
         supported_units: support.supported_units,
         unit_upkeep: support.unit_upkeep,
+        command_centers: bases
+            .iter()
+            .filter(|base| base.facilities.contains(&Facility::CommandCenter))
+            .count(),
+        transit_hubs: bases
+            .iter()
+            .filter(|base| base.facilities.contains(&Facility::TransitHub))
+            .count(),
+        peak_supported_units: peak_support.supported_units,
+        peak_unit_upkeep: peak_support.unit_upkeep,
         facility_upkeep,
         convoy_upkeep,
         total_upkeep,
@@ -452,6 +491,15 @@ fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerP
             turn,
             ..OwnerPeakBaseStress::default()
         })
+}
+
+fn owner_peak_support(game: &GameState, owner: usize, turn: usize) -> OwnerPeakSupport {
+    let support = game.faction_support_summary(owner);
+    OwnerPeakSupport {
+        supported_units: support.supported_units,
+        unit_upkeep: support.unit_upkeep,
+        turn,
+    }
 }
 
 impl OwnerPeakBaseStress {
@@ -485,6 +533,39 @@ impl Ord for OwnerPeakBaseStress {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         (self.facility_upkeep, self.optional_upkeep, self.facilities, self.turn)
             .cmp(&(other.facility_upkeep, other.optional_upkeep, other.facilities, other.turn))
+    }
+}
+
+impl OwnerPeakSupport {
+    fn max(self, other: Self) -> Self {
+        if other > self {
+            other
+        } else {
+            self
+        }
+    }
+}
+
+impl PartialEq for OwnerPeakSupport {
+    fn eq(&self, other: &Self) -> bool {
+        self.supported_units == other.supported_units
+            && self.unit_upkeep == other.unit_upkeep
+            && self.turn == other.turn
+    }
+}
+
+impl Eq for OwnerPeakSupport {}
+
+impl PartialOrd for OwnerPeakSupport {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OwnerPeakSupport {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        (self.unit_upkeep, self.supported_units, self.turn)
+            .cmp(&(other.unit_upkeep, other.supported_units, other.turn))
     }
 }
 
