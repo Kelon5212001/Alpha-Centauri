@@ -755,7 +755,7 @@ fn choose_ai_offensive_base_target(state: &GameState, owner: usize) -> Option<us
     state
         .bases
         .iter()
-        .filter(|base| !is_ai_ally(state, owner, base.owner))
+        .filter(|base| is_ai_offensive_target(state, owner, base.owner))
         .min_by_key(|base| offensive_base_priority(state, owner, base.id))
         .map(|base| base.id)
 }
@@ -764,7 +764,9 @@ fn choose_ai_naval_invasion_target(state: &GameState, owner: usize) -> Option<us
     state
         .bases
         .iter()
-        .filter(|base| !is_ai_ally(state, owner, base.owner) && is_base_coastal(state, base.id))
+        .filter(|base| {
+            is_ai_offensive_target(state, owner, base.owner) && is_base_coastal(state, base.id)
+        })
         .min_by_key(|base| {
             let priority = offensive_base_priority(state, owner, base.id);
             // Prefer coastal bases for naval invasion
@@ -786,7 +788,7 @@ fn choose_ai_offensive_position_target(state: &GameState, owner: usize) -> Optio
     for unit in state
         .units
         .iter()
-        .filter(|unit| unit.alive && !is_ai_ally(state, owner, unit.owner))
+        .filter(|unit| unit.alive && is_ai_offensive_target(state, owner, unit.owner))
     {
         let nearest_owned_base = state
             .bases_for(owner)
@@ -1043,8 +1045,11 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                         status: crate::DiplomacyStatus::Pact,
                     });
                 }
-            } else if (attitude <= -15 && personality.aggression > 4)
-                || (frontier_tension >= 3 && attitude <= 20 && hostility_bias >= 5)
+            } else if (attitude <= -20 && personality.aggression > 5)
+                || (state.turn >= 30
+                    && frontier_tension >= 4
+                    && attitude <= 10
+                    && hostility_bias >= 6)
             {
                 // Break Treaty
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1054,7 +1059,11 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
                 });
             }
         } else if current_status == crate::DiplomacyStatus::Pact {
-            if attitude <= 10 || (frontier_tension >= 4 && attitude < 30 && hostility_bias >= 6)
+            if attitude <= 0
+                || (state.turn >= 40
+                    && frontier_tension >= 5
+                    && attitude < 20
+                    && hostility_bias >= 7)
             {
                 // Break Pact
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -1070,9 +1079,10 @@ fn update_ai_diplomacy(state: &mut GameState, owner: usize) {
             if (attitude <= -30 && personality.aggression > 5)
                 || (state.turn >= 30
                     && frontier_tension >= 4
-                    && attitude <= 10
-                    && (hostility_bias >= 5 || expansionism_threat)
-                    && strength_margin >= -4)
+                    && attitude <= 0
+                    && (hostility_bias >= 7 || expansionism_threat)
+                    && our_strength >= 6
+                    && strength_margin >= 4)
             {
                 // Declare War
                 let _ = state.apply_action(GameAction::UpdateDiplomacy {
@@ -4391,12 +4401,11 @@ fn choose_ai_raider_target_for_owner(
 ) -> Option<(usize, usize)> {
     let signals = tactical_signals_for_owner(state, owner);
     let mut best: Option<(usize, usize, i32)> = None;
-    let rival_owner = rival_owner(state, owner);
 
     for unit in state
         .units
         .iter()
-        .filter(|u| u.alive && u.owner == rival_owner)
+        .filter(|u| u.alive && is_ai_offensive_target(state, owner, u.owner))
     {
         let mut score = score_player_unit_target(x, y, unit.x, unit.y, signals);
         if matches!(unit.kind, UnitKind::Former | UnitKind::ColonyPod) {
@@ -4409,7 +4418,11 @@ fn choose_ai_raider_target_for_owner(
         }
     }
 
-    for base in state.bases.iter().filter(|b| b.owner == rival_owner) {
+    for base in state
+        .bases
+        .iter()
+        .filter(|b| is_ai_offensive_target(state, owner, b.owner))
+    {
         let score = score_raider_base_target(state, x, y, base.id, signals);
         if best.map(|b| score < b.2).unwrap_or(true) {
             best = Some((base.x, base.y, score));
@@ -4590,13 +4603,12 @@ fn best_scored_target_for_owner(
     y: usize,
     signals: AiTacticalSignals,
 ) -> Option<(usize, usize)> {
-    let rival_owner = rival_owner(state, owner);
     let mut best: Option<(usize, usize, i32)> = None;
 
     for unit in state
         .units
         .iter()
-        .filter(|u| u.alive && u.owner == rival_owner)
+        .filter(|u| u.alive && is_ai_offensive_target(state, owner, u.owner))
     {
         let score = score_player_unit_target(x, y, unit.x, unit.y, signals);
         if best.map(|b| score < b.2).unwrap_or(true) {
@@ -4604,7 +4616,11 @@ fn best_scored_target_for_owner(
         }
     }
 
-    for base in state.bases.iter().filter(|b| b.owner == rival_owner) {
+    for base in state
+        .bases
+        .iter()
+        .filter(|b| is_ai_offensive_target(state, owner, b.owner))
+    {
         let score = score_player_base_target(x, y, base.x, base.y, signals)
             + offensive_base_priority(state, owner, base.id);
         if best.map(|b| score < b.2).unwrap_or(true) {
@@ -4795,6 +4811,9 @@ mod tests {
             cargo_unit_ids: Vec::new(),
             activity: UnitActivity::None,
         });
+
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
 
         let target =
             best_scored_target(&game, 5, 5, tactical_signals(&game)).expect("target should exist");
@@ -5370,6 +5389,7 @@ mod tests {
     #[test]
     fn tactical_target_prefers_closer_base_over_farther_unit() {
         let mut game = GameState::new_game(16, 16, 9);
+        let ai_owner = game.ai_owner();
         let player_owner = game.player_owner();
         game.units.clear();
         game.bases.clear();
@@ -5411,6 +5431,9 @@ mod tests {
             cargo_unit_ids: Vec::new(),
             activity: UnitActivity::None,
         });
+
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
 
         let target =
             best_scored_target(&game, 5, 5, tactical_signals(&game)).expect("target should exist");
@@ -5548,6 +5571,9 @@ mod tests {
         });
         game.tiles[5 * game.width + 8].unit = Some(3);
 
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
+
         run_ai_tactics_for_owner(&mut game, ai_owner);
 
         assert_eq!(game.base(1).map(|base| base.owner), Some(ai_owner));
@@ -5634,14 +5660,69 @@ mod tests {
         game.add_convoy_route_typed(1, 2, crate::ConvoyRouteKind::Trade)
             .expect("trade route should exist");
 
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
+
         let target = choose_ai_offensive_base_target(&game, ai_owner)
             .expect("frontier convoy hub should be selected");
         assert_eq!(target, 1);
     }
 
     #[test]
+    fn offensive_base_target_requires_war_status() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let ai_owner = game.ai_owner();
+        let player_owner = game.player_owner();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.base = None;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner: ai_owner,
+            name: "Sparta".to_string(),
+            x: 4,
+            y: 5,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[5 * game.width + 4].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner: player_owner,
+            name: "Gaia".to_string(),
+            x: 7,
+            y: 5,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::ScoutPatrol,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[5 * game.width + 7].base = Some(1);
+
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::Truce;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::Truce;
+        assert_eq!(choose_ai_offensive_base_target(&game, ai_owner), None);
+
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
+        assert_eq!(choose_ai_offensive_base_target(&game, ai_owner), Some(1));
+    }
+
+    #[test]
     fn raider_target_prefers_player_base_over_same_distance_combat_unit() {
         let mut game = GameState::new_game(16, 16, 9);
+        let ai_owner = game.ai_owner();
         let player_owner = game.player_owner();
         game.units.clear();
         game.bases.clear();
@@ -5684,6 +5765,9 @@ mod tests {
             activity: UnitActivity::None,
         });
 
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
+
         let target = choose_ai_raider_target(&game, 5, 5).expect("raider target should exist");
         assert_eq!(target, (7, 5));
     }
@@ -5691,6 +5775,7 @@ mod tests {
     #[test]
     fn raider_target_prefers_exposed_colony_pod() {
         let mut game = GameState::new_game(16, 16, 9);
+        let ai_owner = game.ai_owner();
         let player_owner = game.player_owner();
         game.units.clear();
         for tile in &mut game.tiles {
@@ -5731,6 +5816,9 @@ mod tests {
             cargo_unit_ids: Vec::new(),
             activity: UnitActivity::None,
         });
+
+        game.relations[ai_owner][player_owner].status = crate::DiplomacyStatus::War;
+        game.relations[player_owner][ai_owner].status = crate::DiplomacyStatus::War;
 
         let target = choose_ai_raider_target(&game, 5, 5).expect("raider target should exist");
         assert_eq!(target, (6, 4));
@@ -7176,6 +7264,9 @@ mod tests {
         });
         game.tiles[7 * game.width + 11].unit = Some(200);
 
+        game.relations[owner][rival].status = crate::DiplomacyStatus::War;
+        game.relations[rival][owner].status = crate::DiplomacyStatus::War;
+
         run_ai_tactics_for_owner(&mut game, owner);
 
         assert!(
@@ -7707,6 +7798,10 @@ fn is_ai_ally(state: &GameState, owner: usize, other_id: usize) -> bool {
     }
     let status = state.relations[owner][other_id].status;
     status == crate::DiplomacyStatus::Treaty || status == crate::DiplomacyStatus::Pact
+}
+
+fn is_ai_offensive_target(state: &GameState, owner: usize, other_id: usize) -> bool {
+    owner != other_id && state.relations[owner][other_id].status == crate::DiplomacyStatus::War
 }
 
 fn is_base_coastal(state: &GameState, base_id: usize) -> bool {
