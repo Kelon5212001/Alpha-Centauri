@@ -311,6 +311,9 @@ fn update_ai_research(state: &mut GameState, owner: usize) {
         if support_strained && unlocks_support_recovery {
             score += 25;
         }
+        if support_strained && tech_variant == crate::Tech::IndustrialBase {
+            score += 35;
+        }
 
         if tech_variant == crate::Tech::SecretsOfPlanet {
             if underexpanded
@@ -2269,6 +2272,12 @@ fn choose_ai_queue_follow_up(
             return crate::ProductionItem::Speeder;
         }
         return crate::ProductionItem::ScoutPatrol;
+    }
+    if support_pressure
+        && !base.facilities.contains(&crate::Facility::CommandCenter)
+        && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+    {
+        return crate::ProductionItem::CommandCenter;
     }
     if !base.facilities.contains(&crate::Facility::NetworkNode)
         && !maintenance_overbuilt
@@ -6351,6 +6360,91 @@ mod tests {
     }
 
     #[test]
+    fn support_pressure_follow_up_prioritizes_command_center_before_optional_economy() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Support Queue".to_string(),
+            x: 6,
+            y: 6,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![crate::Facility::TradeExchange],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner,
+            name: "Support Link".to_string(),
+            x: 8,
+            y: 6,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 8].base = Some(1);
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 8usize, 6usize),
+            (104usize, 6usize, 5usize),
+            (105usize, 8usize, 5usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert!(game.faction_support_summary(owner).supported_units > 0);
+
+        let choice = choose_ai_queue_follow_up(&game, 0, owner);
+
+        assert_eq!(choice, ProductionItem::CommandCenter);
+    }
+
+    #[test]
     fn six_facility_base_blocks_additional_optional_economy_follow_up() {
         let mut game = GameState::new_game(16, 16, 9);
         let owner = game.ai_owner();
@@ -7250,6 +7344,79 @@ mod tests {
             ),
             "support pressure should choose relief infrastructure instead of scout fallback, got {choice:?}"
         );
+    }
+
+    #[test]
+    fn support_pressure_research_prioritizes_industrial_base() {
+        let mut game = GameState::new_game(16, 16, 43);
+        let owner = game.ai_owner();
+        game.turn = 20;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+        }
+
+        for (id, x, y) in [(0usize, 6usize, 6usize), (1usize, 12usize, 12usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Base {id}"),
+                x,
+                y,
+                population: 3,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 12usize, 12usize),
+            (104usize, 11usize, 12usize),
+            (105usize, 12usize, 11usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert!(game.faction_support_summary(owner).supported_units > 0);
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::Biogenetics) {
+            faction.known_techs.push(Tech::Biogenetics);
+        }
+        faction.current_research = Tech::CentauriEcology;
+        assert!(game.is_research_available(owner, Tech::IndustrialBase));
+
+        update_ai_research(&mut game, owner);
+
+        let current_research = game
+            .faction(owner)
+            .expect("AI faction must exist")
+            .current_research;
+        assert_eq!(current_research, Tech::IndustrialBase);
     }
 
     #[test]

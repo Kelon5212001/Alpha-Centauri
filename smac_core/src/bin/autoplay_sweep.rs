@@ -1,5 +1,5 @@
 use smac_core::content_api::facility_maintenance;
-use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState};
+use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState, ProductionItem, Tech};
 use std::env;
 
 struct Config {
@@ -37,6 +37,8 @@ struct OwnerMetrics {
     unit_upkeep: i32,
     command_centers: usize,
     transit_hubs: usize,
+    industrial_base_known: bool,
+    command_center_available: bool,
     peak_supported_units: i32,
     peak_unit_upkeep: i32,
     facility_upkeep: i32,
@@ -165,7 +167,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -194,6 +196,8 @@ fn run() -> Result<(), String> {
             summary.player.unit_upkeep,
             summary.player.command_centers,
             summary.player.transit_hubs,
+            yn(summary.player.industrial_base_known),
+            yn(summary.player.command_center_available),
             summary.player.peak_supported_units,
             summary.player.peak_unit_upkeep,
             summary.player.facility_upkeep,
@@ -221,6 +225,8 @@ fn run() -> Result<(), String> {
             summary.ai.unit_upkeep,
             summary.ai.command_centers,
             summary.ai.transit_hubs,
+            yn(summary.ai.industrial_base_known),
+            yn(summary.ai.command_center_available),
             summary.ai.peak_supported_units,
             summary.ai.peak_unit_upkeep,
             summary.ai.facility_upkeep,
@@ -462,6 +468,10 @@ fn owner_metrics(
             .iter()
             .filter(|base| base.facilities.contains(&Facility::TransitHub))
             .count(),
+        industrial_base_known: faction
+            .map(|f| f.known_techs.contains(&Tech::IndustrialBase))
+            .unwrap_or(false),
+        command_center_available: game.is_production_available(owner, ProductionItem::CommandCenter),
         peak_supported_units: peak_support.supported_units,
         peak_unit_upkeep: peak_support.unit_upkeep,
         facility_upkeep,
@@ -616,6 +626,10 @@ fn nearest_base_gap(game: &GameState, owner: usize, other: usize) -> i32 {
         })
         .min()
         .unwrap_or(99)
+}
+
+fn yn(value: bool) -> &'static str {
+    if value { "y" } else { "n" }
 }
 
 fn parse_args() -> Result<Config, String> {
