@@ -1329,8 +1329,33 @@ fn run_ai_economy_for_owner(state: &mut GameState, owner: usize) {
         }
 
         if state.base(base_id).is_some() {
+            let queue_item = choose_ai_queue_follow_up(state, base_id, owner);
+            let support_summary = state.faction_support_summary(owner);
+            let severe_support_queue_pressure = support_summary.supported_units
+                >= state.bases_for(owner).len().max(1) as i32
+                || support_summary.unit_upkeep >= 2;
+            let should_force_support_follow_up = severe_support_queue_pressure
+                && queue_item == crate::ProductionItem::CommandCenter
+                && state
+                    .base(base_id)
+                    .map(|base| {
+                        !base.facilities.contains(&crate::Facility::CommandCenter)
+                            && !base
+                                .production_queue
+                                .contains(&crate::ProductionItem::CommandCenter)
+                    })
+                    .unwrap_or(false);
+
+            if should_force_support_follow_up
+                && state
+                    .base(base_id)
+                    .map(|base| !base.production_queue.is_empty())
+                    .unwrap_or(false)
+            {
+                let _ = state.clear_production_queue_action(base_id);
+            }
+
             if state.base(base_id).unwrap().production_queue.is_empty() {
-                let queue_item = choose_ai_queue_follow_up(state, base_id, owner);
                 if queue_item != state.base(base_id).unwrap().production {
                     let _ = state.apply_action(GameAction::QueueBaseProduction {
                         base_id,
@@ -6419,6 +6444,10 @@ mod tests {
             (103usize, 8usize, 6usize),
             (104usize, 6usize, 5usize),
             (105usize, 8usize, 5usize),
+            (106usize, 6usize, 7usize),
+            (107usize, 7usize, 7usize),
+            (108usize, 8usize, 7usize),
+            (109usize, 9usize, 6usize),
         ] {
             game.tiles[y * game.width + x].unit = Some(unit_id);
             game.units.push(Unit {
@@ -6442,6 +6471,126 @@ mod tests {
         let choice = choose_ai_queue_follow_up(&game, 0, owner);
 
         assert_eq!(choice, ProductionItem::CommandCenter);
+    }
+
+    #[test]
+    fn severe_support_pressure_rewrites_stale_queue_to_command_center() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.turn = 80;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        for (id, name, x, y, population, minerals_stock, production, facilities, queue) in [
+            (
+                0usize,
+                "Queued Relief",
+                6usize,
+                6usize,
+                4i32,
+                40i32,
+                ProductionItem::TradeExchange,
+                vec![crate::Facility::TradeExchange],
+                vec![ProductionItem::Former],
+            ),
+            (
+                1usize,
+                "Queued Relief Link",
+                8usize,
+                6usize,
+                2i32,
+                0i32,
+                ProductionItem::Former,
+                Vec::new(),
+                Vec::new(),
+            ),
+        ] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: name.to_string(),
+                x,
+                y,
+                population,
+                nutrients_stock: 0,
+                minerals_stock,
+                production,
+                production_queue: queue,
+                facilities,
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 8usize, 6usize),
+            (104usize, 6usize, 5usize),
+            (105usize, 8usize, 5usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        for (unit_id, x, y) in [(200usize, 6usize, 8usize), (201usize, 8usize, 8usize)] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ColonyPod,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        let support = game.faction_support_summary(owner);
+        assert!(support.supported_units > 0);
+        assert_eq!(
+            choose_ai_queue_follow_up(&game, 0, owner),
+            ProductionItem::CommandCenter
+        );
+
+        run_ai_economy_for_owner(&mut game, owner);
+
+        let base = game.base(0).expect("base should still exist");
+        assert_eq!(base.production, ProductionItem::TradeExchange);
+        assert_eq!(base.production_queue, vec![ProductionItem::CommandCenter]);
     }
 
     #[test]
@@ -7384,6 +7533,10 @@ mod tests {
             (103usize, 12usize, 12usize),
             (104usize, 11usize, 12usize),
             (105usize, 12usize, 11usize),
+            (106usize, 10usize, 12usize),
+            (107usize, 12usize, 10usize),
+            (108usize, 11usize, 11usize),
+            (109usize, 10usize, 11usize),
         ] {
             game.tiles[y * game.width + x].unit = Some(unit_id);
             game.units.push(Unit {
@@ -7402,7 +7555,7 @@ mod tests {
             });
         }
 
-        assert!(game.faction_support_summary(owner).supported_units > 0);
+        assert!(game.faction_support_summary(owner).supported_units >= 3);
         let faction = game.faction_mut(owner).expect("AI faction must exist");
         if !faction.known_techs.contains(&Tech::Biogenetics) {
             faction.known_techs.push(Tech::Biogenetics);
