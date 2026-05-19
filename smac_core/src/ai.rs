@@ -1607,11 +1607,15 @@ fn is_ai_base_maintenance_saturated(base: &crate::Base, yields: Yields) -> bool 
         .filter(|facility| is_ai_optional_maintenance_facility(**facility))
         .count() as i32;
 
-    (total_upkeep >= 10
-        && optional_upkeep >= 5
+    (total_upkeep >= 9
+        && optional_upkeep >= 4
         && optional_count >= 3
-        && (base.population <= 5 || yields.energy <= 6))
-        || (facility_count >= 7 && total_upkeep >= 11 && optional_upkeep >= 4)
+        && (base.population <= 6 || yields.energy <= 7))
+        || (facility_count >= 6
+            && total_upkeep >= 9
+            && optional_upkeep >= 4
+            && optional_count >= 3)
+        || (facility_count >= 7 && total_upkeep >= 10 && optional_upkeep >= 4)
         || (facility_count >= 8 && optional_upkeep >= 4)
 }
 
@@ -6313,6 +6317,61 @@ mod tests {
             governor_mode: GovernorMode::Off,
         });
         game.tiles[6 * game.width + 8].base = Some(1);
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 120;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+        if !faction.known_techs.contains(&Tech::PlanetaryNetworks) {
+            faction.known_techs.push(Tech::PlanetaryNetworks);
+        }
+
+        let choice = choose_ai_queue_follow_up(&game, 0, owner);
+
+        assert_ne!(choice, ProductionItem::NetworkNode);
+        assert_ne!(choice, ProductionItem::TradeExchange);
+        assert_ne!(choice, ProductionItem::FreightDepot);
+    }
+
+    #[test]
+    fn six_facility_base_blocks_additional_optional_economy_follow_up() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Six Stack".to_string(),
+            x: 6,
+            y: 6,
+            population: 6,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![
+                crate::Facility::RecreationCommons,
+                crate::Facility::Greenhouse,
+                crate::Facility::CommandCenter,
+                crate::Facility::NetworkNode,
+                crate::Facility::TradeExchange,
+                crate::Facility::FreightDepot,
+            ],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
 
         let faction = game.faction_mut(owner).expect("AI faction must exist");
         faction.energy = 120;
