@@ -59,6 +59,13 @@ struct OwnerMetrics {
     command_center_avg_progress_pct: i32,
     command_center_max_progress_pct: i32,
     command_center_low_mineral_bases: usize,
+    command_center_base_turns: usize,
+    command_center_loss_turns: usize,
+    command_center_positive_yield_loss_turns: usize,
+    command_center_avg_start_stock: i32,
+    command_center_avg_end_stock: i32,
+    command_center_avg_yield_minerals: i32,
+    command_center_avg_mineral_margin: i32,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -74,6 +81,25 @@ struct OwnerPeakSupport {
     supported_units: i32,
     unit_upkeep: i32,
     turn: usize,
+}
+
+#[derive(Clone, Copy, Default)]
+struct OwnerCommandCenterTurnFlow {
+    base_turns: usize,
+    loss_turns: usize,
+    positive_yield_loss_turns: usize,
+    total_start_stock: i32,
+    total_end_stock: i32,
+    total_yield_minerals: i32,
+    total_mineral_margin: i32,
+}
+
+#[derive(Clone, Copy)]
+struct ActiveCommandCenterBaseStart {
+    base_id: usize,
+    start_stock: i32,
+    yield_minerals: i32,
+    mineral_margin: i32,
 }
 
 struct RunSummary {
@@ -175,7 +201,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -224,6 +250,13 @@ fn run() -> Result<(), String> {
             summary.player.command_center_avg_progress_pct,
             summary.player.command_center_max_progress_pct,
             summary.player.command_center_low_mineral_bases,
+            summary.player.command_center_base_turns,
+            summary.player.command_center_loss_turns,
+            summary.player.command_center_positive_yield_loss_turns,
+            summary.player.command_center_avg_start_stock,
+            summary.player.command_center_avg_end_stock,
+            summary.player.command_center_avg_yield_minerals,
+            summary.player.command_center_avg_mineral_margin,
             blocker_label(
                 summary.player.command_center_blocker,
                 summary.player.command_center_blocker_count,
@@ -263,6 +296,13 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_avg_progress_pct,
             summary.ai.command_center_max_progress_pct,
             summary.ai.command_center_low_mineral_bases,
+            summary.ai.command_center_base_turns,
+            summary.ai.command_center_loss_turns,
+            summary.ai.command_center_positive_yield_loss_turns,
+            summary.ai.command_center_avg_start_stock,
+            summary.ai.command_center_avg_end_stock,
+            summary.ai.command_center_avg_yield_minerals,
+            summary.ai.command_center_avg_mineral_margin,
             blocker_label(
                 summary.ai.command_center_blocker,
                 summary.ai.command_center_blocker_count,
@@ -330,10 +370,14 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut ai_peak_base_stress = owner_peak_base_stress(&game, game.ai_owner(), 0);
     let mut player_peak_support = owner_peak_support(&game, game.player_owner(), 0);
     let mut ai_peak_support = owner_peak_support(&game, game.ai_owner(), 0);
+    let mut player_command_center_turn_flow = OwnerCommandCenterTurnFlow::default();
+    let mut ai_command_center_turn_flow = OwnerCommandCenterTurnFlow::default();
 
     while completed_turns < config.turns && game.game_over.is_none() {
         let player_readiness = offense_readiness_for_owner(&game, game.player_owner());
         let ai_readiness = offense_readiness_for_owner(&game, game.ai_owner());
+        let player_cc_starts = active_command_center_base_starts(&game, game.player_owner());
+        let ai_cc_starts = active_command_center_base_starts(&game, game.ai_owner());
         if player_readiness.has_offensive_target {
             player_target_turns += 1;
         }
@@ -349,6 +393,8 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
 
         game.run_autoplay_mission_year();
         completed_turns += 1;
+        player_command_center_turn_flow.observe_turn(&game, &player_cc_starts);
+        ai_command_center_turn_flow.observe_turn(&game, &ai_cc_starts);
         player_peak_base_stress = player_peak_base_stress.max(owner_peak_base_stress(
             &game,
             game.player_owner(),
@@ -434,8 +480,20 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         player_target_turns,
         ai_ready_turns,
         ai_target_turns,
-        player: owner_metrics(&game, game.player_owner(), player_peak_base_stress, player_peak_support),
-        ai: owner_metrics(&game, game.ai_owner(), ai_peak_base_stress, ai_peak_support),
+        player: owner_metrics(
+            &game,
+            game.player_owner(),
+            player_peak_base_stress,
+            player_peak_support,
+            player_command_center_turn_flow,
+        ),
+        ai: owner_metrics(
+            &game,
+            game.ai_owner(),
+            ai_peak_base_stress,
+            ai_peak_support,
+            ai_command_center_turn_flow,
+        ),
     }
 }
 
@@ -444,6 +502,7 @@ fn owner_metrics(
     owner: usize,
     peak_base_stress: OwnerPeakBaseStress,
     peak_support: OwnerPeakSupport,
+    command_center_turn_flow: OwnerCommandCenterTurnFlow,
 ) -> OwnerMetrics {
     let bases = game.bases_for(owner);
     let unrest_values: Vec<i32> = bases.iter().map(|base| game.base_unrest(base.id)).collect();
@@ -522,7 +581,32 @@ fn owner_metrics(
         command_center_avg_progress_pct: command_center_builds.avg_progress_pct,
         command_center_max_progress_pct: command_center_builds.max_progress_pct,
         command_center_low_mineral_bases: command_center_builds.low_mineral_bases,
+        command_center_base_turns: command_center_turn_flow.base_turns,
+        command_center_loss_turns: command_center_turn_flow.loss_turns,
+        command_center_positive_yield_loss_turns: command_center_turn_flow.positive_yield_loss_turns,
+        command_center_avg_start_stock: command_center_turn_flow.avg_start_stock(),
+        command_center_avg_end_stock: command_center_turn_flow.avg_end_stock(),
+        command_center_avg_yield_minerals: command_center_turn_flow.avg_yield_minerals(),
+        command_center_avg_mineral_margin: command_center_turn_flow.avg_mineral_margin(),
     }
+}
+
+fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<ActiveCommandCenterBaseStart> {
+    game.bases_for(owner)
+        .into_iter()
+        .filter(|base| base.production == ProductionItem::CommandCenter)
+        .map(|base| {
+            let yields = game
+                .operational_base_yields(base.id)
+                .unwrap_or_else(|| game.base_yields(base.x, base.y));
+            ActiveCommandCenterBaseStart {
+                base_id: base.id,
+                start_stock: base.minerals_stock,
+                yield_minerals: yields.minerals,
+                mineral_margin: game.base_mineral_margin(base.id).unwrap_or_default(),
+            }
+        })
+        .collect()
 }
 
 #[derive(Clone, Copy, Default)]
@@ -640,6 +724,44 @@ fn owner_command_center_build_metrics(
         },
         max_progress_pct,
         low_mineral_bases,
+    }
+}
+
+impl OwnerCommandCenterTurnFlow {
+    fn observe_turn(&mut self, game: &GameState, starts: &[ActiveCommandCenterBaseStart]) {
+        for start in starts {
+            let Some(base) = game.base(start.base_id) else {
+                continue;
+            };
+            let end_stock = base.minerals_stock;
+            self.base_turns += 1;
+            self.total_start_stock += start.start_stock;
+            self.total_end_stock += end_stock;
+            self.total_yield_minerals += start.yield_minerals;
+            self.total_mineral_margin += start.mineral_margin;
+            if end_stock < start.start_stock {
+                self.loss_turns += 1;
+                if start.yield_minerals > 0 {
+                    self.positive_yield_loss_turns += 1;
+                }
+            }
+        }
+    }
+
+    fn avg_start_stock(self) -> i32 {
+        average_i32(self.total_start_stock, self.base_turns)
+    }
+
+    fn avg_end_stock(self) -> i32 {
+        average_i32(self.total_end_stock, self.base_turns)
+    }
+
+    fn avg_yield_minerals(self) -> i32 {
+        average_i32(self.total_yield_minerals, self.base_turns)
+    }
+
+    fn avg_mineral_margin(self) -> i32 {
+        average_i32(self.total_mineral_margin, self.base_turns)
     }
 }
 
@@ -792,6 +914,14 @@ fn blocker_label(item: Option<ProductionItem>, count: usize) -> String {
     match item {
         Some(item) if count > 0 => format!("{}x{count}", production_name(item)),
         _ => "-".to_string(),
+    }
+}
+
+fn average_i32(total: i32, count: usize) -> i32 {
+    if count > 0 {
+        total / count as i32
+    } else {
+        0
     }
 }
 
