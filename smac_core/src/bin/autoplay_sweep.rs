@@ -74,6 +74,7 @@ struct OwnerMetrics {
     command_center_loss_with_intercepted_freight: usize,
     command_center_loss_with_collapsing_freight: usize,
     command_center_loss_with_support_drain: usize,
+    command_center_loss_with_production_reset: usize,
     command_center_loss_with_bankruptcy: usize,
     command_center_loss_with_emergency_support: usize,
     command_center_loss_with_support_famine: usize,
@@ -110,14 +111,16 @@ struct OwnerCommandCenterTurnFlow {
     loss_with_intercepted_freight: usize,
     loss_with_collapsing_freight: usize,
     loss_with_support_drain: usize,
+    loss_with_production_reset: usize,
     loss_with_bankruptcy: usize,
     loss_with_emergency_support: usize,
     loss_with_support_famine: usize,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct ActiveCommandCenterBaseStart {
     base_id: usize,
+    base_name: String,
     start_stock: i32,
     yield_minerals: i32,
     mineral_margin: i32,
@@ -232,7 +235,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -295,6 +298,7 @@ fn run() -> Result<(), String> {
             summary.player.command_center_loss_with_intercepted_freight,
             summary.player.command_center_loss_with_collapsing_freight,
             summary.player.command_center_loss_with_support_drain,
+            summary.player.command_center_loss_with_production_reset,
             summary.player.command_center_loss_with_bankruptcy,
             summary.player.command_center_loss_with_emergency_support,
             summary.player.command_center_loss_with_support_famine,
@@ -351,6 +355,7 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_loss_with_intercepted_freight,
             summary.ai.command_center_loss_with_collapsing_freight,
             summary.ai.command_center_loss_with_support_drain,
+            summary.ai.command_center_loss_with_production_reset,
             summary.ai.command_center_loss_with_bankruptcy,
             summary.ai.command_center_loss_with_emergency_support,
             summary.ai.command_center_loss_with_support_famine,
@@ -650,6 +655,8 @@ fn owner_metrics(
         command_center_loss_with_collapsing_freight: command_center_turn_flow
             .loss_with_collapsing_freight,
         command_center_loss_with_support_drain: command_center_turn_flow.loss_with_support_drain,
+        command_center_loss_with_production_reset: command_center_turn_flow
+            .loss_with_production_reset,
         command_center_loss_with_bankruptcy: command_center_turn_flow.loss_with_bankruptcy,
         command_center_loss_with_emergency_support: command_center_turn_flow
             .loss_with_emergency_support,
@@ -670,6 +677,7 @@ fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<Acti
             let route_statuses = game.convoy_route_status_for_base(base.id);
             ActiveCommandCenterBaseStart {
                 base_id: base.id,
+                base_name: base.name.clone(),
                 start_stock: base.minerals_stock,
                 yield_minerals: yields.minerals,
                 mineral_margin: game.base_mineral_margin(base.id).unwrap_or_default(),
@@ -887,6 +895,9 @@ impl OwnerCommandCenterTurnFlow {
                 if start.estimated_support_drain > 0 {
                     self.loss_with_support_drain += 1;
                 }
+                if base_had_production_reset(game, &start.base_name) {
+                    self.loss_with_production_reset += 1;
+                }
                 if economy_signals.bankruptcy {
                     self.loss_with_bankruptcy += 1;
                 }
@@ -915,6 +926,14 @@ impl OwnerCommandCenterTurnFlow {
     fn avg_mineral_margin(self) -> i32 {
         average_i32(self.total_mineral_margin, self.base_turns)
     }
+}
+
+fn base_had_production_reset(game: &GameState, base_name: &str) -> bool {
+    game.log.iter().filter(|entry| entry.turn == game.turn).any(|entry| {
+        entry.message.contains(base_name)
+            && (entry.message.contains("switched production to")
+                || entry.message.contains("promoted "))
+    })
 }
 
 fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerPeakBaseStress {
