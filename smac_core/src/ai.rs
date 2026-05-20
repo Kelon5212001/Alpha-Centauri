@@ -1658,7 +1658,12 @@ fn is_ai_base_maintenance_saturated(base: &crate::Base, yields: Yields) -> bool 
         return true;
     }
 
-    (total_upkeep >= 9
+    (facility_count >= 5
+        && total_upkeep + 1 >= yields.energy
+        && optional_upkeep >= 4
+        && optional_count >= 2
+        && (base.population <= 6 || yields.energy <= 8))
+        || (total_upkeep >= 9
         && optional_upkeep >= 4
         && optional_count >= 3
         && (base.population <= 6 || yields.energy <= 7))
@@ -6710,6 +6715,60 @@ mod tests {
 
         let faction = game.faction_mut(owner).expect("AI faction must exist");
         faction.energy = 120;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+        if !faction.known_techs.contains(&Tech::PlanetaryNetworks) {
+            faction.known_techs.push(Tech::PlanetaryNetworks);
+        }
+
+        let choice = choose_ai_queue_follow_up(&game, 0, owner);
+
+        assert_ne!(choice, ProductionItem::NetworkNode);
+        assert_ne!(choice, ProductionItem::TradeExchange);
+        assert_ne!(choice, ProductionItem::FreightDepot);
+    }
+
+    #[test]
+    fn five_facility_near_break_even_base_blocks_more_optional_economy() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Five Stack".to_string(),
+            x: 6,
+            y: 6,
+            population: 5,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![
+                crate::Facility::RecyclingTanks,
+                crate::Facility::RecreationCommons,
+                crate::Facility::Greenhouse,
+                crate::Facility::TradeExchange,
+                crate::Facility::FreightDepot,
+            ],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 100;
         if !faction.known_techs.contains(&Tech::IndustrialBase) {
             faction.known_techs.push(Tech::IndustrialBase);
         }
