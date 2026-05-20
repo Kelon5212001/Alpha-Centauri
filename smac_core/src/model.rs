@@ -1392,6 +1392,9 @@ pub enum GameAction {
         target_x: usize,
         target_y: usize,
     },
+    DisbandUnit {
+        unit_id: usize,
+    },
     SetUnitActivity {
         unit_id: usize,
         activity: UnitActivity,

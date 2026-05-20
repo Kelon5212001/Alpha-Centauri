@@ -1280,6 +1280,8 @@ pub fn run_ai_economy(state: &mut GameState) {
 }
 
 fn run_ai_economy_for_owner(state: &mut GameState, owner: usize) {
+    retire_idle_ai_formers(state, owner);
+
     for (base_a_id, base_b_id, kind) in state.suggested_convoy_repairs(owner) {
         let _ = state.repair_convoy_route_typed(base_a_id, base_b_id, kind);
     }
@@ -1376,8 +1378,11 @@ fn run_ai_economy_for_owner(state: &mut GameState, owner: usize) {
                 let rush_threshold = if is_competing { 40 } else { 60 };
 
                 if progress_pct >= rush_threshold {
+                    let remaining_minerals = cost.saturating_sub(base.minerals_stock);
+                    let energy_cost = remaining_minerals * 2;
+                    
                     if let Some(faction) = state.faction(owner) {
-                        if faction.energy >= 300 {
+                        if faction.energy >= energy_cost + 50 {
                             let _ = state.apply_action(GameAction::RushBuild { base_id });
                         }
                     }
@@ -1984,7 +1989,11 @@ fn choose_ai_production_for_base(
         {
             return crate::ProductionItem::NetworkNode;
         }
-        return crate::ProductionItem::Former;
+        if is_former_production_warranted(state, owner) {
+            return crate::ProductionItem::Former;
+        } else {
+            return crate::ProductionItem::ScoutPatrol;
+        }
     }
 
     if signals.expansion_pressure
@@ -2002,7 +2011,9 @@ fn choose_ai_production_for_base(
         && signals.military_pressure < 2
         && (!signals.support_pressure || active_formers == 0)
     {
-        return crate::ProductionItem::Former;
+        if is_former_production_warranted(state, owner) {
+            return crate::ProductionItem::Former;
+        }
     }
 
     if signals.military_pressure >= 1 {
@@ -2219,7 +2230,9 @@ fn choose_ai_production_for_base(
         && yields.nutrients > yields.minerals
         && signals.military_pressure == 0
     {
-        return crate::ProductionItem::Former;
+        if is_former_production_warranted(state, owner) {
+            return crate::ProductionItem::Former;
+        }
     }
 
     if psi_pressure_near_base(state, base.x, base.y, owner) >= 2
@@ -2437,7 +2450,7 @@ fn choose_ai_queue_follow_up(
             return relief_item;
         }
     }
-    if yields.nutrients >= yields.minerals {
+    if yields.nutrients >= yields.minerals && is_former_production_warranted(state, owner) {
         crate::ProductionItem::Former
     } else {
         crate::ProductionItem::ScoutPatrol
@@ -8370,4 +8383,125 @@ fn is_base_on_ocean(state: &GameState, base_id: usize) -> bool {
         .tile(base.x, base.y)
         .map(|t| !t.terrain.is_land())
         .unwrap_or(false)
+}
+
+pub(crate) fn former_has_nearby_work(state: &GameState, x: usize, y: usize) -> bool {
+    for dy in -1isize..=1 {
+        for dx in -1isize..=1 {
+            let nx = x as isize + dx;
+            let ny = y as isize + dy;
+            if nx < 0 || ny < 0 {
+                continue;
+            }
+            let nx = nx as usize;
+            let ny = ny as usize;
+            if nx >= state.width || ny >= state.height {
+                continue;
+            }
+            let Some(tile) = state.tile(nx, ny) else {
+                continue;
+            };
+            if !tile.terrain.is_land() || tile.improvement.is_some() {
+                continue;
+            }
+            if !state.tile_potential_improvements(nx, ny).is_empty() {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+pub(crate) fn is_former_production_warranted(state: &GameState, owner: usize) -> bool {
+    let mut saturated_formers = 0usize;
+    let mut active_formers = 0usize;
+
+    for unit in state.units.iter().filter(|u| u.alive && u.owner == owner) {
+        if unit.kind == UnitKind::Former {
+            active_formers += 1;
+            let on_base = state
+                .tile(unit.x, unit.y)
+                .map(|t| t.base.is_some())
+                .unwrap_or(false);
+            if !on_base {
+                if !former_has_nearby_work(state, unit.x, unit.y) {
+                    saturated_formers += 1;
+                }
+            }
+        }
+    }
+
+    let bases_count = state.bases_for(owner).len();
+    
+    // Hard cap: Never exceed 1.5 formers per base (rounded up)
+    if active_formers >= (bases_count * 3) / 2 {
+        return false;
+    }
+
+    // If we have saturated formers, we shouldn't build more
+    if saturated_formers > 0 {
+        return false;
+    }
+
+    true
+}
+
+fn retire_idle_ai_formers(state: &mut GameState, owner: usize) {
+    let support = state.faction_support_summary(owner);
+    if support.supported_units <= 0 && state.faction(owner).map(|f| f.energy).unwrap_or(0) >= 30 {
+        return; // No real pressure
+    }
+
+    let mut idle_former_ids = Vec::new();
+    let mut total_formers = 0;
+
+    for unit in state.units.iter().filter(|u| u.alive && u.owner == owner) {
+        if unit.kind == UnitKind::Former {
+            total_formers += 1;
+            let on_base = state
+                .tile(unit.x, unit.y)
+                .map(|t| t.base.is_some())
+                .unwrap_or(false);
+            if !on_base {
+                if !former_has_nearby_work(state, unit.x, unit.y) {
+                    idle_former_ids.push(unit.id);
+                }
+            }
+        }
+    }
+
+    // Only retire if we have a surplus
+    let bases_count = state.bases_for(owner).len();
+    if total_formers <= bases_count {
+        return;
+    }
+
+    // Retire up to the surplus, prioritizing those far from bases
+    idle_former_ids.sort_by_key(|&id| {
+        let u = state.unit(id).unwrap();
+        // Higher distance = more likely to be retired
+        usize::MAX - nearest_friendly_base(state, owner, u.x, u.y).map(|_| 0).unwrap_or(0) // Quick hack, wait, need actual distance
+    });
+
+    idle_former_ids.sort_by_key(|&id| {
+        let u = state.unit(id).unwrap();
+        let min_dist = state.bases_for(owner)
+            .iter()
+            .map(|base| manhattan(u.x, u.y, base.x, base.y))
+            .min()
+            .unwrap_or(99);
+        -(min_dist as i32) // Sort descending by distance
+    });
+
+    let max_to_retire = total_formers.saturating_sub(bases_count);
+    let mut retired = 0;
+
+    for id in idle_former_ids {
+        if retired >= max_to_retire {
+            break;
+        }
+        // Apply disband action
+        let _ = state.apply_action(GameAction::DisbandUnit { unit_id: id });
+        retired += 1;
+    }
 }

@@ -1487,6 +1487,10 @@ impl GameState {
                 target_x,
                 target_y,
             } => self.unload_unit(unit_id, transport_id, target_x, target_y),
+            GameAction::DisbandUnit { unit_id } => {
+                self.destroy_unit(unit_id);
+                Ok(())
+            }
             GameAction::SetUnitActivity { unit_id, activity } => {
                 self.set_unit_activity(unit_id, activity);
                 Ok(())
