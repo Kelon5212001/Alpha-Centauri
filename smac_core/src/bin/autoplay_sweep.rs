@@ -67,6 +67,10 @@ struct OwnerMetrics {
     command_center_avg_end_stock: i32,
     command_center_avg_yield_minerals: i32,
     command_center_avg_mineral_margin: i32,
+    command_center_completed_turns: usize,
+    command_center_switched_turns: usize,
+    command_center_lost_base_turns: usize,
+    command_center_retained_active_turns: usize,
     command_center_loss_with_intercepted_freight: usize,
     command_center_loss_with_collapsing_freight: usize,
     command_center_loss_with_support_drain: usize,
@@ -99,6 +103,10 @@ struct OwnerCommandCenterTurnFlow {
     total_end_stock: i32,
     total_yield_minerals: i32,
     total_mineral_margin: i32,
+    completed_turns: usize,
+    switched_turns: usize,
+    lost_base_turns: usize,
+    retained_active_turns: usize,
     loss_with_intercepted_freight: usize,
     loss_with_collapsing_freight: usize,
     loss_with_support_drain: usize,
@@ -224,7 +232,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -280,6 +288,10 @@ fn run() -> Result<(), String> {
             summary.player.command_center_avg_end_stock,
             summary.player.command_center_avg_yield_minerals,
             summary.player.command_center_avg_mineral_margin,
+            summary.player.command_center_completed_turns,
+            summary.player.command_center_switched_turns,
+            summary.player.command_center_lost_base_turns,
+            summary.player.command_center_retained_active_turns,
             summary.player.command_center_loss_with_intercepted_freight,
             summary.player.command_center_loss_with_collapsing_freight,
             summary.player.command_center_loss_with_support_drain,
@@ -332,6 +344,10 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_avg_end_stock,
             summary.ai.command_center_avg_yield_minerals,
             summary.ai.command_center_avg_mineral_margin,
+            summary.ai.command_center_completed_turns,
+            summary.ai.command_center_switched_turns,
+            summary.ai.command_center_lost_base_turns,
+            summary.ai.command_center_retained_active_turns,
             summary.ai.command_center_loss_with_intercepted_freight,
             summary.ai.command_center_loss_with_collapsing_freight,
             summary.ai.command_center_loss_with_support_drain,
@@ -625,6 +641,10 @@ fn owner_metrics(
         command_center_avg_end_stock: command_center_turn_flow.avg_end_stock(),
         command_center_avg_yield_minerals: command_center_turn_flow.avg_yield_minerals(),
         command_center_avg_mineral_margin: command_center_turn_flow.avg_mineral_margin(),
+        command_center_completed_turns: command_center_turn_flow.completed_turns,
+        command_center_switched_turns: command_center_turn_flow.switched_turns,
+        command_center_lost_base_turns: command_center_turn_flow.lost_base_turns,
+        command_center_retained_active_turns: command_center_turn_flow.retained_active_turns,
         command_center_loss_with_intercepted_freight: command_center_turn_flow
             .loss_with_intercepted_freight,
         command_center_loss_with_collapsing_freight: command_center_turn_flow
@@ -837,8 +857,16 @@ impl OwnerCommandCenterTurnFlow {
     ) {
         for start in starts {
             let Some(base) = game.base(start.base_id) else {
+                self.lost_base_turns += 1;
                 continue;
             };
+            if base.facilities.contains(&Facility::CommandCenter) {
+                self.completed_turns += 1;
+            } else if base.production == ProductionItem::CommandCenter {
+                self.retained_active_turns += 1;
+            } else {
+                self.switched_turns += 1;
+            }
             let end_stock = base.minerals_stock;
             self.base_turns += 1;
             self.total_start_stock += start.start_stock;
