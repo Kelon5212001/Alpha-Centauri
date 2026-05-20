@@ -1,5 +1,8 @@
 use smac_core::content_api::{facility_maintenance, production_name};
-use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState, ProductionItem, Tech};
+use smac_core::{
+    offense_readiness_for_owner, CommandCenterTurnTrace, Facility, GameOver, GameState,
+    ProductionItem, Tech,
+};
 use std::collections::HashMap;
 use std::env;
 
@@ -67,6 +70,10 @@ struct OwnerMetrics {
     command_center_avg_end_stock: i32,
     command_center_avg_yield_minerals: i32,
     command_center_avg_mineral_margin: i32,
+    command_center_trace_turns: usize,
+    command_center_avg_post_production_stock: i32,
+    command_center_avg_post_interdiction_stock: i32,
+    command_center_avg_exact_upkeep_drain: i32,
     command_center_completed_turns: usize,
     command_center_switched_turns: usize,
     command_center_lost_base_turns: usize,
@@ -104,6 +111,10 @@ struct OwnerCommandCenterTurnFlow {
     total_end_stock: i32,
     total_yield_minerals: i32,
     total_mineral_margin: i32,
+    trace_turns: usize,
+    total_post_production_stock: i32,
+    total_post_interdiction_stock: i32,
+    total_exact_upkeep_drain: i32,
     completed_turns: usize,
     switched_turns: usize,
     lost_base_turns: usize,
@@ -235,7 +246,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -295,6 +306,10 @@ fn run() -> Result<(), String> {
             summary.player.command_center_switched_turns,
             summary.player.command_center_lost_base_turns,
             summary.player.command_center_retained_active_turns,
+            summary.player.command_center_trace_turns,
+            summary.player.command_center_avg_post_production_stock,
+            summary.player.command_center_avg_post_interdiction_stock,
+            summary.player.command_center_avg_exact_upkeep_drain,
             summary.player.command_center_loss_with_intercepted_freight,
             summary.player.command_center_loss_with_collapsing_freight,
             summary.player.command_center_loss_with_support_drain,
@@ -352,6 +367,10 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_switched_turns,
             summary.ai.command_center_lost_base_turns,
             summary.ai.command_center_retained_active_turns,
+            summary.ai.command_center_trace_turns,
+            summary.ai.command_center_avg_post_production_stock,
+            summary.ai.command_center_avg_post_interdiction_stock,
+            summary.ai.command_center_avg_exact_upkeep_drain,
             summary.ai.command_center_loss_with_intercepted_freight,
             summary.ai.command_center_loss_with_collapsing_freight,
             summary.ai.command_center_loss_with_support_drain,
@@ -449,10 +468,22 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
 
         game.run_autoplay_mission_year();
         completed_turns += 1;
+        let player_cc_traces = game.command_center_turn_traces_for_owner(game.player_owner());
+        let ai_cc_traces = game.command_center_turn_traces_for_owner(game.ai_owner());
         let player_economy_signals = owner_turn_economy_signals(&game, game.player_owner());
         let ai_economy_signals = owner_turn_economy_signals(&game, game.ai_owner());
-        player_command_center_turn_flow.observe_turn(&game, &player_cc_starts, player_economy_signals);
-        ai_command_center_turn_flow.observe_turn(&game, &ai_cc_starts, ai_economy_signals);
+        player_command_center_turn_flow.observe_turn(
+            &game,
+            &player_cc_starts,
+            &player_cc_traces,
+            player_economy_signals,
+        );
+        ai_command_center_turn_flow.observe_turn(
+            &game,
+            &ai_cc_starts,
+            &ai_cc_traces,
+            ai_economy_signals,
+        );
         player_peak_base_stress = player_peak_base_stress.max(owner_peak_base_stress(
             &game,
             game.player_owner(),
@@ -646,6 +677,13 @@ fn owner_metrics(
         command_center_avg_end_stock: command_center_turn_flow.avg_end_stock(),
         command_center_avg_yield_minerals: command_center_turn_flow.avg_yield_minerals(),
         command_center_avg_mineral_margin: command_center_turn_flow.avg_mineral_margin(),
+        command_center_trace_turns: command_center_turn_flow.trace_turns,
+        command_center_avg_post_production_stock: command_center_turn_flow
+            .avg_post_production_stock(),
+        command_center_avg_post_interdiction_stock: command_center_turn_flow
+            .avg_post_interdiction_stock(),
+        command_center_avg_exact_upkeep_drain: command_center_turn_flow
+            .avg_exact_upkeep_drain(),
         command_center_completed_turns: command_center_turn_flow.completed_turns,
         command_center_switched_turns: command_center_turn_flow.switched_turns,
         command_center_lost_base_turns: command_center_turn_flow.lost_base_turns,
@@ -861,8 +899,11 @@ impl OwnerCommandCenterTurnFlow {
         &mut self,
         game: &GameState,
         starts: &[ActiveCommandCenterBaseStart],
+        traces: &[CommandCenterTurnTrace],
         economy_signals: OwnerTurnEconomySignals,
     ) {
+        let trace_map: HashMap<usize, &CommandCenterTurnTrace> =
+            traces.iter().map(|trace| (trace.base_id, trace)).collect();
         for start in starts {
             let Some(base) = game.base(start.base_id) else {
                 self.lost_base_turns += 1;
@@ -881,6 +922,12 @@ impl OwnerCommandCenterTurnFlow {
             self.total_end_stock += end_stock;
             self.total_yield_minerals += start.yield_minerals;
             self.total_mineral_margin += start.mineral_margin;
+            if let Some(trace) = trace_map.get(&start.base_id) {
+                self.trace_turns += 1;
+                self.total_post_production_stock += trace.post_production_stock;
+                self.total_post_interdiction_stock += trace.post_interdiction_stock;
+                self.total_exact_upkeep_drain += trace.upkeep_drain;
+            }
             if end_stock < start.start_stock {
                 self.loss_turns += 1;
                 if start.yield_minerals > 0 {
@@ -892,7 +939,11 @@ impl OwnerCommandCenterTurnFlow {
                 if start.collapsing_freight_routes > 0 {
                     self.loss_with_collapsing_freight += 1;
                 }
-                if start.estimated_support_drain > 0 {
+                if trace_map
+                    .get(&start.base_id)
+                    .map(|trace| trace.upkeep_drain > 0)
+                    .unwrap_or(start.estimated_support_drain > 0)
+                {
                     self.loss_with_support_drain += 1;
                 }
                 if base_had_production_reset(game, &start.base_name) {
@@ -925,6 +976,18 @@ impl OwnerCommandCenterTurnFlow {
 
     fn avg_mineral_margin(self) -> i32 {
         average_i32(self.total_mineral_margin, self.base_turns)
+    }
+
+    fn avg_post_production_stock(self) -> i32 {
+        average_i32(self.total_post_production_stock, self.trace_turns)
+    }
+
+    fn avg_post_interdiction_stock(self) -> i32 {
+        average_i32(self.total_post_interdiction_stock, self.trace_turns)
+    }
+
+    fn avg_exact_upkeep_drain(self) -> i32 {
+        average_i32(self.total_exact_upkeep_drain, self.trace_turns)
     }
 }
 

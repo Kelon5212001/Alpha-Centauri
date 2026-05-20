@@ -1,10 +1,10 @@
 use crate::ai;
 use crate::content;
 use crate::model::{
-    Base, BaseAreaRole, DemandKind, DiplomacyStatus, DiplomaticRelation, Economics, EventCategory,
-    EventLogEntry, Facility, FutureSociety, GameAction, GameOver, GameState, GovernorMode,
-    Improvement, Politics, ProbeAction, ProductionItem, SecretProject, Tech, Terrain, Tile, Unit,
-    UnitActivity, UnitKind, Values, Yields,
+    Base, BaseAreaRole, CommandCenterTurnTrace, DemandKind, DiplomacyStatus, DiplomaticRelation,
+    Economics, EventCategory, EventLogEntry, Facility, FutureSociety, GameAction, GameOver,
+    GameState, GovernorMode, Improvement, Politics, ProbeAction, ProductionItem, SecretProject,
+    Tech, Terrain, Tile, Unit, UnitActivity, UnitKind, Values, Yields,
 };
 use crate::presentation;
 use crate::{Ability, Chassis, UnitDesign, Weapon};
@@ -1343,6 +1343,7 @@ impl GameState {
             triggered_narratives: BTreeSet::new(),
             council: crate::model::CouncilState::default(),
             game_over: None,
+            command_center_turn_traces: Vec::new(),
         };
 
         // Initialize self-relations as Pact (or some special state)
@@ -1536,6 +1537,79 @@ impl GameState {
         });
         if self.log.len() > 10000 {
             self.log.remove(0);
+        }
+    }
+
+    pub fn command_center_turn_traces_for_owner(&self, owner: usize) -> Vec<CommandCenterTurnTrace> {
+        self.command_center_turn_traces
+            .iter()
+            .filter(|trace| trace.turn == self.turn && trace.owner == owner)
+            .cloned()
+            .collect()
+    }
+
+    fn clear_command_center_turn_traces_for_owner(&mut self, owner: usize) {
+        self.command_center_turn_traces
+            .retain(|trace| !(trace.turn == self.turn && trace.owner == owner));
+    }
+
+    fn capture_command_center_post_production_traces(&mut self, owner: usize) {
+        self.clear_command_center_turn_traces_for_owner(owner);
+        let snapshots: Vec<(usize, String, i32)> = self
+            .bases_for(owner)
+            .into_iter()
+            .filter(|base| {
+                base.production == ProductionItem::CommandCenter
+                    && !base.facilities.contains(&Facility::CommandCenter)
+            })
+            .map(|base| (base.id, base.name.clone(), base.minerals_stock))
+            .collect();
+        for (base_id, base_name, minerals_stock) in snapshots {
+            self.command_center_turn_traces.push(CommandCenterTurnTrace {
+                turn: self.turn,
+                owner,
+                base_id,
+                base_name,
+                post_production_stock: minerals_stock,
+                post_interdiction_stock: minerals_stock,
+                upkeep_drain: 0,
+                end_stock: minerals_stock,
+            });
+        }
+    }
+
+    fn update_command_center_post_interdiction_traces(&mut self, owner: usize) {
+        let snapshots: Vec<(usize, i32)> = self
+            .bases_for(owner)
+            .into_iter()
+            .map(|base| (base.id, base.minerals_stock))
+            .collect();
+        for (base_id, minerals_stock) in snapshots {
+            if let Some(trace) = self
+                .command_center_turn_traces
+                .iter_mut()
+                .find(|trace| trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id)
+            {
+                trace.post_interdiction_stock = minerals_stock;
+                trace.end_stock = minerals_stock;
+            }
+        }
+    }
+
+    fn update_command_center_end_stock_traces(&mut self, owner: usize) {
+        let snapshots: Vec<(usize, i32)> = self
+            .bases_for(owner)
+            .into_iter()
+            .map(|base| (base.id, base.minerals_stock))
+            .collect();
+        for (base_id, minerals_stock) in snapshots {
+            if let Some(trace) = self
+                .command_center_turn_traces
+                .iter_mut()
+                .find(|trace| trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id)
+            {
+                trace.end_stock = minerals_stock;
+            }
         }
     }
 
@@ -10572,9 +10646,11 @@ impl GameState {
             }
         }
         self.process_strategic_crises(owner);
+        self.capture_command_center_post_production_traces(owner);
 
         self.apply_convoy_interdiction(owner);
         self.apply_faction_upkeep(owner);
+        self.update_command_center_end_stock_traces(owner);
         self.check_narrative_triggers(owner);
         self.emit_logistics_alert_events(owner);
     }
@@ -10830,6 +10906,7 @@ impl GameState {
                 faction.energy -= collapse_energy_loss;
             }
         }
+        self.update_command_center_post_interdiction_traces(owner);
 
         if interceptions > 0 {
             let faction_name = self.faction_name(owner).to_string();
@@ -12052,13 +12129,29 @@ impl GameState {
                 if remaining_minerals <= 0 {
                     break;
                 }
-                let base = &mut self.bases[base_id];
-                if base.minerals_stock >= remaining_minerals {
-                    base.minerals_stock -= remaining_minerals;
-                    remaining_minerals = 0;
-                } else {
-                    remaining_minerals -= base.minerals_stock;
-                    base.minerals_stock = 0;
+                let (drained, end_stock) = {
+                    let base = &mut self.bases[base_id];
+                    let drained = if base.minerals_stock >= remaining_minerals {
+                        remaining_minerals
+                    } else {
+                        base.minerals_stock
+                    };
+                    if base.minerals_stock >= remaining_minerals {
+                        base.minerals_stock -= remaining_minerals;
+                        remaining_minerals = 0;
+                    } else {
+                        remaining_minerals -= base.minerals_stock;
+                        base.minerals_stock = 0;
+                    }
+                    (drained, base.minerals_stock)
+                };
+                if drained > 0 {
+                    if let Some(trace) = self.command_center_turn_traces.iter_mut().find(|trace| {
+                        trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id
+                    }) {
+                        trace.upkeep_drain += drained;
+                        trace.end_stock = end_stock;
+                    }
                 }
             }
         }

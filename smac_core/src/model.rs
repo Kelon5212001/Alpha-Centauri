@@ -1235,6 +1235,18 @@ pub struct EventLogEntry {
     pub turn: i32,
 }
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CommandCenterTurnTrace {
+    pub turn: i32,
+    pub owner: usize,
+    pub base_id: usize,
+    pub base_name: String,
+    pub post_production_stock: i32,
+    pub post_interdiction_stock: i32,
+    pub upkeep_drain: i32,
+    pub end_stock: i32,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GameState {
     pub width: usize,
@@ -1267,6 +1279,8 @@ pub struct GameState {
     #[serde(default)]
     pub council: CouncilState,
     pub game_over: Option<GameOver>,
+    #[serde(default, skip)]
+    pub command_center_turn_traces: Vec<CommandCenterTurnTrace>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

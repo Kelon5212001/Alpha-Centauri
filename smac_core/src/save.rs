@@ -299,6 +299,7 @@ impl GameStateSnapshot {
             triggered_narratives: self.triggered_narratives,
             council: self.council,
             game_over: self.game_over,
+            command_center_turn_traces: Vec::new(),
         }
     }
 
