@@ -1469,7 +1469,6 @@ fn choose_ai_recovery_production(
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
 
     if unrest > 0
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecreationCommons)
         && !base
             .facilities
@@ -1479,8 +1478,6 @@ fn choose_ai_recovery_production(
     }
 
     if severe_unrest
-        && !maintenance_overbuilt
-        && !base_optional_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::HologramTheatre)
         && base
             .facilities
@@ -1491,7 +1488,6 @@ fn choose_ai_recovery_production(
     }
 
     if damaged_garrisons > 0
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::FieldHospital)
         && !base.facilities.contains(&crate::Facility::FieldHospital)
     {
@@ -1523,11 +1519,9 @@ fn choose_ai_support_production(
     if support.supported_units <= 0 {
         return None;
     }
-    let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
 
-    if !maintenance_overbuilt
-        && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+    if state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && !base.facilities.contains(&crate::Facility::CommandCenter)
     {
         return Some(crate::ProductionItem::CommandCenter);
@@ -1537,7 +1531,6 @@ fn choose_ai_support_production(
     let severe_support_pressure =
         support.supported_units >= base_count.max(1) || support.unit_upkeep >= 2;
     if severe_support_pressure
-        && !maintenance_overbuilt
         && !base_optional_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::TransitHub)
         && !base.facilities.contains(&crate::Facility::TransitHub)
@@ -1570,7 +1563,6 @@ fn choose_ai_support_relief_fallback(
 
     if !base.facilities.contains(&crate::Facility::CommandCenter)
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
-        && !maintenance_overbuilt
     {
         return Some(crate::ProductionItem::CommandCenter);
     }
@@ -1585,7 +1577,6 @@ fn choose_ai_support_relief_fallback(
     }
 
     if !base.facilities.contains(&crate::Facility::RecyclingTanks)
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !low_energy
     {
@@ -1859,6 +1850,17 @@ fn choose_ai_production_for_base(
         }
     }
 
+    if trade_links >= 1
+        && !signals.support_pressure
+        && state.is_production_available(owner, crate::ProductionItem::FreightDepot)
+        && !base.facilities.contains(&crate::Facility::FreightDepot)
+        && !base_optional_overbuilt
+        && (base.facilities.contains(&crate::Facility::TradeExchange)
+            || state.base_mineral_margin(base.id).unwrap_or(1) <= 1)
+    {
+        return crate::ProductionItem::FreightDepot;
+    }
+
     // NAVAL EXPANSION: Coastal or sea bases should build sea units
     let is_sea_base = is_base_on_ocean(state, base.id);
     if (is_coastal || is_sea_base) && can_push_colony_pod && !overpopulated_with_units {
@@ -1880,7 +1882,6 @@ fn choose_ai_production_for_base(
     // CRITICAL SURVIVAL: Famine or extreme unrest prevention
     if (yields.nutrients < base.population as i32
         || (yields.nutrients <= base.population as i32 + 1 && signals.expansion_pressure))
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
         && !base.facilities.contains(&crate::Facility::Greenhouse)
     {
@@ -1888,7 +1889,6 @@ fn choose_ai_production_for_base(
     }
 
     if (unrest > 1 || (unrest > 0 && yields.energy >= 5))
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecreationCommons)
         && !base
             .facilities
@@ -1898,7 +1898,6 @@ fn choose_ai_production_for_base(
     }
 
     if signals.mineral_pressure
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
     {
@@ -1906,8 +1905,7 @@ fn choose_ai_production_for_base(
     }
 
     if signals.military_pressure >= 1 {
-        if !maintenance_overbuilt
-            && state.is_production_available(owner, crate::ProductionItem::PerimeterDefense)
+        if state.is_production_available(owner, crate::ProductionItem::PerimeterDefense)
             && !base.facilities.contains(&crate::Facility::PerimeterDefense)
             && (yields.minerals >= 4 || signals.military_pressure >= 2)
         {
@@ -1946,8 +1944,7 @@ fn choose_ai_production_for_base(
         return support_item;
     }
 
-    if !maintenance_overbuilt
-        && state.is_production_available(owner, crate::ProductionItem::RecreationCommons)
+    if state.is_production_available(owner, crate::ProductionItem::RecreationCommons)
         && !base
             .facilities
             .contains(&crate::Facility::RecreationCommons)
@@ -1957,7 +1954,6 @@ fn choose_ai_production_for_base(
     }
 
     if yields.nutrients <= base.population.max(1) + 1
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::Greenhouse)
         && !base.facilities.contains(&crate::Facility::Greenhouse)
     {
@@ -1965,7 +1961,6 @@ fn choose_ai_production_for_base(
     }
 
     if state.base_mineral_margin(base.id).unwrap_or_default() <= 0
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::MineralRefinery)
         && !base.facilities.contains(&crate::Facility::MineralRefinery)
     {
@@ -1973,7 +1968,6 @@ fn choose_ai_production_for_base(
     }
 
     if signals.energy_pressure
-        && !maintenance_overbuilt
         && !base_optional_overbuilt
         && trade_links >= 1
         && state.is_production_available(owner, crate::ProductionItem::TradeExchange)
@@ -2168,7 +2162,6 @@ fn choose_ai_production_for_base(
         return crate::ProductionItem::MineralRefinery;
     }
     if signals.mineral_pressure
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
         && !low_energy
@@ -2184,16 +2177,14 @@ fn choose_ai_production_for_base(
         return crate::ProductionItem::Greenhouse;
     }
 
-    if !maintenance_overbuilt
-        && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
+    if state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
         && !base.facilities.contains(&crate::Facility::RecyclingTanks)
         && base.population <= 2
     {
         return crate::ProductionItem::RecyclingTanks;
     }
 
-    if !maintenance_overbuilt
-        && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+    if state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && !base.facilities.contains(&crate::Facility::CommandCenter)
         && yields.minerals >= yields.energy
     {
@@ -2248,7 +2239,6 @@ fn choose_ai_production_for_base(
         })
         .count();
     if damaged_garrisons > 0
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::FieldHospital)
         && !base.facilities.contains(&crate::Facility::FieldHospital)
     {
@@ -2261,9 +2251,6 @@ fn choose_ai_production_for_base(
                 choose_ai_support_relief_fallback(state, base, owner, yields, trade_links)
             {
                 return relief_item;
-            }
-            if state.is_production_available(owner, crate::ProductionItem::StockpileEnergy) {
-                return crate::ProductionItem::StockpileEnergy;
             }
         }
         return crate::ProductionItem::ScoutPatrol;
@@ -2304,7 +2291,11 @@ fn choose_ai_production_for_base(
         }
     }
 
-    if maintenance_overbuilt || (signals.support_pressure && psi_pressure < 1 && signals.military_pressure < 1) {
+    if maintenance_overbuilt
+        && !signals.support_pressure
+        && psi_pressure < 1
+        && signals.military_pressure < 1
+    {
         if state.is_production_available(owner, crate::ProductionItem::StockpileEnergy) {
             return crate::ProductionItem::StockpileEnergy;
         }
@@ -2380,7 +2371,6 @@ fn choose_ai_queue_follow_up(
         return crate::ProductionItem::ScoutPatrol;
     }
     if support_pressure
-        && !maintenance_overbuilt
         && !base.facilities.contains(&crate::Facility::CommandCenter)
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
     {
@@ -2429,7 +2419,6 @@ fn choose_ai_queue_follow_up(
         return crate::ProductionItem::FreightDepot;
     }
     if !base.facilities.contains(&crate::Facility::CommandCenter)
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && yields.minerals >= yields.nutrients
     {
@@ -2474,7 +2463,6 @@ fn choose_ai_queue_follow_up(
         return crate::ProductionItem::PsiBeacon;
     }
     if !base.facilities.contains(&crate::Facility::RecyclingTanks)
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecyclingTanks)
     {
         return crate::ProductionItem::RecyclingTanks;
@@ -2494,7 +2482,6 @@ fn choose_ai_queue_follow_up(
     if !base
         .facilities
         .contains(&crate::Facility::RecreationCommons)
-        && !maintenance_overbuilt
         && state.is_production_available(owner, crate::ProductionItem::RecreationCommons)
         && yields.nutrients >= yields.energy
     {
@@ -2526,7 +2513,7 @@ fn choose_ai_queue_follow_up(
     }
     if yields.nutrients >= yields.minerals && is_former_production_warranted(state, owner) {
         crate::ProductionItem::Former
-    } else if maintenance_overbuilt || (support_pressure && psi_pressure < 1 && pressure < 1) {
+    } else if maintenance_overbuilt && !support_pressure && psi_pressure < 1 && pressure < 1 {
         crate::ProductionItem::StockpileEnergy
     } else {
         crate::ProductionItem::ScoutPatrol
