@@ -174,6 +174,12 @@ struct OwnerTurnEconomySignals {
     support_famine: bool,
 }
 
+#[derive(Clone)]
+struct BaseTurnSnapshot {
+    base_name: String,
+    local_unit_count: usize,
+}
+
 struct RunSummary {
     seed: u32,
     completed_turns: usize,
@@ -195,6 +201,9 @@ struct RunSummary {
     scrap_hologram_theatre: usize,
     scrap_research_hospital: usize,
     scrap_other_facility: usize,
+    command_center_scrap_empty_bases: usize,
+    command_center_scrap_light_bases: usize,
+    command_center_scrap_heavy_bases: usize,
     scrap_facility_counts: HashMap<&'static str, usize>,
     top_scrap_facilities: String,
     famines: usize,
@@ -234,6 +243,9 @@ fn run() -> Result<(), String> {
     let mut total_scrap_hologram_theatre = 0usize;
     let mut total_scrap_research_hospital = 0usize;
     let mut total_scrap_other_facility = 0usize;
+    let mut total_command_center_scrap_empty_bases = 0usize;
+    let mut total_command_center_scrap_light_bases = 0usize;
+    let mut total_command_center_scrap_heavy_bases = 0usize;
     let mut total_scrap_counts: HashMap<&'static str, usize> = HashMap::new();
     let mut total_famines = 0usize;
     let mut total_starvation_famines = 0usize;
@@ -274,6 +286,9 @@ fn run() -> Result<(), String> {
         total_scrap_hologram_theatre += summary.scrap_hologram_theatre;
         total_scrap_research_hospital += summary.scrap_research_hospital;
         total_scrap_other_facility += summary.scrap_other_facility;
+        total_command_center_scrap_empty_bases += summary.command_center_scrap_empty_bases;
+        total_command_center_scrap_light_bases += summary.command_center_scrap_light_bases;
+        total_command_center_scrap_heavy_bases += summary.command_center_scrap_heavy_bases;
         for (name, count) in &summary.scrap_facility_counts {
             *total_scrap_counts.entry(*name).or_default() += *count;
         }
@@ -300,7 +315,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -474,6 +489,9 @@ fn run() -> Result<(), String> {
             summary.scrap_hologram_theatre,
             summary.scrap_research_hospital,
             summary.scrap_other_facility,
+            summary.command_center_scrap_empty_bases,
+            summary.command_center_scrap_light_bases,
+            summary.command_center_scrap_heavy_bases,
             summary.top_scrap_facilities,
             summary.emergency_support_payments,
             summary.emergency_support_energy,
@@ -484,7 +502,7 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
         total_raids,
@@ -505,6 +523,9 @@ fn run() -> Result<(), String> {
         total_scrap_hologram_theatre,
         total_scrap_research_hospital,
         total_scrap_other_facility,
+        total_command_center_scrap_empty_bases,
+        total_command_center_scrap_light_bases,
+        total_command_center_scrap_heavy_bases,
         top_scrap_labels(&total_scrap_counts),
         total_emergency_support_payments,
         total_emergency_support_energy,
@@ -537,6 +558,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut scrap_hologram_theatre = 0usize;
     let mut scrap_research_hospital = 0usize;
     let mut scrap_other_facility = 0usize;
+    let mut command_center_scrap_empty_bases = 0usize;
+    let mut command_center_scrap_light_bases = 0usize;
+    let mut command_center_scrap_heavy_bases = 0usize;
     let mut scrap_counts: HashMap<&'static str, usize> = HashMap::new();
     let mut famines = 0usize;
     let mut starvation_famines = 0usize;
@@ -559,6 +583,8 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         let ai_readiness = offense_readiness_for_owner(&game, game.ai_owner());
         let player_cc_starts = active_command_center_base_starts(&game, game.player_owner());
         let ai_cc_starts = active_command_center_base_starts(&game, game.ai_owner());
+        let player_base_snapshots = owner_base_turn_snapshots(&game, game.player_owner());
+        let ai_base_snapshots = owner_base_turn_snapshots(&game, game.ai_owner());
         if player_readiness.has_offensive_target {
             player_target_turns += 1;
         }
@@ -648,6 +674,25 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                             }
                         }
                     }
+                    if entry.message.contains("CommandCenter") {
+                        if let Some((owner, base_name)) = bankruptcy_base_name(entry.message.as_str(), &game)
+                        {
+                            let snapshots = if owner == game.player_owner() {
+                                &player_base_snapshots
+                            } else {
+                                &ai_base_snapshots
+                            };
+                            if let Some(snapshot) =
+                                snapshots.iter().find(|snapshot| snapshot.base_name == base_name)
+                            {
+                                match snapshot.local_unit_count {
+                                    0 => command_center_scrap_empty_bases += 1,
+                                    1 | 2 => command_center_scrap_light_bases += 1,
+                                    _ => command_center_scrap_heavy_bases += 1,
+                                }
+                            }
+                        }
+                    }
                 } else if entry.message.contains("unit disbanded") {
                     unit_bankruptcies += 1;
                 }
@@ -701,6 +746,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         scrap_hologram_theatre,
         scrap_research_hospital,
         scrap_other_facility,
+        command_center_scrap_empty_bases,
+        command_center_scrap_light_bases,
+        command_center_scrap_heavy_bases,
         scrap_facility_counts: scrap_counts.clone(),
         top_scrap_facilities: top_scrap_labels(&scrap_counts),
         famines,
@@ -935,6 +983,32 @@ fn owner_turn_economy_signals(game: &GameState, owner: usize) -> OwnerTurnEconom
         }
     }
     signals
+}
+
+fn owner_base_turn_snapshots(game: &GameState, owner: usize) -> Vec<BaseTurnSnapshot> {
+    game.bases_for(owner)
+        .into_iter()
+        .map(|base| BaseTurnSnapshot {
+            base_name: base.name.clone(),
+            local_unit_count: game
+                .units
+                .iter()
+                .filter(|unit| unit.alive && unit.owner == owner && unit.x == base.x && unit.y == base.y)
+                .count(),
+        })
+        .collect()
+}
+
+fn bankruptcy_base_name<'a>(message: &'a str, game: &GameState) -> Option<(usize, &'a str)> {
+    let owner = if message.contains(&game.faction_name(game.player_owner())) {
+        game.player_owner()
+    } else if message.contains(&game.faction_name(game.ai_owner())) {
+        game.ai_owner()
+    } else {
+        return None;
+    };
+    let base_name = message.split(" in ").nth(1)?.split(" to cover debt").next()?;
+    Some((owner, base_name))
 }
 
 #[derive(Clone, Copy, Default)]
