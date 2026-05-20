@@ -188,6 +188,13 @@ struct RunSummary {
     bankruptcies: usize,
     facility_bankruptcies: usize,
     unit_bankruptcies: usize,
+    scrap_trade_exchange: usize,
+    scrap_freight_depot: usize,
+    scrap_network_node: usize,
+    scrap_transit_hub: usize,
+    scrap_hologram_theatre: usize,
+    scrap_research_hospital: usize,
+    scrap_other_facility: usize,
     famines: usize,
     starvation_famines: usize,
     support_famines: usize,
@@ -218,6 +225,13 @@ fn run() -> Result<(), String> {
     let mut total_bankruptcies = 0usize;
     let mut total_facility_bankruptcies = 0usize;
     let mut total_unit_bankruptcies = 0usize;
+    let mut total_scrap_trade_exchange = 0usize;
+    let mut total_scrap_freight_depot = 0usize;
+    let mut total_scrap_network_node = 0usize;
+    let mut total_scrap_transit_hub = 0usize;
+    let mut total_scrap_hologram_theatre = 0usize;
+    let mut total_scrap_research_hospital = 0usize;
+    let mut total_scrap_other_facility = 0usize;
     let mut total_famines = 0usize;
     let mut total_starvation_famines = 0usize;
     let mut total_support_famines = 0usize;
@@ -250,6 +264,13 @@ fn run() -> Result<(), String> {
         total_bankruptcies += summary.bankruptcies;
         total_facility_bankruptcies += summary.facility_bankruptcies;
         total_unit_bankruptcies += summary.unit_bankruptcies;
+        total_scrap_trade_exchange += summary.scrap_trade_exchange;
+        total_scrap_freight_depot += summary.scrap_freight_depot;
+        total_scrap_network_node += summary.scrap_network_node;
+        total_scrap_transit_hub += summary.scrap_transit_hub;
+        total_scrap_hologram_theatre += summary.scrap_hologram_theatre;
+        total_scrap_research_hospital += summary.scrap_research_hospital;
+        total_scrap_other_facility += summary.scrap_other_facility;
         total_famines += summary.famines;
         total_starvation_famines += summary.starvation_famines;
         total_support_famines += summary.support_famines;
@@ -273,7 +294,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -440,6 +461,13 @@ fn run() -> Result<(), String> {
             summary.bankruptcies,
             summary.facility_bankruptcies,
             summary.unit_bankruptcies,
+            summary.scrap_trade_exchange,
+            summary.scrap_freight_depot,
+            summary.scrap_network_node,
+            summary.scrap_transit_hub,
+            summary.scrap_hologram_theatre,
+            summary.scrap_research_hospital,
+            summary.scrap_other_facility,
             summary.emergency_support_payments,
             summary.emergency_support_energy,
             summary.famines,
@@ -449,7 +477,7 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
         total_raids,
@@ -463,6 +491,13 @@ fn run() -> Result<(), String> {
         total_bankruptcies,
         total_facility_bankruptcies,
         total_unit_bankruptcies,
+        total_scrap_trade_exchange,
+        total_scrap_freight_depot,
+        total_scrap_network_node,
+        total_scrap_transit_hub,
+        total_scrap_hologram_theatre,
+        total_scrap_research_hospital,
+        total_scrap_other_facility,
         total_emergency_support_payments,
         total_emergency_support_energy,
         total_famines,
@@ -487,6 +522,13 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut bankruptcies = 0usize;
     let mut facility_bankruptcies = 0usize;
     let mut unit_bankruptcies = 0usize;
+    let mut scrap_trade_exchange = 0usize;
+    let mut scrap_freight_depot = 0usize;
+    let mut scrap_network_node = 0usize;
+    let mut scrap_transit_hub = 0usize;
+    let mut scrap_hologram_theatre = 0usize;
+    let mut scrap_research_hospital = 0usize;
+    let mut scrap_other_facility = 0usize;
     let mut famines = 0usize;
     let mut starvation_famines = 0usize;
     let mut support_famines = 0usize;
@@ -569,6 +611,21 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                 bankruptcies += 1;
                 if entry.message.contains("scrapped") {
                     facility_bankruptcies += 1;
+                    if entry.message.contains("TradeExchange") {
+                        scrap_trade_exchange += 1;
+                    } else if entry.message.contains("FreightDepot") {
+                        scrap_freight_depot += 1;
+                    } else if entry.message.contains("NetworkNode") {
+                        scrap_network_node += 1;
+                    } else if entry.message.contains("TransitHub") {
+                        scrap_transit_hub += 1;
+                    } else if entry.message.contains("HologramTheatre") {
+                        scrap_hologram_theatre += 1;
+                    } else if entry.message.contains("ResearchHospital") {
+                        scrap_research_hospital += 1;
+                    } else {
+                        scrap_other_facility += 1;
+                    }
                 } else if entry.message.contains("unit disbanded") {
                     unit_bankruptcies += 1;
                 }
@@ -615,6 +672,13 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         bankruptcies,
         facility_bankruptcies,
         unit_bankruptcies,
+        scrap_trade_exchange,
+        scrap_freight_depot,
+        scrap_network_node,
+        scrap_transit_hub,
+        scrap_hologram_theatre,
+        scrap_research_hospital,
+        scrap_other_facility,
         famines,
         starvation_famines,
         support_famines,
