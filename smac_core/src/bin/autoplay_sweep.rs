@@ -56,6 +56,9 @@ struct OwnerMetrics {
     command_center_queued_bases: usize,
     command_center_blocker_count: usize,
     command_center_blocker: Option<ProductionItem>,
+    command_center_avg_progress_pct: i32,
+    command_center_max_progress_pct: i32,
+    command_center_low_mineral_bases: usize,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -172,7 +175,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -218,6 +221,9 @@ fn run() -> Result<(), String> {
             summary.player.command_center_gap_bases,
             summary.player.command_center_active_bases,
             summary.player.command_center_queued_bases,
+            summary.player.command_center_avg_progress_pct,
+            summary.player.command_center_max_progress_pct,
+            summary.player.command_center_low_mineral_bases,
             blocker_label(
                 summary.player.command_center_blocker,
                 summary.player.command_center_blocker_count,
@@ -254,6 +260,9 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_gap_bases,
             summary.ai.command_center_active_bases,
             summary.ai.command_center_queued_bases,
+            summary.ai.command_center_avg_progress_pct,
+            summary.ai.command_center_max_progress_pct,
+            summary.ai.command_center_low_mineral_bases,
             blocker_label(
                 summary.ai.command_center_blocker,
                 summary.ai.command_center_blocker_count,
@@ -454,6 +463,7 @@ fn owner_metrics(
         .max()
         .unwrap_or_default();
     let command_center_gap = owner_command_center_gap(game, owner, &bases);
+    let command_center_builds = owner_command_center_build_metrics(game, owner, &bases);
 
     OwnerMetrics {
         bases: bases.len(),
@@ -509,6 +519,9 @@ fn owner_metrics(
         command_center_queued_bases: command_center_gap.queued_bases,
         command_center_blocker_count: command_center_gap.blocker_count,
         command_center_blocker: command_center_gap.blocker,
+        command_center_avg_progress_pct: command_center_builds.avg_progress_pct,
+        command_center_max_progress_pct: command_center_builds.max_progress_pct,
+        command_center_low_mineral_bases: command_center_builds.low_mineral_bases,
     }
 }
 
@@ -519,6 +532,13 @@ struct CommandCenterGapSummary {
     queued_bases: usize,
     blocker_count: usize,
     blocker: Option<ProductionItem>,
+}
+
+#[derive(Clone, Copy, Default)]
+struct CommandCenterBuildMetrics {
+    avg_progress_pct: i32,
+    max_progress_pct: i32,
+    low_mineral_bases: usize,
 }
 
 fn owner_command_center_gap(
@@ -582,6 +602,45 @@ fn owner_command_center_gap(
         });
 
     summary
+}
+
+fn owner_command_center_build_metrics(
+    game: &GameState,
+    owner: usize,
+    bases: &[&smac_core::Base],
+) -> CommandCenterBuildMetrics {
+    let mut active_count = 0i32;
+    let mut total_progress_pct = 0i32;
+    let mut max_progress_pct = 0i32;
+    let mut low_mineral_bases = 0usize;
+
+    for base in bases {
+        if base.production != ProductionItem::CommandCenter {
+            continue;
+        }
+        active_count += 1;
+        let cost = game.production_cost(owner, ProductionItem::CommandCenter).max(1);
+        let progress_pct = ((base.minerals_stock * 100) / cost).clamp(0, 999);
+        total_progress_pct += progress_pct;
+        max_progress_pct = max_progress_pct.max(progress_pct);
+
+        let yields = game
+            .operational_base_yields(base.id)
+            .unwrap_or_else(|| game.base_yields(base.x, base.y));
+        if yields.minerals <= 1 || game.base_mineral_margin(base.id).unwrap_or_default() <= 0 {
+            low_mineral_bases += 1;
+        }
+    }
+
+    CommandCenterBuildMetrics {
+        avg_progress_pct: if active_count > 0 {
+            total_progress_pct / active_count
+        } else {
+            0
+        },
+        max_progress_pct,
+        low_mineral_bases,
+    }
 }
 
 fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerPeakBaseStress {
