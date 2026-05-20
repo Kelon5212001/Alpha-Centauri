@@ -53,6 +53,8 @@ struct OwnerMetrics {
     peak_formers_in_field: usize,
     peak_field_formers_with_nearby_work: usize,
     peak_field_formers_saturated: usize,
+    peak_saturated_formers_near_base: usize,
+    peak_saturated_formers_far_from_base: usize,
     current_active_former_builds: usize,
     peak_active_former_builds: usize,
     facility_upkeep: i32,
@@ -119,6 +121,8 @@ struct OwnerPeakSupport {
     formers_in_field: usize,
     field_formers_with_nearby_work: usize,
     field_formers_saturated: usize,
+    saturated_formers_near_base: usize,
+    saturated_formers_far_from_base: usize,
     active_former_builds: usize,
     turn: usize,
 }
@@ -269,7 +273,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -310,6 +314,8 @@ fn run() -> Result<(), String> {
             summary.player.peak_formers_in_field,
             summary.player.peak_field_formers_with_nearby_work,
             summary.player.peak_field_formers_saturated,
+            summary.player.peak_saturated_formers_near_base,
+            summary.player.peak_saturated_formers_far_from_base,
             summary.player.current_active_former_builds,
             summary.player.peak_active_former_builds,
             summary.player.facility_upkeep,
@@ -383,6 +389,8 @@ fn run() -> Result<(), String> {
             summary.ai.peak_formers_in_field,
             summary.ai.peak_field_formers_with_nearby_work,
             summary.ai.peak_field_formers_saturated,
+            summary.ai.peak_saturated_formers_near_base,
+            summary.ai.peak_saturated_formers_far_from_base,
             summary.ai.current_active_former_builds,
             summary.ai.peak_active_former_builds,
             summary.ai.facility_upkeep,
@@ -707,6 +715,8 @@ fn owner_metrics(
         peak_formers_in_field: peak_support.formers_in_field,
         peak_field_formers_with_nearby_work: peak_support.field_formers_with_nearby_work,
         peak_field_formers_saturated: peak_support.field_formers_saturated,
+        peak_saturated_formers_near_base: peak_support.saturated_formers_near_base,
+        peak_saturated_formers_far_from_base: peak_support.saturated_formers_far_from_base,
         current_active_former_builds: bases
             .iter()
             .filter(|base| base.production == ProductionItem::Former)
@@ -1101,6 +1111,8 @@ fn owner_peak_support(game: &GameState, owner: usize, turn: usize) -> OwnerPeakS
     let mut formers_in_field = 0usize;
     let mut field_formers_with_nearby_work = 0usize;
     let mut field_formers_saturated = 0usize;
+    let mut saturated_formers_near_base = 0usize;
+    let mut saturated_formers_far_from_base = 0usize;
     for unit in game.live_units_for(owner) {
         match unit.kind {
             smac_core::UnitKind::ColonyPod | smac_core::UnitKind::SeaColonyPod => {
@@ -1120,6 +1132,11 @@ fn owner_peak_support(game: &GameState, owner: usize, turn: usize) -> OwnerPeakS
                         field_formers_with_nearby_work += 1;
                     } else {
                         field_formers_saturated += 1;
+                        if nearest_owned_base_distance(game, owner, unit.x, unit.y) <= 3 {
+                            saturated_formers_near_base += 1;
+                        } else {
+                            saturated_formers_far_from_base += 1;
+                        }
                     }
                 }
             }
@@ -1142,6 +1159,8 @@ fn owner_peak_support(game: &GameState, owner: usize, turn: usize) -> OwnerPeakS
         formers_in_field,
         field_formers_with_nearby_work,
         field_formers_saturated,
+        saturated_formers_near_base,
+        saturated_formers_far_from_base,
         active_former_builds,
         turn,
     }
@@ -1169,6 +1188,14 @@ fn former_has_nearby_work(game: &GameState, x: usize, y: usize) -> bool {
         }
     }
     false
+}
+
+fn nearest_owned_base_distance(game: &GameState, owner: usize, x: usize, y: usize) -> usize {
+    game.bases_for(owner)
+        .into_iter()
+        .map(|base| base.x.abs_diff(x) + base.y.abs_diff(y))
+        .min()
+        .unwrap_or(usize::MAX)
 }
 
 impl OwnerPeakBaseStress {
@@ -1227,6 +1254,8 @@ impl PartialEq for OwnerPeakSupport {
             && self.formers_in_field == other.formers_in_field
             && self.field_formers_with_nearby_work == other.field_formers_with_nearby_work
             && self.field_formers_saturated == other.field_formers_saturated
+            && self.saturated_formers_near_base == other.saturated_formers_near_base
+            && self.saturated_formers_far_from_base == other.saturated_formers_far_from_base
             && self.active_former_builds == other.active_former_builds
             && self.turn == other.turn
     }
@@ -1242,34 +1271,30 @@ impl PartialOrd for OwnerPeakSupport {
 
 impl Ord for OwnerPeakSupport {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (
-            self.unit_upkeep,
-            self.supported_units,
-            self.combat_units,
-            self.field_formers_saturated,
-            self.field_formers_with_nearby_work,
-            self.formers_in_field,
-            self.formers_on_base,
-            self.active_former_builds,
-            self.formers,
-            self.colony_pods,
-            self.probes,
-            self.turn,
-        )
-            .cmp(&(
-                other.unit_upkeep,
-                other.supported_units,
-                other.combat_units,
-                other.field_formers_saturated,
-                other.field_formers_with_nearby_work,
-                other.formers_in_field,
-                other.formers_on_base,
-                other.active_former_builds,
-                other.formers,
-                other.colony_pods,
-                other.probes,
-                other.turn,
-            ))
+        self.unit_upkeep
+            .cmp(&other.unit_upkeep)
+            .then_with(|| self.supported_units.cmp(&other.supported_units))
+            .then_with(|| self.combat_units.cmp(&other.combat_units))
+            .then_with(|| self.field_formers_saturated.cmp(&other.field_formers_saturated))
+            .then_with(|| {
+                self.field_formers_with_nearby_work
+                    .cmp(&other.field_formers_with_nearby_work)
+            })
+            .then_with(|| {
+                self.saturated_formers_far_from_base
+                    .cmp(&other.saturated_formers_far_from_base)
+            })
+            .then_with(|| {
+                self.saturated_formers_near_base
+                    .cmp(&other.saturated_formers_near_base)
+            })
+            .then_with(|| self.formers_in_field.cmp(&other.formers_in_field))
+            .then_with(|| self.formers_on_base.cmp(&other.formers_on_base))
+            .then_with(|| self.active_former_builds.cmp(&other.active_former_builds))
+            .then_with(|| self.formers.cmp(&other.formers))
+            .then_with(|| self.colony_pods.cmp(&other.colony_pods))
+            .then_with(|| self.probes.cmp(&other.probes))
+            .then_with(|| self.turn.cmp(&other.turn))
     }
 }
 
