@@ -1,4 +1,4 @@
-use smac_core::content_api::facility_maintenance;
+use smac_core::content_api::{facility_maintenance, production_name};
 use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState, ProductionItem, Tech};
 use std::env;
 
@@ -51,6 +51,11 @@ struct OwnerMetrics {
     peak_base_facility_upkeep: i32,
     peak_base_optional_upkeep: i32,
     peak_base_stress_turn: usize,
+    command_center_gap_bases: usize,
+    command_center_active_bases: usize,
+    command_center_queued_bases: usize,
+    command_center_blocker_count: usize,
+    command_center_blocker: Option<ProductionItem>,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -167,7 +172,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -210,6 +215,13 @@ fn run() -> Result<(), String> {
             summary.player.peak_base_facility_upkeep,
             summary.player.peak_base_optional_upkeep,
             summary.player.peak_base_stress_turn,
+            summary.player.command_center_gap_bases,
+            summary.player.command_center_active_bases,
+            summary.player.command_center_queued_bases,
+            blocker_label(
+                summary.player.command_center_blocker,
+                summary.player.command_center_blocker_count,
+            ),
             summary.ai_ready_turns,
             summary.ai_target_turns,
             summary.ai.bases,
@@ -239,6 +251,13 @@ fn run() -> Result<(), String> {
             summary.ai.peak_base_facility_upkeep,
             summary.ai.peak_base_optional_upkeep,
             summary.ai.peak_base_stress_turn,
+            summary.ai.command_center_gap_bases,
+            summary.ai.command_center_active_bases,
+            summary.ai.command_center_queued_bases,
+            blocker_label(
+                summary.ai.command_center_blocker,
+                summary.ai.command_center_blocker_count,
+            ),
             summary.bankruptcies,
             summary.facility_bankruptcies,
             summary.unit_bankruptcies,
@@ -434,6 +453,7 @@ fn owner_metrics(
         .map(|base| base_optional_facility_upkeep(base))
         .max()
         .unwrap_or_default();
+    let command_center_gap = owner_command_center_gap(game, owner, &bases);
 
     OwnerMetrics {
         bases: bases.len(),
@@ -484,7 +504,84 @@ fn owner_metrics(
         peak_base_facility_upkeep: peak_base_stress.facility_upkeep,
         peak_base_optional_upkeep: peak_base_stress.optional_upkeep,
         peak_base_stress_turn: peak_base_stress.turn,
+        command_center_gap_bases: command_center_gap.gap_bases,
+        command_center_active_bases: command_center_gap.active_bases,
+        command_center_queued_bases: command_center_gap.queued_bases,
+        command_center_blocker_count: command_center_gap.blocker_count,
+        command_center_blocker: command_center_gap.blocker,
     }
+}
+
+#[derive(Clone, Copy, Default)]
+struct CommandCenterGapSummary {
+    gap_bases: usize,
+    active_bases: usize,
+    queued_bases: usize,
+    blocker_count: usize,
+    blocker: Option<ProductionItem>,
+}
+
+fn owner_command_center_gap(
+    game: &GameState,
+    owner: usize,
+    bases: &[&smac_core::Base],
+) -> CommandCenterGapSummary {
+    let support = game.faction_support_summary(owner);
+    if support.supported_units <= 0
+        || !game
+            .faction(owner)
+            .map(|f| f.known_techs.contains(&Tech::IndustrialBase))
+            .unwrap_or(false)
+        || !game.is_production_available(owner, ProductionItem::CommandCenter)
+    {
+        return CommandCenterGapSummary::default();
+    }
+
+    let mut summary = CommandCenterGapSummary::default();
+    let mut blocker_counts: Vec<(ProductionItem, usize)> = Vec::new();
+
+    for base in bases {
+        if base.facilities.contains(&Facility::CommandCenter) {
+            continue;
+        }
+        summary.gap_bases += 1;
+
+        if base.production == ProductionItem::CommandCenter {
+            summary.active_bases += 1;
+            continue;
+        }
+        if base
+            .production_queue
+            .contains(&ProductionItem::CommandCenter)
+        {
+            summary.queued_bases += 1;
+            continue;
+        }
+
+        summary.blocker_count += 1;
+        if let Some((_, count)) = blocker_counts
+            .iter_mut()
+            .find(|(item, _)| *item == base.production)
+        {
+            *count += 1;
+        } else {
+            blocker_counts.push((base.production, 1));
+        }
+    }
+
+    summary.blocker = blocker_counts
+        .into_iter()
+        .max_by(|left, right| {
+            left.1
+                .cmp(&right.1)
+                .then_with(|| production_name(left.0).cmp(production_name(right.0)))
+        })
+        .map(|(item, count)| {
+            summary.blocker_count = count;
+            item
+        });
+
+    summary
 }
 
 fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerPeakBaseStress {
@@ -630,6 +727,13 @@ fn nearest_base_gap(game: &GameState, owner: usize, other: usize) -> i32 {
 
 fn yn(value: bool) -> &'static str {
     if value { "y" } else { "n" }
+}
+
+fn blocker_label(item: Option<ProductionItem>, count: usize) -> String {
+    match item {
+        Some(item) if count > 0 => format!("{}x{count}", production_name(item)),
+        _ => "-".to_string(),
+    }
 }
 
 fn parse_args() -> Result<Config, String> {
