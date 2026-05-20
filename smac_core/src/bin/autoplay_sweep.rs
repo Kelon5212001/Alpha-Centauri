@@ -1,5 +1,6 @@
 use smac_core::content_api::{facility_maintenance, production_name};
 use smac_core::{offense_readiness_for_owner, Facility, GameOver, GameState, ProductionItem, Tech};
+use std::collections::HashMap;
 use std::env;
 
 struct Config {
@@ -66,6 +67,12 @@ struct OwnerMetrics {
     command_center_avg_end_stock: i32,
     command_center_avg_yield_minerals: i32,
     command_center_avg_mineral_margin: i32,
+    command_center_loss_with_intercepted_freight: usize,
+    command_center_loss_with_collapsing_freight: usize,
+    command_center_loss_with_support_drain: usize,
+    command_center_loss_with_bankruptcy: usize,
+    command_center_loss_with_emergency_support: usize,
+    command_center_loss_with_support_famine: usize,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -92,6 +99,12 @@ struct OwnerCommandCenterTurnFlow {
     total_end_stock: i32,
     total_yield_minerals: i32,
     total_mineral_margin: i32,
+    loss_with_intercepted_freight: usize,
+    loss_with_collapsing_freight: usize,
+    loss_with_support_drain: usize,
+    loss_with_bankruptcy: usize,
+    loss_with_emergency_support: usize,
+    loss_with_support_famine: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -100,6 +113,16 @@ struct ActiveCommandCenterBaseStart {
     start_stock: i32,
     yield_minerals: i32,
     mineral_margin: i32,
+    intercepted_freight_routes: usize,
+    collapsing_freight_routes: usize,
+    estimated_support_drain: i32,
+}
+
+#[derive(Clone, Copy, Default)]
+struct OwnerTurnEconomySignals {
+    bankruptcy: bool,
+    emergency_support_payment: bool,
+    support_famine: bool,
 }
 
 struct RunSummary {
@@ -201,7 +224,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -257,6 +280,12 @@ fn run() -> Result<(), String> {
             summary.player.command_center_avg_end_stock,
             summary.player.command_center_avg_yield_minerals,
             summary.player.command_center_avg_mineral_margin,
+            summary.player.command_center_loss_with_intercepted_freight,
+            summary.player.command_center_loss_with_collapsing_freight,
+            summary.player.command_center_loss_with_support_drain,
+            summary.player.command_center_loss_with_bankruptcy,
+            summary.player.command_center_loss_with_emergency_support,
+            summary.player.command_center_loss_with_support_famine,
             blocker_label(
                 summary.player.command_center_blocker,
                 summary.player.command_center_blocker_count,
@@ -303,6 +332,12 @@ fn run() -> Result<(), String> {
             summary.ai.command_center_avg_end_stock,
             summary.ai.command_center_avg_yield_minerals,
             summary.ai.command_center_avg_mineral_margin,
+            summary.ai.command_center_loss_with_intercepted_freight,
+            summary.ai.command_center_loss_with_collapsing_freight,
+            summary.ai.command_center_loss_with_support_drain,
+            summary.ai.command_center_loss_with_bankruptcy,
+            summary.ai.command_center_loss_with_emergency_support,
+            summary.ai.command_center_loss_with_support_famine,
             blocker_label(
                 summary.ai.command_center_blocker,
                 summary.ai.command_center_blocker_count,
@@ -393,8 +428,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
 
         game.run_autoplay_mission_year();
         completed_turns += 1;
-        player_command_center_turn_flow.observe_turn(&game, &player_cc_starts);
-        ai_command_center_turn_flow.observe_turn(&game, &ai_cc_starts);
+        let player_economy_signals = owner_turn_economy_signals(&game, game.player_owner());
+        let ai_economy_signals = owner_turn_economy_signals(&game, game.ai_owner());
+        player_command_center_turn_flow.observe_turn(&game, &player_cc_starts, player_economy_signals);
+        ai_command_center_turn_flow.observe_turn(&game, &ai_cc_starts, ai_economy_signals);
         player_peak_base_stress = player_peak_base_stress.max(owner_peak_base_stress(
             &game,
             game.player_owner(),
@@ -588,10 +625,21 @@ fn owner_metrics(
         command_center_avg_end_stock: command_center_turn_flow.avg_end_stock(),
         command_center_avg_yield_minerals: command_center_turn_flow.avg_yield_minerals(),
         command_center_avg_mineral_margin: command_center_turn_flow.avg_mineral_margin(),
+        command_center_loss_with_intercepted_freight: command_center_turn_flow
+            .loss_with_intercepted_freight,
+        command_center_loss_with_collapsing_freight: command_center_turn_flow
+            .loss_with_collapsing_freight,
+        command_center_loss_with_support_drain: command_center_turn_flow.loss_with_support_drain,
+        command_center_loss_with_bankruptcy: command_center_turn_flow.loss_with_bankruptcy,
+        command_center_loss_with_emergency_support: command_center_turn_flow
+            .loss_with_emergency_support,
+        command_center_loss_with_support_famine: command_center_turn_flow
+            .loss_with_support_famine,
     }
 }
 
 fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<ActiveCommandCenterBaseStart> {
+    let support_drain = owner_support_drain_estimates(game, owner);
     game.bases_for(owner)
         .into_iter()
         .filter(|base| base.production == ProductionItem::CommandCenter)
@@ -599,14 +647,67 @@ fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<Acti
             let yields = game
                 .operational_base_yields(base.id)
                 .unwrap_or_else(|| game.base_yields(base.x, base.y));
+            let route_statuses = game.convoy_route_status_for_base(base.id);
             ActiveCommandCenterBaseStart {
                 base_id: base.id,
                 start_stock: base.minerals_stock,
                 yield_minerals: yields.minerals,
                 mineral_margin: game.base_mineral_margin(base.id).unwrap_or_default(),
+                intercepted_freight_routes: route_statuses
+                    .iter()
+                    .filter(|(_, kind, _, intercepted, _)| {
+                        *kind == smac_core::ConvoyRouteKind::Freight && *intercepted
+                    })
+                    .count(),
+                collapsing_freight_routes: route_statuses
+                    .iter()
+                    .filter(|(_, kind, _, intercepted, integrity)| {
+                        *kind == smac_core::ConvoyRouteKind::Freight && *intercepted && *integrity <= 1
+                    })
+                    .count(),
+                estimated_support_drain: support_drain.get(&base.id).copied().unwrap_or_default(),
             }
         })
         .collect()
+}
+
+fn owner_support_drain_estimates(game: &GameState, owner: usize) -> HashMap<usize, i32> {
+    let mut remaining = game.faction_support_summary(owner).unit_upkeep.max(0);
+    let mut drains = HashMap::new();
+    for base in game.bases_for(owner) {
+        if remaining <= 0 {
+            break;
+        }
+        let drain = base.minerals_stock.min(remaining).max(0);
+        if drain > 0 {
+            drains.insert(base.id, drain);
+            remaining -= drain;
+        }
+    }
+    drains
+}
+
+fn owner_turn_economy_signals(game: &GameState, owner: usize) -> OwnerTurnEconomySignals {
+    let faction_name = game.faction_name(owner).to_string();
+    let mut signals = OwnerTurnEconomySignals::default();
+    for entry in game.log.iter().filter(|entry| entry.turn == game.turn) {
+        if entry.message.contains("BANKRUPTCY:") && entry.message.contains(&faction_name) {
+            signals.bankruptcy = true;
+        }
+        if entry.message.contains("spent ")
+            && entry.message.contains(" energy reserves to cover mineral support")
+            && entry.message.contains(&faction_name)
+        {
+            signals.emergency_support_payment = true;
+        }
+        if entry.message.contains("FAMINE:")
+            && entry.message.contains("lack of support")
+            && entry.message.contains(&faction_name)
+        {
+            signals.support_famine = true;
+        }
+    }
+    signals
 }
 
 #[derive(Clone, Copy, Default)]
@@ -728,7 +829,12 @@ fn owner_command_center_build_metrics(
 }
 
 impl OwnerCommandCenterTurnFlow {
-    fn observe_turn(&mut self, game: &GameState, starts: &[ActiveCommandCenterBaseStart]) {
+    fn observe_turn(
+        &mut self,
+        game: &GameState,
+        starts: &[ActiveCommandCenterBaseStart],
+        economy_signals: OwnerTurnEconomySignals,
+    ) {
         for start in starts {
             let Some(base) = game.base(start.base_id) else {
                 continue;
@@ -743,6 +849,24 @@ impl OwnerCommandCenterTurnFlow {
                 self.loss_turns += 1;
                 if start.yield_minerals > 0 {
                     self.positive_yield_loss_turns += 1;
+                }
+                if start.intercepted_freight_routes > 0 {
+                    self.loss_with_intercepted_freight += 1;
+                }
+                if start.collapsing_freight_routes > 0 {
+                    self.loss_with_collapsing_freight += 1;
+                }
+                if start.estimated_support_drain > 0 {
+                    self.loss_with_support_drain += 1;
+                }
+                if economy_signals.bankruptcy {
+                    self.loss_with_bankruptcy += 1;
+                }
+                if economy_signals.emergency_support_payment {
+                    self.loss_with_emergency_support += 1;
+                }
+                if economy_signals.support_famine {
+                    self.loss_with_support_famine += 1;
                 }
             }
         }
