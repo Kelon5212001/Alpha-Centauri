@@ -1573,6 +1573,7 @@ impl GameState {
                 post_production_stock: minerals_stock,
                 post_interdiction_stock: minerals_stock,
                 upkeep_drain: 0,
+                upkeep_order_index: None,
                 end_stock: minerals_stock,
             });
         }
@@ -12125,7 +12126,7 @@ impl GameState {
         let mut remaining_minerals = unit_upkeep;
         if remaining_minerals > 0 {
             let base_ids: Vec<usize> = self.bases_for(owner).iter().map(|b| b.id).collect();
-            for base_id in base_ids {
+            for (order_index, base_id) in base_ids.into_iter().enumerate() {
                 if remaining_minerals <= 0 {
                     break;
                 }
@@ -12150,6 +12151,9 @@ impl GameState {
                         trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id
                     }) {
                         trace.upkeep_drain += drained;
+                        if trace.upkeep_order_index.is_none() {
+                            trace.upkeep_order_index = Some(order_index);
+                        }
                         trace.end_stock = end_stock;
                     }
                 }

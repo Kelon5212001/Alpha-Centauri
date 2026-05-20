@@ -1244,6 +1244,7 @@ pub struct CommandCenterTurnTrace {
     pub post_production_stock: i32,
     pub post_interdiction_stock: i32,
     pub upkeep_drain: i32,
+    pub upkeep_order_index: Option<usize>,
     pub end_stock: i32,
 }
 
