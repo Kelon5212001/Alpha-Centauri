@@ -1519,10 +1519,19 @@ fn choose_ai_support_production(
     if support.supported_units <= 0 {
         return None;
     }
+    let nearby_units = state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner)
+        .filter(|u| manhattan(u.x, u.y, base.x, base.y) <= 1)
+        .count();
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
+    let severe_support_pressure =
+        support.supported_units >= state.bases_for(owner).len() as i32 + 1 || support.unit_upkeep >= 4;
 
     if state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && !base.facilities.contains(&crate::Facility::CommandCenter)
+        && (nearby_units >= 3 || (severe_support_pressure && nearby_units >= 2))
     {
         return Some(crate::ProductionItem::CommandCenter);
     }
@@ -1560,9 +1569,19 @@ fn choose_ai_support_relief_fallback(
     let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
     let low_energy = state.faction(owner).map(|f| f.energy < 20).unwrap_or(true);
+    let support = state.faction_support_summary(owner);
+    let nearby_units = state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner)
+        .filter(|u| manhattan(u.x, u.y, base.x, base.y) <= 1)
+        .count();
+    let severe_support_pressure =
+        support.supported_units >= state.bases_for(owner).len() as i32 + 1 || support.unit_upkeep >= 4;
 
     if !base.facilities.contains(&crate::Facility::CommandCenter)
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && (nearby_units >= 3 || (severe_support_pressure && nearby_units >= 2))
     {
         return Some(crate::ProductionItem::CommandCenter);
     }
@@ -7048,6 +7067,91 @@ mod tests {
         let choice = choose_ai_production_for_base(&game, 0, owner);
 
         assert_eq!(choice, ProductionItem::CommandCenter);
+    }
+
+    #[test]
+    fn light_garrison_support_base_does_not_overbuild_command_center() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Light Support".to_string(),
+            x: 6,
+            y: 6,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        for (id, x, y) in [(1usize, 10usize, 10usize), (2usize, 12usize, 10usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Dummy {id}"),
+                x,
+                y,
+                population: 1,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+
+        for (unit_id, kind, x, y) in [
+            (100usize, UnitKind::Former, 6usize, 6usize),
+            (101usize, UnitKind::ScoutPatrol, 10usize, 10usize),
+            (102usize, UnitKind::ScoutPatrol, 12usize, 10usize),
+            (103usize, UnitKind::ScoutPatrol, 10usize, 12usize),
+            (104usize, UnitKind::ScoutPatrol, 11usize, 10usize),
+            (105usize, UnitKind::ScoutPatrol, 12usize, 11usize),
+            (106usize, UnitKind::ScoutPatrol, 10usize, 11usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert!(game.faction_support_summary(owner).supported_units > 0);
+
+        let choice = choose_ai_production_for_base(&game, 0, owner);
+
+        assert_ne!(choice, ProductionItem::CommandCenter);
     }
 
     #[test]
