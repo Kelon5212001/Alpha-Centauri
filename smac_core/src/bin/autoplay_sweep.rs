@@ -207,9 +207,12 @@ enum CommandCenterActivationSource {
 }
 
 #[derive(Clone, Copy, Default)]
-struct CommandCenterSwitchHistory {
+struct PendingCommandCenterActivation {
+    last_activation_source: Option<CommandCenterActivationSource>,
+    last_switch_reason: Option<AiCommandCenterChoiceSource>,
     switch_to_command_center_count: usize,
     switched_away_after_command_center: bool,
+    currently_on_switched_command_center: bool,
 }
 
 struct RunSummary {
@@ -288,6 +291,9 @@ struct RunSummary {
     command_center_scrap_active_switched: usize,
     command_center_scrap_active_promoted: usize,
     command_center_scrap_active_unknown: usize,
+    command_center_scrap_active_age_one_turn: usize,
+    command_center_scrap_active_age_two_to_five_turns: usize,
+    command_center_scrap_active_age_six_plus_turns: usize,
     command_center_scrap_switched_urgent_relief: usize,
     command_center_scrap_switched_generic_fallback: usize,
     command_center_scrap_switched_other_source: usize,
@@ -395,6 +401,9 @@ fn run() -> Result<(), String> {
     let mut total_command_center_scrap_active_switched = 0usize;
     let mut total_command_center_scrap_active_promoted = 0usize;
     let mut total_command_center_scrap_active_unknown = 0usize;
+    let mut total_command_center_scrap_active_age_one_turn = 0usize;
+    let mut total_command_center_scrap_active_age_two_to_five_turns = 0usize;
+    let mut total_command_center_scrap_active_age_six_plus_turns = 0usize;
     let mut total_command_center_scrap_switched_urgent_relief = 0usize;
     let mut total_command_center_scrap_switched_generic_fallback = 0usize;
     let mut total_command_center_scrap_switched_other_source = 0usize;
@@ -545,6 +554,12 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_active_promoted;
         total_command_center_scrap_active_unknown +=
             summary.command_center_scrap_active_unknown;
+        total_command_center_scrap_active_age_one_turn +=
+            summary.command_center_scrap_active_age_one_turn;
+        total_command_center_scrap_active_age_two_to_five_turns +=
+            summary.command_center_scrap_active_age_two_to_five_turns;
+        total_command_center_scrap_active_age_six_plus_turns +=
+            summary.command_center_scrap_active_age_six_plus_turns;
         total_command_center_scrap_switched_urgent_relief +=
             summary.command_center_scrap_switched_urgent_relief;
         total_command_center_scrap_switched_generic_fallback +=
@@ -597,7 +612,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} cco {:>2}/{:>2}/{:>2}/{:>2} ccpn {:>2}/{:>2}/{:>2}/{:>2} ccpo {:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccox {:>2}/{:>2}/{:>2} ccpr {:>2}/{:>2}/{:>2}/{:>2} ccas {:>2}/{:>2}/{:>2} ccsr {:>2}/{:>2}/{:>2} ccsm {:>2}/{:>2} ccsb {:>2}/{:>2} ccre {:>2}/{:>2} ccrd {:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} cco {:>2}/{:>2}/{:>2}/{:>2} ccpn {:>2}/{:>2}/{:>2}/{:>2} ccpo {:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccox {:>2}/{:>2}/{:>2} ccpr {:>2}/{:>2}/{:>2}/{:>2} ccas {:>2}/{:>2}/{:>2} ccag {:>2}/{:>2}/{:>2} ccsr {:>2}/{:>2}/{:>2} ccsm {:>2}/{:>2} ccsb {:>2}/{:>2} ccre {:>2}/{:>2} ccrd {:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -826,6 +841,9 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_active_switched,
             summary.command_center_scrap_active_promoted,
             summary.command_center_scrap_active_unknown,
+            summary.command_center_scrap_active_age_one_turn,
+            summary.command_center_scrap_active_age_two_to_five_turns,
+            summary.command_center_scrap_active_age_six_plus_turns,
             summary.command_center_scrap_switched_urgent_relief,
             summary.command_center_scrap_switched_generic_fallback,
             summary.command_center_scrap_switched_other_source,
@@ -849,7 +867,7 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} cco {}/{}/{}/{} ccpn {}/{}/{}/{} ccpo {}/{}/{}/{}/{} ccox {}/{}/{} ccpr {}/{}/{}/{} ccas {}/{}/{} ccsr {}/{}/{} ccsm {}/{} ccsb {}/{} ccre {}/{} ccrd {}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} cco {}/{}/{}/{} ccpn {}/{}/{}/{} ccpo {}/{}/{}/{}/{} ccox {}/{}/{} ccpr {}/{}/{}/{} ccas {}/{}/{} ccag {}/{}/{} ccsr {}/{}/{} ccsm {}/{} ccsb {}/{} ccre {}/{} ccrd {}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
         total_raids,
@@ -925,6 +943,9 @@ fn run() -> Result<(), String> {
         total_command_center_scrap_active_switched,
         total_command_center_scrap_active_promoted,
         total_command_center_scrap_active_unknown,
+        total_command_center_scrap_active_age_one_turn,
+        total_command_center_scrap_active_age_two_to_five_turns,
+        total_command_center_scrap_active_age_six_plus_turns,
         total_command_center_scrap_switched_urgent_relief,
         total_command_center_scrap_switched_generic_fallback,
         total_command_center_scrap_switched_other_source,
@@ -1025,6 +1046,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut command_center_scrap_active_switched = 0usize;
     let mut command_center_scrap_active_promoted = 0usize;
     let mut command_center_scrap_active_unknown = 0usize;
+    let mut command_center_scrap_active_age_one_turn = 0usize;
+    let mut command_center_scrap_active_age_two_to_five_turns = 0usize;
+    let mut command_center_scrap_active_age_six_plus_turns = 0usize;
     let mut command_center_scrap_switched_urgent_relief = 0usize;
     let mut command_center_scrap_switched_generic_fallback = 0usize;
     let mut command_center_scrap_switched_other_source = 0usize;
@@ -1068,6 +1092,12 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         .collect();
     let mut player_last_command_center_scrap_turn: HashMap<String, usize> = HashMap::new();
     let mut ai_last_command_center_scrap_turn: HashMap<String, usize> = HashMap::new();
+    let mut player_pending_command_center_activation: HashMap<String, PendingCommandCenterActivation> =
+        HashMap::new();
+    let mut ai_pending_command_center_activation: HashMap<String, PendingCommandCenterActivation> =
+        HashMap::new();
+    let mut player_command_center_active_streaks: HashMap<String, usize> = HashMap::new();
+    let mut ai_command_center_active_streaks: HashMap<String, usize> = HashMap::new();
 
     while completed_turns < config.turns && game.game_over.is_none() {
         let player_readiness = offense_readiness_for_owner(&game, game.player_owner());
@@ -1076,6 +1106,34 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         let ai_cc_starts = active_command_center_base_starts(&game, game.ai_owner());
         let player_base_snapshots = owner_base_turn_snapshots(&game, game.player_owner());
         let ai_base_snapshots = owner_base_turn_snapshots(&game, game.ai_owner());
+        player_command_center_active_streaks = next_command_center_active_streaks(
+            &player_command_center_active_streaks,
+            &player_base_snapshots,
+        );
+        ai_command_center_active_streaks = next_command_center_active_streaks(
+            &ai_command_center_active_streaks,
+            &ai_base_snapshots,
+        );
+        let player_command_center_choice_sources: HashMap<String, Option<AiCommandCenterChoiceSource>> =
+            game.bases_for(game.player_owner())
+                .into_iter()
+                .map(|base| {
+                    (
+                        base.name.clone(),
+                        command_center_choice_source_for_base(&game, base.id, game.player_owner()),
+                    )
+                })
+                .collect();
+        let ai_command_center_choice_sources: HashMap<String, Option<AiCommandCenterChoiceSource>> =
+            game.bases_for(game.ai_owner())
+                .into_iter()
+                .map(|base| {
+                    (
+                        base.name.clone(),
+                        command_center_choice_source_for_base(&game, base.id, game.ai_owner()),
+                    )
+                })
+                .collect();
         if player_readiness.has_offensive_target {
             player_target_turns += 1;
         }
@@ -1119,6 +1177,57 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         ai_peak_support = ai_peak_support.max(owner_peak_support(&game, game.ai_owner(), completed_turns));
 
         for entry in game.log.iter().filter(|entry| entry.turn == game.turn) {
+            if let Some((base_name, item_name)) =
+                switched_production_message_parts(entry.message.as_str())
+            {
+                let (pending_map, choice_sources) =
+                    if player_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name) {
+                        (
+                            &mut player_pending_command_center_activation,
+                            &player_command_center_choice_sources,
+                        )
+                    } else if ai_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name)
+                    {
+                        (
+                            &mut ai_pending_command_center_activation,
+                            &ai_command_center_choice_sources,
+                        )
+                    } else {
+                        continue;
+                    };
+                let pending = pending_map.entry(base_name.to_string()).or_default();
+                if item_name == "Command Center" {
+                    pending.last_activation_source = Some(CommandCenterActivationSource::Switched);
+                    pending.last_switch_reason =
+                        choice_sources.get(base_name).copied().flatten();
+                    pending.switch_to_command_center_count += 1;
+                    pending.currently_on_switched_command_center = true;
+                } else if pending.currently_on_switched_command_center {
+                    pending.switched_away_after_command_center = true;
+                    pending.currently_on_switched_command_center = false;
+                }
+            }
+            if let Some((base_name, item_name)) =
+                promoted_production_message_parts(entry.message.as_str())
+            {
+                if item_name == "Command Center" {
+                    let pending_map =
+                        if player_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name)
+                        {
+                            &mut player_pending_command_center_activation
+                        } else if ai_base_snapshots
+                            .iter()
+                            .any(|snapshot| snapshot.base_name == base_name)
+                        {
+                            &mut ai_pending_command_center_activation
+                        } else {
+                            continue;
+                        };
+                    let pending = pending_map.entry(base_name.to_string()).or_default();
+                    pending.last_activation_source = Some(CommandCenterActivationSource::Promoted);
+                    pending.currently_on_switched_command_center = false;
+                }
+            }
             if entry.message.contains("TACTICS:") {
                 raids += 1;
             }
@@ -1173,6 +1282,16 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                             } else {
                                 &ai_base_snapshots
                             };
+                            let pending_command_center_activation = if owner == game.player_owner() {
+                                &mut player_pending_command_center_activation
+                            } else {
+                                &mut ai_pending_command_center_activation
+                            };
+                            let command_center_active_streaks = if owner == game.player_owner() {
+                                &player_command_center_active_streaks
+                            } else {
+                                &ai_command_center_active_streaks
+                            };
                             let ever_had_command_center = if owner == game.player_owner() {
                                 &player_ever_had_command_center
                             } else {
@@ -1183,10 +1302,6 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                             } else {
                                 &mut ai_last_command_center_scrap_turn
                             };
-                            let previous_scrap_turn = last_command_center_scrap_turn
-                                .get(base_name)
-                                .copied()
-                                .unwrap_or(0);
                             if let Some(snapshot) =
                                 snapshots.iter().find(|snapshot| snapshot.base_name == base_name)
                             {
@@ -1323,37 +1438,41 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                 match snapshot.current_production {
                                     ProductionItem::CommandCenter => {
                                         command_center_scrap_while_building_command_center += 1;
-                                        match base_last_command_center_activation_source(
-                                            &game,
-                                            &snapshot.base_name,
-                                        ) {
+                                        let pending_activation = pending_command_center_activation
+                                            .get(&snapshot.base_name)
+                                            .copied()
+                                            .unwrap_or_default();
+                                        match command_center_active_streaks
+                                            .get(&snapshot.base_name)
+                                            .copied()
+                                            .unwrap_or(1)
+                                        {
+                                            0 | 1 => {
+                                                command_center_scrap_active_age_one_turn += 1;
+                                            }
+                                            2..=5 => {
+                                                command_center_scrap_active_age_two_to_five_turns += 1;
+                                            }
+                                            _ => {
+                                                command_center_scrap_active_age_six_plus_turns += 1;
+                                            }
+                                        }
+                                        match pending_activation.last_activation_source {
                                             Some(CommandCenterActivationSource::Switched) => {
                                                 command_center_scrap_active_switched += 1;
-                                                let switch_history = command_center_switch_history_since(
-                                                    &game,
-                                                    &snapshot.base_name,
-                                                    previous_scrap_turn,
-                                                    completed_turns,
-                                                );
-                                                if switch_history.switch_to_command_center_count <= 1 {
+                                                if pending_activation.switch_to_command_center_count
+                                                    <= 1
+                                                {
                                                     command_center_scrap_switched_single_cycle += 1;
                                                 } else {
                                                     command_center_scrap_switched_multi_cycle += 1;
                                                 }
-                                                if switch_history.switched_away_after_command_center {
+                                                if pending_activation.switched_away_after_command_center {
                                                     command_center_scrap_switched_away_and_back += 1;
                                                 } else {
                                                     command_center_scrap_switched_stayed_on_command_center += 1;
                                                 }
-                                                match game
-                                                    .bases_for(owner)
-                                                    .into_iter()
-                                                    .find(|base| base.name == snapshot.base_name)
-                                                    .and_then(|base| {
-                                                        command_center_choice_source_for_base(
-                                                            &game, base.id, owner,
-                                                        )
-                                                    }) {
+                                                match pending_activation.last_switch_reason {
                                                     Some(
                                                         AiCommandCenterChoiceSource::UrgentSupportRelief,
                                                     ) => {
@@ -1409,6 +1528,7 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                 }
                                 last_command_center_scrap_turn
                                     .insert(snapshot.base_name.clone(), completed_turns);
+                                pending_command_center_activation.remove(&snapshot.base_name);
                             }
                         }
                     }
@@ -1533,6 +1653,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         command_center_scrap_active_switched,
         command_center_scrap_active_promoted,
         command_center_scrap_active_unknown,
+        command_center_scrap_active_age_one_turn,
+        command_center_scrap_active_age_two_to_five_turns,
+        command_center_scrap_active_age_six_plus_turns,
         command_center_scrap_switched_urgent_relief,
         command_center_scrap_switched_generic_fallback,
         command_center_scrap_switched_other_source,
@@ -2117,53 +2240,30 @@ fn base_had_production_reset(game: &GameState, base_name: &str) -> bool {
     })
 }
 
-fn base_last_command_center_activation_source(
-    game: &GameState,
-    base_name: &str,
-) -> Option<CommandCenterActivationSource> {
-    game.log.iter().rev().find_map(|entry| {
-        if !entry.message.contains(base_name) {
-            return None;
-        }
-        if entry
-            .message
-            .contains("switched production to Command Center")
-        {
-            return Some(CommandCenterActivationSource::Switched);
-        }
-        if entry
-            .message
-            .contains("promoted Command Center to active production")
-        {
-            return Some(CommandCenterActivationSource::Promoted);
-        }
-        None
-    })
+fn switched_production_message_parts(message: &str) -> Option<(&str, &str)> {
+    let (base_name, item_name) = message.split_once(" switched production to ")?;
+    Some((base_name, item_name.strip_suffix('.')?))
 }
 
-fn command_center_switch_history_since(
-    game: &GameState,
-    base_name: &str,
-    after_turn: usize,
-    through_turn: usize,
-) -> CommandCenterSwitchHistory {
-    let mut history = CommandCenterSwitchHistory::default();
-    let mut saw_command_center_switch = false;
-    for entry in game.log.iter().filter(|entry| {
-        let turn = entry.turn.max(0) as usize;
-        turn > after_turn && turn <= through_turn && entry.message.contains(base_name)
-    }) {
-        if entry.message.contains("switched production to Command Center") {
-            history.switch_to_command_center_count += 1;
-            saw_command_center_switch = true;
-            continue;
-        }
-        if saw_command_center_switch && entry.message.contains("switched production to ") {
-            history.switched_away_after_command_center = true;
-            saw_command_center_switch = false;
-        }
-    }
-    history
+fn promoted_production_message_parts(message: &str) -> Option<(&str, &str)> {
+    let (base_name, item_name) = message.split_once(" promoted ")?;
+    Some((base_name, item_name.strip_suffix(" to active production.")?))
+}
+
+fn next_command_center_active_streaks(
+    previous: &HashMap<String, usize>,
+    snapshots: &[BaseTurnSnapshot],
+) -> HashMap<String, usize> {
+    snapshots
+        .iter()
+        .filter(|snapshot| snapshot.current_production == ProductionItem::CommandCenter)
+        .map(|snapshot| {
+            (
+                snapshot.base_name.clone(),
+                previous.get(&snapshot.base_name).copied().unwrap_or(0) + 1,
+            )
+        })
+        .collect()
 }
 
 fn owner_peak_base_stress(game: &GameState, owner: usize, turn: usize) -> OwnerPeakBaseStress {
