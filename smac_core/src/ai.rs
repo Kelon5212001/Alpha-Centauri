@@ -2346,6 +2346,23 @@ fn choose_ai_production_for_base(
     preferred
 }
 
+fn base_recently_scrapped_command_center(
+    state: &GameState,
+    owner: usize,
+    base_name: &str,
+    within_turns: i32,
+) -> bool {
+    let faction_name = state.faction_name(owner);
+    state.log.iter().rev().any(|entry| {
+        entry.turn <= state.turn
+            && state.turn - entry.turn <= within_turns
+            && entry.message.contains("BANKRUPTCY:")
+            && entry.message.contains(&faction_name)
+            && entry.message.contains("CommandCenter")
+            && entry.message.contains(base_name)
+    })
+}
+
 fn choose_ai_queue_follow_up(
     state: &GameState,
     base_id: usize,
@@ -2370,6 +2387,8 @@ fn choose_ai_queue_follow_up(
                 .convoy_route_status_for_base(base.id)
                 .into_iter()
                 .any(|(_, _, disrupted, intercepted, _)| disrupted || intercepted));
+    let recent_command_center_scrap =
+        base_recently_scrapped_command_center(state, owner, &base.name, 15);
 
     if let Some(recovery_item) = choose_ai_recovery_production(state, base, owner, pressure) {
         return recovery_item;
@@ -2442,6 +2461,7 @@ fn choose_ai_queue_follow_up(
         return crate::ProductionItem::FreightDepot;
     }
     if !base.facilities.contains(&crate::Facility::CommandCenter)
+        && !recent_command_center_scrap
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && yields.minerals >= yields.nutrients
     {
@@ -4912,8 +4932,8 @@ mod tests {
         update_ai_social_engineering, update_ai_unit_designs, AiTacticalSignals,
     };
     use crate::{
-        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity,
-        UnitKind,
+        model::{EventCategory, EventLogEntry},
+        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
     };
 
     #[test]
@@ -6576,6 +6596,99 @@ mod tests {
     }
 
     #[test]
+    fn recent_command_center_scrap_blocks_immediate_follow_up_rebuild() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.turn = 90;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Repeat Relief".to_string(),
+            x: 6,
+            y: 6,
+            population: 5,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![
+                crate::Facility::NetworkNode,
+                crate::Facility::TradeExchange,
+                crate::Facility::FreightDepot,
+            ],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner,
+            name: "Repeat Link".to_string(),
+            x: 8,
+            y: 6,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 8].base = Some(1);
+
+        let faction_name = game.faction_name(owner).to_string();
+        game.log.push(EventLogEntry {
+            category: EventCategory::Economics,
+            message: format!(
+                "BANKRUPTCY: {} scrapped CommandCenter in Repeat Relief to cover debt!",
+                faction_name
+            ),
+            turn: 84,
+        });
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [(100usize, 6usize, 6usize), (101usize, 8usize, 6usize)] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert_eq!(game.faction_support_summary(owner).supported_units, 0);
+
+        let choice = choose_ai_queue_follow_up(&game, 0, owner);
+
+        assert_ne!(choice, ProductionItem::CommandCenter);
+    }
+
+    #[test]
     fn severe_support_pressure_rewrites_stale_queue_to_command_center() {
         let mut game = GameState::new_game(16, 16, 9);
         let owner = game.ai_owner();
@@ -6645,6 +6758,12 @@ mod tests {
             (103usize, 8usize, 6usize),
             (104usize, 6usize, 5usize),
             (105usize, 8usize, 5usize),
+            (106usize, 6usize, 7usize),
+            (107usize, 7usize, 7usize),
+            (108usize, 12usize, 12usize),
+            (109usize, 13usize, 12usize),
+            (110usize, 12usize, 13usize),
+            (111usize, 13usize, 13usize),
         ] {
             game.tiles[y * game.width + x].unit = Some(unit_id);
             game.units.push(Unit {
@@ -6693,6 +6812,102 @@ mod tests {
         let base = game.base(0).expect("base should still exist");
         assert_eq!(base.production, ProductionItem::TradeExchange);
         assert_eq!(base.production_queue, vec![ProductionItem::CommandCenter]);
+    }
+
+    #[test]
+    fn severe_support_pressure_allows_command_center_despite_recent_scrap() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.turn = 80;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 70;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Queued Relief".to_string(),
+            x: 6,
+            y: 6,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: vec![crate::Facility::TradeExchange],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        game.bases.push(Base {
+            id: 1,
+            owner,
+            name: "Queued Relief Link".to_string(),
+            x: 8,
+            y: 6,
+            population: 2,
+            nutrients_stock: 0,
+            minerals_stock: 0,
+            production: ProductionItem::Former,
+            production_queue: Vec::new(),
+            facilities: Vec::new(),
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 8].base = Some(1);
+
+        let faction_name = game.faction_name(owner).to_string();
+        game.log.push(EventLogEntry {
+            category: EventCategory::Economics,
+            message: format!(
+                "BANKRUPTCY: {} scrapped CommandCenter in Queued Relief to cover debt!",
+                faction_name
+            ),
+            turn: 74,
+        });
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 8usize, 6usize),
+            (104usize, 6usize, 5usize),
+            (105usize, 8usize, 5usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        assert!(game.faction_support_summary(owner).supported_units > 0);
+        assert_eq!(
+            choose_ai_queue_follow_up(&game, 0, owner),
+            ProductionItem::CommandCenter
+        );
     }
 
     #[test]
