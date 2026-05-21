@@ -33,6 +33,12 @@ pub struct AiOffenseReadiness {
     pub can_form_attack_group: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AiCommandCenterChoiceSource {
+    UrgentSupportRelief,
+    GenericMineralFallback,
+}
+
 pub fn run_non_player_turns(state: &mut GameState) {
     let start = std::time::Instant::now();
     let ai_owner = state.ai_owner();
@@ -193,6 +199,40 @@ pub fn offense_readiness_for_owner(state: &GameState, owner: usize) -> AiOffense
             && available_attackers >= minimum_attack_group_size
             && has_offensive_target,
     }
+}
+
+pub fn command_center_choice_source_for_base(
+    state: &GameState,
+    base_id: usize,
+    owner: usize,
+) -> Option<AiCommandCenterChoiceSource> {
+    let base = state.base(base_id)?;
+    let yields = state
+        .operational_base_yields(base.id)
+        .unwrap_or_else(|| state.base_yields(base.x, base.y));
+    let signals = economy_signals_for_base(state, owner, base.id, base.x, base.y, yields);
+    let psi_pressure = state.base_local_psi_pressure(base.id);
+    let owned_bases = state.bases_for(owner).len();
+    let support_summary = state.faction_support_summary(owner);
+
+    let urgent_command_center_relief = state
+        .is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && !base.facilities.contains(&crate::Facility::CommandCenter)
+        && support_summary.supported_units >= owned_bases as i32 + 1
+        && (support_summary.unit_upkeep >= 4 || signals.military_pressure < 2)
+        && psi_pressure < 2;
+    if urgent_command_center_relief {
+        return Some(AiCommandCenterChoiceSource::UrgentSupportRelief);
+    }
+
+    if state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && !base.facilities.contains(&crate::Facility::CommandCenter)
+        && yields.minerals >= yields.energy
+    {
+        return Some(AiCommandCenterChoiceSource::GenericMineralFallback);
+    }
+
+    None
 }
 
 fn run_ai_strategy_for_owner(state: &mut GameState, owner: usize) {

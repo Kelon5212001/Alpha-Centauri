@@ -1,6 +1,7 @@
 use smac_core::content_api::{facility_maintenance, production_name};
 use smac_core::{
-    offense_readiness_for_owner, CommandCenterTurnTrace, Facility, GameOver, GameState,
+    command_center_choice_source_for_base, offense_readiness_for_owner,
+    AiCommandCenterChoiceSource, CommandCenterTurnTrace, Facility, GameOver, GameState,
     GovernorMode, ProductionItem, Tech,
 };
 use std::collections::HashMap;
@@ -281,6 +282,9 @@ struct RunSummary {
     command_center_scrap_active_switched: usize,
     command_center_scrap_active_promoted: usize,
     command_center_scrap_active_unknown: usize,
+    command_center_scrap_switched_urgent_relief: usize,
+    command_center_scrap_switched_generic_fallback: usize,
+    command_center_scrap_switched_other_source: usize,
     command_center_scrap_repeat_rebuild: usize,
     command_center_scrap_first_attempt: usize,
     command_center_scrap_recent_rebuild: usize,
@@ -381,6 +385,9 @@ fn run() -> Result<(), String> {
     let mut total_command_center_scrap_active_switched = 0usize;
     let mut total_command_center_scrap_active_promoted = 0usize;
     let mut total_command_center_scrap_active_unknown = 0usize;
+    let mut total_command_center_scrap_switched_urgent_relief = 0usize;
+    let mut total_command_center_scrap_switched_generic_fallback = 0usize;
+    let mut total_command_center_scrap_switched_other_source = 0usize;
     let mut total_command_center_scrap_repeat_rebuild = 0usize;
     let mut total_command_center_scrap_first_attempt = 0usize;
     let mut total_command_center_scrap_recent_rebuild = 0usize;
@@ -524,6 +531,12 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_active_promoted;
         total_command_center_scrap_active_unknown +=
             summary.command_center_scrap_active_unknown;
+        total_command_center_scrap_switched_urgent_relief +=
+            summary.command_center_scrap_switched_urgent_relief;
+        total_command_center_scrap_switched_generic_fallback +=
+            summary.command_center_scrap_switched_generic_fallback;
+        total_command_center_scrap_switched_other_source +=
+            summary.command_center_scrap_switched_other_source;
         total_command_center_scrap_repeat_rebuild +=
             summary.command_center_scrap_repeat_rebuild;
         total_command_center_scrap_first_attempt +=
@@ -562,7 +575,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} cco {:>2}/{:>2}/{:>2}/{:>2} ccpn {:>2}/{:>2}/{:>2}/{:>2} ccpo {:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccox {:>2}/{:>2}/{:>2} ccpr {:>2}/{:>2}/{:>2}/{:>2} ccas {:>2}/{:>2}/{:>2} ccre {:>2}/{:>2} ccrd {:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} cco {:>2}/{:>2}/{:>2}/{:>2} ccpn {:>2}/{:>2}/{:>2}/{:>2} ccpo {:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccox {:>2}/{:>2}/{:>2} ccpr {:>2}/{:>2}/{:>2}/{:>2} ccas {:>2}/{:>2}/{:>2} ccsr {:>2}/{:>2}/{:>2} ccre {:>2}/{:>2} ccrd {:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -791,6 +804,9 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_active_switched,
             summary.command_center_scrap_active_promoted,
             summary.command_center_scrap_active_unknown,
+            summary.command_center_scrap_switched_urgent_relief,
+            summary.command_center_scrap_switched_generic_fallback,
+            summary.command_center_scrap_switched_other_source,
             summary.command_center_scrap_repeat_rebuild,
             summary.command_center_scrap_first_attempt,
             summary.command_center_scrap_recent_rebuild,
@@ -807,7 +823,7 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} cco {}/{}/{}/{} ccpn {}/{}/{}/{} ccpo {}/{}/{}/{}/{} ccox {}/{}/{} ccpr {}/{}/{}/{} ccas {}/{}/{} ccre {}/{} ccrd {}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} cco {}/{}/{}/{} ccpn {}/{}/{}/{} ccpo {}/{}/{}/{}/{} ccox {}/{}/{} ccpr {}/{}/{}/{} ccas {}/{}/{} ccsr {}/{}/{} ccre {}/{} ccrd {}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
         total_raids,
@@ -883,6 +899,9 @@ fn run() -> Result<(), String> {
         total_command_center_scrap_active_switched,
         total_command_center_scrap_active_promoted,
         total_command_center_scrap_active_unknown,
+        total_command_center_scrap_switched_urgent_relief,
+        total_command_center_scrap_switched_generic_fallback,
+        total_command_center_scrap_switched_other_source,
         total_command_center_scrap_repeat_rebuild,
         total_command_center_scrap_first_attempt,
         total_command_center_scrap_recent_rebuild,
@@ -976,6 +995,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut command_center_scrap_active_switched = 0usize;
     let mut command_center_scrap_active_promoted = 0usize;
     let mut command_center_scrap_active_unknown = 0usize;
+    let mut command_center_scrap_switched_urgent_relief = 0usize;
+    let mut command_center_scrap_switched_generic_fallback = 0usize;
+    let mut command_center_scrap_switched_other_source = 0usize;
     let mut command_center_scrap_repeat_rebuild = 0usize;
     let mut command_center_scrap_first_attempt = 0usize;
     let mut command_center_scrap_recent_rebuild = 0usize;
@@ -1269,6 +1291,29 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                         ) {
                                             Some(CommandCenterActivationSource::Switched) => {
                                                 command_center_scrap_active_switched += 1;
+                                                match game
+                                                    .bases_for(owner)
+                                                    .into_iter()
+                                                    .find(|base| base.name == snapshot.base_name)
+                                                    .and_then(|base| {
+                                                        command_center_choice_source_for_base(
+                                                            &game, base.id, owner,
+                                                        )
+                                                    }) {
+                                                    Some(
+                                                        AiCommandCenterChoiceSource::UrgentSupportRelief,
+                                                    ) => {
+                                                        command_center_scrap_switched_urgent_relief += 1;
+                                                    }
+                                                    Some(
+                                                        AiCommandCenterChoiceSource::GenericMineralFallback,
+                                                    ) => {
+                                                        command_center_scrap_switched_generic_fallback += 1;
+                                                    }
+                                                    None => {
+                                                        command_center_scrap_switched_other_source += 1;
+                                                    }
+                                                }
                                             }
                                             Some(CommandCenterActivationSource::Promoted) => {
                                                 command_center_scrap_active_promoted += 1;
@@ -1434,6 +1479,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         command_center_scrap_active_switched,
         command_center_scrap_active_promoted,
         command_center_scrap_active_unknown,
+        command_center_scrap_switched_urgent_relief,
+        command_center_scrap_switched_generic_fallback,
+        command_center_scrap_switched_other_source,
         command_center_scrap_repeat_rebuild,
         command_center_scrap_first_attempt,
         command_center_scrap_recent_rebuild,

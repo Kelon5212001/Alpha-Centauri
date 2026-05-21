@@ -57,7 +57,10 @@ pub use units::definitions::UnitDesign;
 
 pub use content::RuntimeRole;
 pub use content::RuntimeRoles;
-pub use ai::{offense_readiness_for_owner, run_ai_tactics, run_ai_tactics_for_owner, AiOffenseReadiness};
+pub use ai::{
+    command_center_choice_source_for_base, offense_readiness_for_owner, run_ai_tactics,
+    run_ai_tactics_for_owner, AiCommandCenterChoiceSource, AiOffenseReadiness,
+};
 pub use game_state::base_focus_filter_label;
 pub use game_state::base_sort_mode_label;
 pub use game_state::logistics_route_filter_label;
