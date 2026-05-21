@@ -9,7 +9,6 @@ struct AiEconomySignals {
     military_pressure: i32,
     infrastructure_pressure: bool,
     energy_pressure: bool,
-    maintenance_pressure: bool,
     mineral_pressure: bool,
     support_pressure: bool,
     support_deficit: i32,
@@ -2610,8 +2609,6 @@ fn economy_signals_for_base(
     let minerals_stock = state.base(base_id).map(|b| b.minerals_stock).unwrap_or(0);
     let local_military_pressure = frontline_military_pressure_near_base(state, x, y, owner);
 
-    let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
-
     AiEconomySignals {
         expansion_pressure: owned_bases < expansion_target
             && support.supported_units <= owned_bases as i32
@@ -2626,7 +2623,6 @@ fn economy_signals_for_base(
         energy_pressure: faction.energy <= 10
             || research_gap >= yields.energy.max(1) * 10
             || faction.energy < 0,
-        maintenance_pressure: maintenance_overbuilt,
         mineral_pressure: support.unit_upkeep > (owned_bases as i32 * 2) || minerals_stock <= 2,
         support_pressure: support.supported_units > 0,
         support_deficit: support.supported_units,
@@ -4916,7 +4912,8 @@ mod tests {
         update_ai_social_engineering, update_ai_unit_designs, AiTacticalSignals,
     };
     use crate::{
-        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
+        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity,
+        UnitKind,
     };
 
     #[test]
@@ -6382,21 +6379,23 @@ mod tests {
         });
         game.tiles[6 * game.width + 6].base = Some(0);
 
-        game.bases.push(Base {
-            id: 1,
-            owner,
-            name: "Link".to_string(),
-            x: 8,
-            y: 6,
-            population: 2,
-            nutrients_stock: 0,
-            minerals_stock: 0,
-            production: ProductionItem::Former,
-            production_queue: Vec::new(),
-            facilities: Vec::new(),
-            governor_mode: GovernorMode::Off,
-        });
-        game.tiles[6 * game.width + 8].base = Some(1);
+        for (id, x, y) in [(1usize, 8usize, 6usize), (2usize, 10usize, 6usize), (3usize, 12usize, 6usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Link {id}"),
+                x,
+                y,
+                population: 2,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
 
         let faction = game.faction_mut(owner).expect("AI faction must exist");
         faction.energy = 30;
