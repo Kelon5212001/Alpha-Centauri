@@ -1810,6 +1810,8 @@ fn choose_ai_production_for_base(
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
     let low_energy = faction.energy < 20;
     let overpopulated_with_units = support_summary.unit_upkeep > 4;
+    let recent_command_center_scrap =
+        base_recently_scrapped_command_center(state, owner, &base.name, 15);
     let urgent_command_center_relief = state
         .is_production_available(owner, crate::ProductionItem::CommandCenter)
         && !base.facilities.contains(&crate::Facility::CommandCenter)
@@ -2249,6 +2251,7 @@ fn choose_ai_production_for_base(
 
     if state.is_production_available(owner, crate::ProductionItem::CommandCenter)
         && !base.facilities.contains(&crate::Facility::CommandCenter)
+        && !recent_command_center_scrap
         && yields.minerals >= yields.energy
     {
         return crate::ProductionItem::CommandCenter;
