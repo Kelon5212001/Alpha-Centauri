@@ -249,6 +249,10 @@ struct RunSummary {
     command_center_scrap_balanced_governed: usize,
     command_center_scrap_economy_governed: usize,
     command_center_scrap_other_governed: usize,
+    command_center_scrap_off_governed: usize,
+    command_center_scrap_defense_governed: usize,
+    command_center_scrap_recovery_governed: usize,
+    command_center_scrap_residual_governed: usize,
     scrap_facility_counts: HashMap<&'static str, usize>,
     top_scrap_facilities: String,
     famines: usize,
@@ -320,6 +324,10 @@ fn run() -> Result<(), String> {
     let mut total_command_center_scrap_balanced_governed = 0usize;
     let mut total_command_center_scrap_economy_governed = 0usize;
     let mut total_command_center_scrap_other_governed = 0usize;
+    let mut total_command_center_scrap_off_governed = 0usize;
+    let mut total_command_center_scrap_defense_governed = 0usize;
+    let mut total_command_center_scrap_recovery_governed = 0usize;
+    let mut total_command_center_scrap_residual_governed = 0usize;
     let mut total_scrap_counts: HashMap<&'static str, usize> = HashMap::new();
     let mut total_famines = 0usize;
     let mut total_starvation_famines = 0usize;
@@ -411,6 +419,14 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_economy_governed;
         total_command_center_scrap_other_governed +=
             summary.command_center_scrap_other_governed;
+        total_command_center_scrap_off_governed +=
+            summary.command_center_scrap_off_governed;
+        total_command_center_scrap_defense_governed +=
+            summary.command_center_scrap_defense_governed;
+        total_command_center_scrap_recovery_governed +=
+            summary.command_center_scrap_recovery_governed;
+        total_command_center_scrap_residual_governed +=
+            summary.command_center_scrap_residual_governed;
         for (name, count) in &summary.scrap_facility_counts {
             *total_scrap_counts.entry(*name).or_default() += *count;
         }
@@ -437,7 +453,7 @@ fn run() -> Result<(), String> {
         total_ai_target_turns += summary.ai_target_turns;
 
         println!(
-            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
+            "seed {:>3} | turns {:>3} | outcome {:<12} | routes {:>2} projects {:>2} gap {:>2} raids {:>2} combats {:>3} caps {:>2} wars {:>2} | p off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | ai off {:>3}/{:>3} bases {:>2} units {:>2}/{:>2} tech {:>2} energy {:>4} food {:>4} frontier {:>2} unrest {:>2}/{:<2} supp {:>2}/{:<2} cc {:>2} th {:>2} ib {} ca {} pk {:>2}/{:<2} mix {:>2}/{:>2}/{:>2}/{:>2} fld {:>2}/{:>2} wrk {:>2}/{:>2} sat {:>2}/{:>2} fmb {:>2}/{:>2} upk {:>2}+{:>2}+{:>2} base {:>2}f/{:>2}m/{:>2}o pk {:>2}f/{:>2}m/{:>2}o@{:>3} ccgap {:>2}/{:>2}/{:<2} ccprog {:>2}/{:>2} lm {:>2} ccflow {:>2} loss {:>2}/{:>2} {:>2}/{:>2}/{:>2}/{:>2} fate {:>2}/{:>2}/{:>2}/{:>2} ccupk {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} src {:>2}/{:>2}/{:>2}/{:>2} own {:>2}/{:>2}/{:>2} blk {:<16} | bank {:>2} fac {:>2} unit {:>2} scr {:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2}/{:>2} ccs {:>2}/{:>2}/{:>2} cce {:>2}/{:>2} cct {:>2}/{:>2} ccx {:>2}/{:>2}/{:>2} ccp {:>2}/{:>2}/{:>2} ccy {:>2}/{:>2}/{:>2} ccr {:>2}/{:>2} ccl {:>2}/{:>2} ccv {:>2}/{:>2} ccg {:>2}/{:>2}/{:>2} ccm {:>2}/{:>2} ccrg {:>2}/{:>2} ccmd {:>2}/{:>2}/{:>2} cco {:>2}/{:>2}/{:>2}/{:>2} top {:<24} em {:>2}/{:>3} famine {:>2} starve {:>2} support {:>2}",
             summary.seed,
             summary.completed_turns,
             summary
@@ -643,6 +659,10 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_balanced_governed,
             summary.command_center_scrap_economy_governed,
             summary.command_center_scrap_other_governed,
+            summary.command_center_scrap_off_governed,
+            summary.command_center_scrap_defense_governed,
+            summary.command_center_scrap_recovery_governed,
+            summary.command_center_scrap_residual_governed,
             summary.top_scrap_facilities,
             summary.emergency_support_payments,
             summary.emergency_support_energy,
@@ -653,7 +673,7 @@ fn run() -> Result<(), String> {
     }
 
     println!(
-        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
+        "aggregate | terminal {} / {} | raids {} | combats {} | captures {} | wars {} | p off {}/{} | ai off {}/{} | bankruptcies {} fac {} unit {} scr {}/{}/{}/{}/{}/{}/{} ccs {}/{}/{} cce {}/{} cct {}/{} ccx {}/{}/{} ccp {}/{}/{} ccy {}/{}/{} ccr {}/{} ccl {}/{} ccv {}/{} ccg {}/{}/{} ccm {}/{} ccrg {}/{} ccmd {}/{}/{} cco {}/{}/{}/{} top {} em {}/{} | famines {} | starvation {} | support {} | player low-expansion {} | ai low-expansion {} | player zero-unit {} | ai zero-unit {}",
         terminal_runs,
         config.count,
         total_raids,
@@ -706,6 +726,10 @@ fn run() -> Result<(), String> {
         total_command_center_scrap_balanced_governed,
         total_command_center_scrap_economy_governed,
         total_command_center_scrap_other_governed,
+        total_command_center_scrap_off_governed,
+        total_command_center_scrap_defense_governed,
+        total_command_center_scrap_recovery_governed,
+        total_command_center_scrap_residual_governed,
         top_scrap_labels(&total_scrap_counts),
         total_emergency_support_payments,
         total_emergency_support_energy,
@@ -770,6 +794,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut command_center_scrap_balanced_governed = 0usize;
     let mut command_center_scrap_economy_governed = 0usize;
     let mut command_center_scrap_other_governed = 0usize;
+    let mut command_center_scrap_off_governed = 0usize;
+    let mut command_center_scrap_defense_governed = 0usize;
+    let mut command_center_scrap_recovery_governed = 0usize;
+    let mut command_center_scrap_residual_governed = 0usize;
     let mut scrap_counts: HashMap<&'static str, usize> = HashMap::new();
     let mut famines = 0usize;
     let mut starvation_famines = 0usize;
@@ -971,6 +999,19 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                     }
                                     _ => command_center_scrap_other_governed += 1,
                                 }
+                                match snapshot.governor_mode {
+                                    GovernorMode::Off => command_center_scrap_off_governed += 1,
+                                    GovernorMode::Defense => {
+                                        command_center_scrap_defense_governed += 1;
+                                    }
+                                    GovernorMode::Recovery => {
+                                        command_center_scrap_recovery_governed += 1;
+                                    }
+                                    GovernorMode::Balanced
+                                    | GovernorMode::Economy
+                                    | GovernorMode::Logistics => {}
+                                    _ => command_center_scrap_residual_governed += 1,
+                                }
                             }
                         }
                     }
@@ -1059,6 +1100,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         command_center_scrap_balanced_governed,
         command_center_scrap_economy_governed,
         command_center_scrap_other_governed,
+        command_center_scrap_off_governed,
+        command_center_scrap_defense_governed,
+        command_center_scrap_recovery_governed,
+        command_center_scrap_residual_governed,
         scrap_facility_counts: scrap_counts.clone(),
         top_scrap_facilities: top_scrap_labels(&scrap_counts),
         famines,
