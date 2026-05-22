@@ -2492,7 +2492,8 @@ fn choose_ai_queue_follow_up(
     let psi_pressure = state.base_local_psi_pressure(base.id);
     let prefer_raider = should_prefer_raider_speeder(state, owner, base.x, base.y);
     let trade_links = state.base_potential_trade_links(base.id);
-    let support_pressure = state.faction_support_summary(owner).supported_units > 0;
+    let support_summary = state.faction_support_summary(owner);
+    let support_pressure = support_summary.supported_units > 0;
     let maintenance_overbuilt = is_ai_maintenance_overbuilt(state, owner);
     let base_optional_overbuilt = is_ai_base_maintenance_saturated(base, yields);
     let convoy_pressure = trade_links >= 1
@@ -2526,9 +2527,27 @@ fn choose_ai_queue_follow_up(
         }
         return crate::ProductionItem::ScoutPatrol;
     }
+    let local_units = state
+        .units
+        .iter()
+        .filter(|u| u.alive && u.owner == owner && u.x == base.x && u.y == base.y)
+        .count();
+    let severe_support_pressure = support_summary.supported_units
+        >= state.bases_for(owner).len().max(1) as i32 + 1
+        || support_summary.unit_upkeep >= 4;
+    let defer_safe_hub_command_center = !severe_support_pressure
+        && base.governor_mode == crate::GovernorMode::Off
+        && trade_links >= 1
+        && pressure < 1
+        && psi_pressure < 1
+        && (1..=2).contains(&local_units)
+        && base.population >= 5
+        && yields.minerals + yields.energy >= 7
+        && (maintenance_overbuilt || base_optional_overbuilt);
     if support_pressure
         && !base.facilities.contains(&crate::Facility::CommandCenter)
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && !defer_safe_hub_command_center
     {
         return crate::ProductionItem::CommandCenter;
     }
