@@ -1359,7 +1359,10 @@ fn run_ai_economy_for_owner(state: &mut GameState, owner: usize) {
                 crate::ProductionItem::ColonyPod => {
                     state.bases_for(owner).len() <= 2 && base.population >= 4
                 }
-                crate::ProductionItem::StockpileEnergy => is_ai_maintenance_overbuilt(state, owner),
+                crate::ProductionItem::StockpileEnergy => {
+                    is_ai_maintenance_overbuilt(state, owner)
+                        || should_abort_repeat_command_center_build(state, base, owner)
+                }
                 _ => false,
             };
 
@@ -1833,6 +1836,14 @@ fn choose_ai_production_for_base(
 
     if urgent_command_center_relief {
         return crate::ProductionItem::CommandCenter;
+    }
+
+    if should_abort_repeat_command_center_build(state, base, owner)
+    {
+        if state.is_production_available(owner, crate::ProductionItem::StockpileEnergy) {
+            return crate::ProductionItem::StockpileEnergy;
+        }
+        return crate::ProductionItem::ScoutPatrol;
     }
 
     // FORCED EXPANSION: Single-base factions must expand once they are either
@@ -2406,6 +2417,66 @@ fn base_recently_scrapped_command_center(
     })
 }
 
+fn should_abort_repeat_command_center_build(
+    state: &GameState,
+    base: &crate::Base,
+    owner: usize,
+) -> bool {
+    if base.production != crate::ProductionItem::CommandCenter {
+        return false;
+    }
+    if base.facilities.contains(&crate::Facility::CommandCenter) {
+        return false;
+    }
+    if !base_recently_scrapped_command_center(state, owner, &base.name, 12) {
+        return false;
+    }
+    if base.governor_mode != crate::GovernorMode::Off {
+        return false;
+    }
+    if !is_ai_maintenance_overbuilt(state, owner) {
+        return false;
+    }
+    if frontline_military_pressure_near_base(state, base.x, base.y, owner) > 0
+        || state.base_local_psi_pressure(base.id) > 0
+    {
+        return false;
+    }
+
+    let support = state.faction_support_summary(owner);
+    let base_count = state.bases_for(owner).len() as i32;
+    let severe_support_pressure =
+        support.supported_units >= base_count.saturating_add(1) || support.unit_upkeep >= 4;
+    if severe_support_pressure {
+        return false;
+    }
+
+    let yields = state
+        .operational_base_yields(base.id)
+        .unwrap_or_else(|| state.base_yields(base.x, base.y));
+    let local_units = state
+        .units
+        .iter()
+        .filter(|unit| unit.alive && unit.owner == owner && unit.x == base.x && unit.y == base.y)
+        .count();
+    if local_units == 0 || local_units > 2 {
+        return false;
+    }
+    if base.population < 5 || yields.minerals + yields.energy < 7 {
+        return false;
+    }
+    if state.base_potential_trade_links(base.id) < 1 {
+        return false;
+    }
+
+    let Some(faction) = state.faction(owner) else {
+        return false;
+    };
+    let (_, _, _, total_upkeep) = state.faction_upkeep_breakdown(owner);
+    let net_margin = faction_energy_income(state, owner) - total_upkeep;
+    net_margin < 2 || (faction.energy < 30 && net_margin < 6)
+}
+
 fn choose_ai_queue_follow_up(
     state: &GameState,
     base_id: usize,
@@ -2506,6 +2577,7 @@ fn choose_ai_queue_follow_up(
     if !base.facilities.contains(&crate::Facility::CommandCenter)
         && !recent_command_center_scrap
         && state.is_production_available(owner, crate::ProductionItem::CommandCenter)
+        && !should_abort_repeat_command_center_build(state, base, owner)
         && yields.minerals >= yields.nutrients
     {
         return crate::ProductionItem::CommandCenter;
@@ -4968,7 +5040,8 @@ mod tests {
         choose_ai_offensive_base_target, choose_ai_production_for_base, choose_ai_queue_follow_up,
         choose_ai_raider_target, choose_ai_support_production, desired_ai_base_spacing,
         desired_ai_expansion_target, economy_signals_for_base, exploratory_target,
-        is_ai_colony_site_acceptable, manhattan, maybe_assign_ai_convoy_route,
+        is_ai_colony_site_acceptable, manhattan,
+        maybe_assign_ai_convoy_route,
         run_ai_economy_for_owner, run_ai_tactics_for_owner, score_player_base_target,
         score_player_unit_target, score_raider_base_target, score_unexplored_tile_target,
         should_ai_call_council, tactical_signals, try_ai_move_toward, update_ai_diplomacy, update_ai_research,
@@ -4976,7 +5049,8 @@ mod tests {
     };
     use crate::{
         model::{EventCategory, EventLogEntry},
-        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
+        Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity,
+        UnitKind,
     };
 
     #[test]
@@ -7409,6 +7483,219 @@ mod tests {
         let choice = choose_ai_production_for_base(&game, 0, owner);
 
         assert_ne!(choice, ProductionItem::CommandCenter);
+    }
+
+    #[test]
+    fn recently_scrapped_safe_off_hub_aborts_active_command_center_rebuild() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.turn = 90;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Repeat Relief".to_string(),
+            x: 6,
+            y: 6,
+            population: 5,
+            nutrients_stock: 0,
+            minerals_stock: 24,
+            production: ProductionItem::CommandCenter,
+            production_queue: Vec::new(),
+            facilities: vec![
+                crate::Facility::TradeExchange,
+                crate::Facility::FreightDepot,
+                crate::Facility::NetworkNode,
+            ],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        for (id, x, y, facilities) in [
+            (
+                1usize,
+                8usize,
+                6usize,
+                vec![
+                    crate::Facility::TradeExchange,
+                    crate::Facility::TransitHub,
+                ],
+            ),
+            (
+                2usize,
+                10usize,
+                10usize,
+                vec![
+                    crate::Facility::HologramTheatre,
+                    crate::Facility::FreightDepot,
+                    crate::Facility::SensorArray,
+                ],
+            ),
+        ] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Dummy {id}"),
+                x,
+                y,
+                population: 3,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities,
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction_name = game.faction_name(owner).to_string();
+        game.log.push(EventLogEntry {
+            category: EventCategory::Economics,
+            message: format!(
+                "BANKRUPTCY: {} scrapped CommandCenter in Repeat Relief to cover debt!",
+                faction_name
+            ),
+            turn: 84,
+        });
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 5;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [(100usize, 6usize, 6usize), (101usize, 7usize, 6usize)] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        run_ai_economy_for_owner(&mut game, owner);
+
+        let base = game.base(0).expect("base must survive");
+        assert_eq!(base.production, ProductionItem::StockpileEnergy);
+    }
+
+    #[test]
+    fn urgent_support_relief_does_not_abort_active_command_center() {
+        let mut game = GameState::new_game(16, 16, 9);
+        let owner = game.ai_owner();
+        game.turn = 80;
+        game.units.clear();
+        game.bases.clear();
+        for tile in &mut game.tiles {
+            tile.unit = None;
+            tile.base = None;
+            tile.terrain = Terrain::Flat;
+            tile.moisture = 60;
+        }
+
+        game.bases.push(Base {
+            id: 0,
+            owner,
+            name: "Queued Relief".to_string(),
+            x: 6,
+            y: 6,
+            population: 4,
+            nutrients_stock: 0,
+            minerals_stock: 24,
+            production: ProductionItem::CommandCenter,
+            production_queue: Vec::new(),
+            facilities: vec![crate::Facility::TradeExchange],
+            governor_mode: GovernorMode::Off,
+        });
+        game.tiles[6 * game.width + 6].base = Some(0);
+
+        for (id, x, y) in [(1usize, 8usize, 6usize), (2usize, 10usize, 10usize)] {
+            game.bases.push(Base {
+                id,
+                owner,
+                name: format!("Dummy {id}"),
+                x,
+                y,
+                population: 2,
+                nutrients_stock: 0,
+                minerals_stock: 0,
+                production: ProductionItem::Former,
+                production_queue: Vec::new(),
+                facilities: Vec::new(),
+                governor_mode: GovernorMode::Off,
+            });
+            game.tiles[y * game.width + x].base = Some(id);
+        }
+
+        let faction_name = game.faction_name(owner).to_string();
+        game.log.push(EventLogEntry {
+            category: EventCategory::Economics,
+            message: format!(
+                "BANKRUPTCY: {} scrapped CommandCenter in Queued Relief to cover debt!",
+                faction_name
+            ),
+            turn: 74,
+        });
+
+        let faction = game.faction_mut(owner).expect("AI faction must exist");
+        faction.energy = 5;
+        if !faction.known_techs.contains(&Tech::IndustrialBase) {
+            faction.known_techs.push(Tech::IndustrialBase);
+        }
+        if !faction.known_techs.contains(&Tech::InformationNetworks) {
+            faction.known_techs.push(Tech::InformationNetworks);
+        }
+
+        for (unit_id, x, y) in [
+            (100usize, 6usize, 6usize),
+            (101usize, 5usize, 6usize),
+            (102usize, 7usize, 6usize),
+            (103usize, 8usize, 6usize),
+            (104usize, 6usize, 5usize),
+            (105usize, 8usize, 5usize),
+        ] {
+            game.tiles[y * game.width + x].unit = Some(unit_id);
+            game.units.push(Unit {
+                id: unit_id,
+                owner,
+                kind: UnitKind::ScoutPatrol,
+                design_index: 0,
+                x,
+                y,
+                moves_left: 1,
+                hp: 10,
+                experience: 0,
+                alive: true,
+                cargo_unit_ids: Vec::new(),
+                activity: UnitActivity::None,
+            });
+        }
+
+        run_ai_economy_for_owner(&mut game, owner);
+
+        let base = game.base(0).expect("base must survive");
+        assert_eq!(base.production, ProductionItem::CommandCenter);
     }
 
     #[test]
