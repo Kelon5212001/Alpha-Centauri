@@ -2642,6 +2642,7 @@ fn facility_name(facility: Facility) -> &'static str {
         Facility::HologramTheatre => "HologramTheatre",
         Facility::BioenhancementCenter => "BioenhancementCenter",
         Facility::ResearchHospital => "ResearchHospital",
+        Facility::FusionLab => "FusionLab",
     }
 }
 

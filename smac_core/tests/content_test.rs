@@ -227,7 +227,7 @@ fn content_name_mapping_for_tech_and_units_is_stable() {
 fn production_definitions_load_and_match_runtime_mapping() {
     let definitions = load_production_definitions().expect("bundled production JSON should parse");
 
-    assert_eq!(definitions.len(), 43);
+    assert_eq!(definitions.len(), 44);
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "former"));
@@ -353,7 +353,7 @@ fn production_definitions_load_and_match_runtime_mapping() {
 fn facility_definitions_load_and_match_runtime_mapping() {
     let definitions = load_facility_definitions().expect("bundled facility JSON should parse");
 
-    assert_eq!(definitions.len(), 19);
+    assert_eq!(definitions.len(), 20);
     assert_eq!(facility_name(Facility::NetworkNode), "Network Node");
     assert_eq!(facility_maintenance(Facility::PerimeterDefense), 2);
     assert_eq!(

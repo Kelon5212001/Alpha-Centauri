@@ -273,5 +273,17 @@
       "minerals": 0,
       "energy": 2
     }
+  },
+  {
+    "id": "fusion_lab",
+    "name": "Fusion Lab",
+    "maintenance": 3,
+    "defense_bonus": 0,
+    "stability_bonus": 0,
+    "yield_bonus": {
+      "nutrients": 0,
+      "minerals": 0,
+      "energy": 5
+    }
   }
 ]

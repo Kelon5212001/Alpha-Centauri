@@ -359,6 +359,7 @@ pub enum ProductionItem {
     HologramTheatre,
     BioenhancementCenter,
     ResearchHospital,
+    FusionLab,
     WeatherPattern,
     ClinicalImmortality,
     EmpathGuild,
@@ -419,6 +420,7 @@ impl ProductionItem {
             ProductionItem::HologramTheatre => "hologram_theatre",
             ProductionItem::BioenhancementCenter => "bioenhancement_center",
             ProductionItem::ResearchHospital => "research_hospital",
+            ProductionItem::FusionLab => "fusion_lab",
             ProductionItem::WeatherPattern => "weather_pattern",
             ProductionItem::ClinicalImmortality => "clinical_immortality",
             ProductionItem::EmpathGuild => "empath_guild",
@@ -457,11 +459,12 @@ impl ProductionItem {
             ProductionItem::HologramTheatre => Some(Facility::HologramTheatre),
             ProductionItem::BioenhancementCenter => Some(Facility::BioenhancementCenter),
             ProductionItem::ResearchHospital => Some(Facility::ResearchHospital),
+            ProductionItem::FusionLab => Some(Facility::FusionLab),
             _ => None,
         }
     }
 
-    pub fn all() -> [ProductionItem; 41] {
+    pub fn all() -> [ProductionItem; 42] {
         [
             ProductionItem::ScoutPatrol,
             ProductionItem::ColonyPod,
@@ -492,6 +495,7 @@ impl ProductionItem {
             ProductionItem::HologramTheatre,
             ProductionItem::BioenhancementCenter,
             ProductionItem::ResearchHospital,
+            ProductionItem::FusionLab,
             ProductionItem::WeatherPattern,
             ProductionItem::ClinicalImmortality,
             ProductionItem::EmpathGuild,
@@ -541,6 +545,7 @@ impl ProductionItem {
             Facility::HologramTheatre => Some(ProductionItem::HologramTheatre),
             Facility::BioenhancementCenter => Some(ProductionItem::BioenhancementCenter),
             Facility::ResearchHospital => Some(ProductionItem::ResearchHospital),
+            Facility::FusionLab => Some(ProductionItem::FusionLab),
         }
     }
 
@@ -576,6 +581,7 @@ impl ProductionItem {
             "hologram_theatre" => Some(ProductionItem::HologramTheatre),
             "bioenhancement_center" => Some(ProductionItem::BioenhancementCenter),
             "research_hospital" => Some(ProductionItem::ResearchHospital),
+            "fusion_lab" => Some(ProductionItem::FusionLab),
             "weather_pattern" => Some(ProductionItem::WeatherPattern),
             "clinical_immortality" => Some(ProductionItem::ClinicalImmortality),
             "empath_guild" => Some(ProductionItem::EmpathGuild),
@@ -654,6 +660,7 @@ pub enum Facility {
     HologramTheatre,
     BioenhancementCenter,
     ResearchHospital,
+    FusionLab,
 }
 
 impl Facility {
@@ -678,10 +685,11 @@ impl Facility {
             Facility::HologramTheatre => "hologram_theatre",
             Facility::BioenhancementCenter => "bioenhancement_center",
             Facility::ResearchHospital => "research_hospital",
+            Facility::FusionLab => "fusion_lab",
         }
     }
 
-    pub fn all() -> [Facility; 19] {
+    pub fn all() -> [Facility; 20] {
         [
             Facility::RecyclingTanks,
             Facility::PerimeterDefense,
@@ -702,6 +710,7 @@ impl Facility {
             Facility::HologramTheatre,
             Facility::BioenhancementCenter,
             Facility::ResearchHospital,
+            Facility::FusionLab,
         ]
     }
 
@@ -726,6 +735,7 @@ impl Facility {
             "hologram_theatre" => Some(Facility::HologramTheatre),
             "bioenhancement_center" => Some(Facility::BioenhancementCenter),
             "research_hospital" => Some(Facility::ResearchHospital),
+            "fusion_lab" => Some(Facility::FusionLab),
             _ => None,
         }
     }

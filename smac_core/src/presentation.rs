@@ -480,6 +480,7 @@ pub fn production_role_badge(item: ProductionItem) -> &'static str {
         ProductionItem::HologramTheatre => "MRL",
         ProductionItem::BioenhancementCenter => "BIO",
         ProductionItem::ResearchHospital => "MED",
+        ProductionItem::FusionLab => "ENE",
         ProductionItem::WeatherPattern
         | ProductionItem::ClinicalImmortality
         | ProductionItem::EmpathGuild
@@ -524,7 +525,7 @@ pub fn production_role_category(item: ProductionItem) -> &'static str {
         ProductionItem::HologramTheatre => "Morale",
         ProductionItem::BioenhancementCenter => "Biotech",
         ProductionItem::ResearchHospital => "Recovery",
-        ProductionItem::RecyclingTanks | ProductionItem::RecreationCommons => "Economy",
+        ProductionItem::RecyclingTanks | ProductionItem::RecreationCommons | ProductionItem::FusionLab => "Economy",
         ProductionItem::CommandCenter | ProductionItem::MilitaryAcademy => "Command",
         ProductionItem::FieldHospital => "Recovery",
         ProductionItem::WeatherPattern
@@ -609,6 +610,9 @@ pub fn production_role_summary(item: ProductionItem) -> &'static str {
         }
         ProductionItem::ResearchHospital => {
             "Advanced medical complex that accelerates recovery, growth, and scientific throughput."
+        }
+        ProductionItem::FusionLab => {
+            "Advanced energy laboratory that boosts base energy production significantly."
         }
         ProductionItem::WeatherPattern => {
             "Global wonder that stabilizes planetary conditions, protecting against Dust Fall."

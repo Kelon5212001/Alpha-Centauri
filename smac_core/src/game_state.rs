@@ -1218,13 +1218,37 @@ impl GameState {
 
     pub fn tile_visible_to_owner(&self, x: usize, y: usize, owner: usize) -> bool {
         self.tile(x, y)
-            .map(|tile| tile.visible_by_owner.contains(&owner))
+            .map(|tile| {
+                if tile.visible_by_owner.contains(&owner) {
+                    return true;
+                }
+                for other_id in 0..self.factions.len() {
+                    if other_id != owner && self.relations[owner][other_id].status == DiplomacyStatus::Pact {
+                        if tile.visible_by_owner.contains(&other_id) {
+                            return true;
+                        }
+                    }
+                }
+                false
+            })
             .unwrap_or(false)
     }
 
     pub fn tile_explored_by_owner(&self, x: usize, y: usize, owner: usize) -> bool {
         self.tile(x, y)
-            .map(|tile| tile.explored_by_owner.contains(&owner))
+            .map(|tile| {
+                if tile.explored_by_owner.contains(&owner) {
+                    return true;
+                }
+                for other_id in 0..self.factions.len() {
+                    if other_id != owner && self.relations[owner][other_id].status == DiplomacyStatus::Pact {
+                        if tile.explored_by_owner.contains(&other_id) {
+                            return true;
+                        }
+                    }
+                }
+                false
+            })
             .unwrap_or(false)
     }
 
@@ -9277,13 +9301,12 @@ impl GameState {
                 return Err("Another friendly unit is already on that tile.".to_string());
             }
 
-            // Block combat between allies (Treaty or Pact)
-            let status = self.relations[unit_snapshot.owner][defender.owner].status;
-            if status == DiplomacyStatus::Treaty || status == DiplomacyStatus::Pact {
-                return Err(format!(
-                    "Cannot attack ally (status: {:?}).",
-                    status
-                ));
+            // AUTO-DECLARE WAR on Attack
+            if defender.owner != self.native_owner() && unit_snapshot.owner != self.native_owner() {
+                let status = self.relations[unit_snapshot.owner][defender.owner].status;
+                if status != DiplomacyStatus::War {
+                    self.update_diplomacy(unit_snapshot.owner, defender.owner, DiplomacyStatus::War)?;
+                }
             }
 
             self.resolve_combat(unit_id, defender_id, target_x, target_y);
@@ -9312,21 +9335,6 @@ impl GameState {
                             owner,
                             DiplomacyStatus::War,
                         );
-                    }
-
-                    // MUTUAL DEFENSE: Allies of the defender declare war on the attacker
-                    let previous_owner_allies: Vec<usize> = (0..self.factions.len())
-                        .filter(|&id| {
-                            id != owner 
-                                && id != unit_snapshot.owner
-                                && self.relations[owner][id].status == DiplomacyStatus::Pact
-                        })
-                        .collect();
-                    
-                    for ally_id in previous_owner_allies {
-                        if self.relations[unit_snapshot.owner][ally_id].status != DiplomacyStatus::War {
-                            let _ = self.update_diplomacy(unit_snapshot.owner, ally_id, DiplomacyStatus::War);
-                        }
                     }
                 }
 
@@ -10032,19 +10040,46 @@ impl GameState {
             return Err("Cannot update diplomacy with self.".to_string());
         }
 
+        let old_status = self.relations[faction_a][faction_b].status;
+        if old_status == status {
+            return Ok(());
+        }
+
         self.relations[faction_a][faction_b].status = status;
         self.relations[faction_b][faction_a].status = status;
 
         let name_a = self.faction_name(faction_a).to_string();
         let name_b = self.faction_name(faction_b).to_string();
 
-        self.push_event_log(
-            EventCategory::Diplomacy,
-            format!(
-                "DIPLOMACY: {} and {} have signed a {:?}.",
-                name_a, name_b, status
-            ),
-        );
+        let msg = match status {
+            DiplomacyStatus::War => format!("DIPLOMACY: {} has declared war on {}!", name_a, name_b),
+            DiplomacyStatus::Truce => format!("DIPLOMACY: {} and {} have signed a Truce.", name_a, name_b),
+            DiplomacyStatus::Treaty => format!("DIPLOMACY: {} and {} have signed a Treaty.", name_a, name_b),
+            DiplomacyStatus::Pact => format!("DIPLOMACY: {} and {} have signed a Pact.", name_a, name_b),
+        };
+        self.push_event_log(EventCategory::Diplomacy, msg);
+
+        if status == DiplomacyStatus::War {
+            // Mutual defense cascade: If B has a Pact with ally_b, ally_b declares war on A
+            let allies_b: Vec<usize> = (0..self.factions.len())
+                .filter(|&id| id != faction_b && id != faction_a && self.relations[faction_b][id].status == DiplomacyStatus::Pact)
+                .collect();
+            for ally_id in allies_b {
+                if self.relations[faction_a][ally_id].status != DiplomacyStatus::War {
+                    let _ = self.update_diplomacy(faction_a, ally_id, DiplomacyStatus::War);
+                }
+            }
+
+            // Mutual defense cascade: If A has a Pact with ally_a, ally_a declares war on B
+            let allies_a: Vec<usize> = (0..self.factions.len())
+                .filter(|&id| id != faction_a && id != faction_b && self.relations[faction_a][id].status == DiplomacyStatus::Pact)
+                .collect();
+            for ally_id in allies_a {
+                if self.relations[faction_b][ally_id].status != DiplomacyStatus::War {
+                    let _ = self.update_diplomacy(faction_b, ally_id, DiplomacyStatus::War);
+                }
+            }
+        }
 
         if faction_a == self.player_owner() || faction_b == self.player_owner() {
             self.update_player_visibility();
@@ -11312,21 +11347,6 @@ impl GameState {
         {
             if self.relations[attacker.owner][defender.owner].status != DiplomacyStatus::War {
                 let _ = self.update_diplomacy(attacker.owner, defender.owner, DiplomacyStatus::War);
-            }
-
-            // MUTUAL DEFENSE: Allies of the defender declare war on the attacker
-            let defender_allies: Vec<usize> = (0..self.factions.len())
-                .filter(|&id| {
-                    id != defender.owner 
-                        && id != attacker.owner
-                        && self.relations[defender.owner][id].status == DiplomacyStatus::Pact
-                })
-                .collect();
-            
-            for ally_id in defender_allies {
-                if self.relations[attacker.owner][ally_id].status != DiplomacyStatus::War {
-                    let _ = self.update_diplomacy(attacker.owner, ally_id, DiplomacyStatus::War);
-                }
             }
         }
 

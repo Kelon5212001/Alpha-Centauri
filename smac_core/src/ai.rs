@@ -1691,6 +1691,7 @@ fn is_ai_optional_maintenance_facility(facility: crate::Facility) -> bool {
             | crate::Facility::HologramTheatre
             | crate::Facility::BioenhancementCenter
             | crate::Facility::ResearchHospital
+            | crate::Facility::FusionLab
     )
 }
 
@@ -2041,6 +2042,15 @@ fn choose_ai_production_for_base(
         && !base.facilities.contains(&crate::Facility::MineralRefinery)
     {
         return crate::ProductionItem::MineralRefinery;
+    }
+
+    if state.is_production_available(owner, crate::ProductionItem::FusionLab)
+        && !base.facilities.contains(&crate::Facility::FusionLab)
+        && !maintenance_overbuilt
+        && !base_optional_overbuilt
+        && (signals.energy_pressure || yields.energy >= 8)
+    {
+        return crate::ProductionItem::FusionLab;
     }
 
     if signals.energy_pressure
@@ -3383,8 +3393,12 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     continue;
                 }
 
-                // Check if unit should retreat even if in a group
-                if should_ai_unit_retreat(state, &unit) {
+                // Check if unit should retreat even if in a group, or if this is a lost cause attack
+                let is_lost_cause = is_attacking
+                    && group_size < minimum_attack_group_size
+                    && !is_unit_on_friendly_base(state, &unit);
+
+                if is_lost_cause || should_ai_unit_retreat(state, &unit) {
                     if try_ai_retreat(state, &unit) {
                         continue;
                     }
@@ -4126,7 +4140,31 @@ fn try_ai_move_toward(
 }
 
 fn should_ai_unit_retreat(state: &GameState, unit: &crate::Unit) -> bool {
-    if unit.kind == UnitKind::ColonyPod || unit.kind == UnitKind::Former {
+    if unit.kind == UnitKind::ColonyPod || unit.kind == UnitKind::SeaColonyPod || unit.kind == UnitKind::Former {
+        // Non-combat units should retreat if there is any enemy combat unit nearby, and they are not protected by a friendly combat unit on their tile.
+        let on_friendly_base = is_unit_on_friendly_base(state, unit);
+        if on_friendly_base {
+            return false;
+        }
+
+        let has_friendly_defender = state.units.iter().any(|u| {
+            u.alive
+                && u.owner == unit.owner
+                && u.id != unit.id
+                && u.x == unit.x
+                && u.y == unit.y
+                && is_ai_combat_unit(state, u)
+        });
+        if has_friendly_defender {
+            return false;
+        }
+
+        // Check if any enemy is within 3 tiles
+        for enemy in state.units.iter().filter(|u| u.alive && state.relations[unit.owner][u.owner].status == crate::DiplomacyStatus::War) {
+            if state.distance(unit.x, unit.y, enemy.x, enemy.y) <= 3 {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -4816,13 +4854,12 @@ fn safest_retreat_step(
 }
 
 fn retreat_threat_score(state: &GameState, owner: usize, x: usize, y: usize) -> i32 {
-    let rival_owner = rival_owner(state, owner);
     let mut threat = 0;
 
     for unit in state
         .units
         .iter()
-        .filter(|unit| unit.alive && unit.owner == rival_owner)
+        .filter(|unit| unit.alive && !is_ai_ally(state, owner, unit.owner))
     {
         let d = state.distance(x, y, unit.x, unit.y);
         if d <= 1 {
@@ -4834,7 +4871,7 @@ fn retreat_threat_score(state: &GameState, owner: usize, x: usize, y: usize) -> 
         }
     }
 
-    for base in state.bases.iter().filter(|base| base.owner == rival_owner) {
+    for base in state.bases.iter().filter(|base| !is_ai_ally(state, owner, base.owner)) {
         let distance = manhattan(x, y, base.x, base.y);
         if distance <= 2 {
             threat += 1;
@@ -4948,13 +4985,6 @@ fn best_scored_target_for_owner(
     best.map(|b| (b.0, b.1))
 }
 
-fn rival_owner(state: &GameState, owner: usize) -> usize {
-    if owner == state.player_owner() {
-        state.ai_owner()
-    } else {
-        state.player_owner()
-    }
-}
 
 fn exploratory_target(
     state: &GameState,

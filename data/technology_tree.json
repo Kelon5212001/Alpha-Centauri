@@ -295,7 +295,7 @@
     "prerequisites": ["advanced_field_theory"],
     "enables": {
       "units": [],
-      "facilities": [],
+      "facilities": ["fusion_lab"],
       "secret_projects": ["singularity_containment", "black_hole_harvester"],
       "weapons": ["planet_buster"],
       "armor": ["monolith_armor"],

@@ -288,5 +288,12 @@
     "name": "Orbital Defense",
     "cost": 60,
     "build_kind": "special"
+  },
+  {
+    "id": "fusion_lab",
+    "name": "Fusion Lab",
+    "cost": 50,
+    "build_kind": "facility",
+    "facility_id": "fusion_lab"
   }
 ]
