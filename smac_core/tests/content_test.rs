@@ -227,7 +227,7 @@ fn content_name_mapping_for_tech_and_units_is_stable() {
 fn production_definitions_load_and_match_runtime_mapping() {
     let definitions = load_production_definitions().expect("bundled production JSON should parse");
 
-    assert_eq!(definitions.len(), 44);
+    assert_eq!(definitions.len(), 45);
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "former"));

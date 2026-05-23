@@ -266,6 +266,12 @@
     "build_kind": "project"
   },
   {
+    "id": "tectonic_buster",
+    "name": "Tectonic Buster Project",
+    "cost": 400,
+    "build_kind": "project"
+  },
+  {
     "id": "stockpile_energy",
     "name": "Stockpile Energy",
     "cost": 0,

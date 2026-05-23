@@ -1734,7 +1734,7 @@ impl GameState {
             Terrain::Flat => 1,
             Terrain::Ocean => 1,
             Terrain::Fungus => 3,
-            Terrain::Crater => 3,
+            Terrain::Crater | Terrain::NuclearCrater => 3,
         }
     }
 
@@ -1914,6 +1914,7 @@ impl GameState {
                 Some(Terrain::Rocky) => "#696056",
                 Some(Terrain::Fungus) => "#883680",
                 Some(Terrain::Crater) => "#222222",
+                Some(Terrain::NuclearCrater) => "#111111",
                 None => "#386048",
             },
             presentation::MapOverlay::Yields => {
@@ -4816,6 +4817,7 @@ impl GameState {
                             SecretProject::ManifoldDrive => ProductionItem::ManifoldDrive,
                             SecretProject::SingularityContainment => ProductionItem::SingularityContainment,
                             SecretProject::BlackHoleHarvester => ProductionItem::BlackHoleHarvester,
+                            SecretProject::TectonicBuster => ProductionItem::TectonicBuster,
                         })))
                         .collect(),
                     jump_queue_gap_label_text: Some("Jump Queue Gap"),
@@ -5232,6 +5234,9 @@ impl GameState {
                 }
                 crate::model::SecretProject::BlackHoleHarvester => {
                     ProductionItem::BlackHoleHarvester
+                }
+                crate::model::SecretProject::TectonicBuster => {
+                    ProductionItem::TectonicBuster
                 }
             };
 
@@ -9283,6 +9288,11 @@ impl GameState {
         // Interception Check: Patrolling aircraft can intercept movement
         if let Some(intercepting_id) = self.find_interceptor(unit_id, target_x, target_y) {
             self.resolve_combat(intercepting_id, unit_id, target_x, target_y);
+
+            // Consume interceptor's activity and moves
+            self.set_unit_activity(intercepting_id, UnitActivity::None);
+            self.set_unit_moves(intercepting_id, 0);
+
             // If unit died, stop movement
             if !self.unit(unit_id).map(|u| u.alive).unwrap_or(false) {
                 return Ok(());
@@ -10097,7 +10107,11 @@ impl GameState {
                 continue;
             }
 
-            if unit.activity != UnitActivity::Patrol {
+            let is_patrol = unit.activity == UnitActivity::Patrol;
+            let is_intercept = unit.activity == UnitActivity::Intercept;
+            let is_scramble = unit.activity == UnitActivity::Scramble;
+
+            if !is_patrol && !is_intercept && !is_scramble {
                 continue;
             }
 
@@ -10105,9 +10119,20 @@ impl GameState {
                 continue;
             }
 
-            // Must be adjacent to the target tile
-            if !Self::is_adjacent(unit.x, unit.y, x, y) && (unit.x != x || unit.y != y) {
+            // Determine allowed range (Chebyshev distance)
+            let dist = (unit.x as isize - x as isize).abs().max((unit.y as isize - y as isize).abs());
+
+            if is_patrol && dist > 1 {
                 continue;
+            }
+            if is_intercept && dist > 3 {
+                continue;
+            }
+            if is_scramble {
+                let stationed_at_base = self.tile(unit.x, unit.y).and_then(|t| t.base).is_some();
+                if dist > 3 || !stationed_at_base {
+                    continue;
+                }
             }
 
             // Air Superiority logic: only intercept aircraft if we have the ability?
@@ -11392,7 +11417,7 @@ impl GameState {
                 }
 
                 // 3. Alter Terrain
-                self.tiles[idx].terrain = Terrain::Crater;
+                self.tiles[idx].terrain = Terrain::NuclearCrater;
                 self.tiles[idx].improvement = None;
                 self.tiles[idx].elevation = -10;
             }
@@ -11402,7 +11427,7 @@ impl GameState {
 
             // Toxicity Reset: Planet Busters create so much pollution they actually "reset" the local ecosystem
             if let Some(f) = self.faction_mut(attacker.owner) {
-                f.planet_toxicity = (f.planet_toxicity / 2).max(0);
+                f.planet_toxicity = 0;
             }
             return;
         }
@@ -12005,6 +12030,21 @@ impl GameState {
         None
     }
 
+    pub fn complete_production_for_testing(&mut self, base_id: usize, item: ProductionItem) -> bool {
+        let owner = if let Some(base) = self.bases.iter().find(|b| b.id == base_id) {
+            base.owner
+        } else {
+            return false;
+        };
+        let cost = self.production_cost(owner, item);
+        if let Some(base) = self.bases.iter_mut().find(|b| b.id == base_id) {
+            base.production = item;
+            base.minerals_stock = cost;
+        }
+        self.complete_production(base_id);
+        true
+    }
+
     fn complete_production(&mut self, base_id: usize) {
         let base = &self.bases[base_id];
         let item = base.production;
@@ -12104,6 +12144,7 @@ impl GameState {
                 SecretProject::ManifoldDrive => ProductionItem::ManifoldDrive,
                 SecretProject::SingularityContainment => ProductionItem::SingularityContainment,
                 SecretProject::BlackHoleHarvester => ProductionItem::BlackHoleHarvester,
+                SecretProject::TectonicBuster => ProductionItem::TectonicBuster,
             },
         );
         let faction_name = self.faction_name(owner).to_string();
@@ -12132,6 +12173,28 @@ impl GameState {
                 EventCategory::SecretProject,
                 format!("{faction_name} construction of {project_name} in {base_name} was aborted! {completed_faction_name} finished it first."),
             );
+        }
+
+        if project == SecretProject::TectonicBuster {
+            if let Some(faction) = self.factions.get_mut(owner) {
+                faction.planet_toxicity = 0;
+                let pb_design = crate::UnitDesign {
+                    name: "Tectonic Buster".to_string(),
+                    chassis: crate::Chassis::Aircraft,
+                    weapon: crate::Weapon::PlanetBuster(20),
+                    armor: crate::Armor::SynthMetal(1),
+                    cost: 100,
+                    abilities: Vec::new(),
+                };
+                faction.unit_designs.push(pb_design.clone());
+                let design_idx = faction.unit_designs.len() - 1;
+                let kind = UnitKind::CustomUnit(pb_design);
+                if let Some(base) = self.bases.iter().find(|b| b.owner == owner) {
+                    let bx = base.x;
+                    let by = base.y;
+                    self.spawn_unit_with_design(owner, kind, design_idx, bx, by, 0);
+                }
+            }
         }
 
         if owner == self.player_owner() || project == SecretProject::EmpathGuild {

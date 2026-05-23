@@ -14,6 +14,7 @@ pub enum Terrain {
     Rocky,
     Fungus,
     Crater,
+    NuclearCrater,
 }
 
 impl Terrain {
@@ -44,7 +45,7 @@ impl Terrain {
                 minerals: 0,
                 energy: 1,
             },
-            Terrain::Crater => Yields {
+            Terrain::Crater | Terrain::NuclearCrater => Yields {
                 nutrients: 0,
                 minerals: 0,
                 energy: 0,
@@ -53,11 +54,11 @@ impl Terrain {
     }
 
     pub fn is_land(self) -> bool {
-        self != Terrain::Ocean && self != Terrain::Crater
+        self != Terrain::Ocean && self != Terrain::Crater && self != Terrain::NuclearCrater
     }
 
     pub fn is_ocean(self) -> bool {
-        self == Terrain::Ocean || self == Terrain::Crater
+        self == Terrain::Ocean || self == Terrain::Crater || self == Terrain::NuclearCrater
     }
 }
 
@@ -306,6 +307,8 @@ pub enum UnitActivity {
     None,
     Sentry,
     Patrol,
+    Intercept,
+    Scramble,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -367,6 +370,7 @@ pub enum ProductionItem {
     ManifoldDrive,
     SingularityContainment,
     BlackHoleHarvester,
+    TectonicBuster,
     ProbeTeam,
     SeaTransport,
     CustomUnit(usize),
@@ -385,6 +389,7 @@ pub enum SecretProject {
     ManifoldDrive,
     SingularityContainment,
     BlackHoleHarvester,
+    TectonicBuster,
 }
 
 impl ProductionItem {
@@ -428,6 +433,7 @@ impl ProductionItem {
             ProductionItem::ManifoldDrive => "manifold_drive",
             ProductionItem::SingularityContainment => "singularity_containment",
             ProductionItem::BlackHoleHarvester => "black_hole_harvester",
+            ProductionItem::TectonicBuster => "tectonic_buster",
             ProductionItem::ProbeTeam => "probe_team",
             ProductionItem::SeaTransport => "sea_transport",
             ProductionItem::CustomUnit(_) => "custom_unit",
@@ -464,7 +470,7 @@ impl ProductionItem {
         }
     }
 
-    pub fn all() -> [ProductionItem; 42] {
+    pub fn all() -> [ProductionItem; 43] {
         [
             ProductionItem::ScoutPatrol,
             ProductionItem::ColonyPod,
@@ -503,6 +509,7 @@ impl ProductionItem {
             ProductionItem::ManifoldDrive,
             ProductionItem::SingularityContainment,
             ProductionItem::BlackHoleHarvester,
+            ProductionItem::TectonicBuster,
             ProductionItem::ProbeTeam,
             ProductionItem::StockpileEnergy,
             ProductionItem::SkyHydroponics,
@@ -520,6 +527,7 @@ impl ProductionItem {
             ProductionItem::ManifoldDrive => Some(SecretProject::ManifoldDrive),
             ProductionItem::SingularityContainment => Some(SecretProject::SingularityContainment),
             ProductionItem::BlackHoleHarvester => Some(SecretProject::BlackHoleHarvester),
+            ProductionItem::TectonicBuster => Some(SecretProject::TectonicBuster),
             _ => None,
         }
     }
@@ -589,6 +597,7 @@ impl ProductionItem {
             "manifold_drive" => Some(ProductionItem::ManifoldDrive),
             "singularity_containment" => Some(ProductionItem::SingularityContainment),
             "black_hole_harvester" => Some(ProductionItem::BlackHoleHarvester),
+            "tectonic_buster" => Some(ProductionItem::TectonicBuster),
             "probe_team" => Some(ProductionItem::ProbeTeam),
             "sea_transport" => Some(ProductionItem::SeaTransport),
             "stockpile_energy" => Some(ProductionItem::StockpileEnergy),
@@ -610,6 +619,7 @@ impl SecretProject {
             SecretProject::ManifoldDrive => "manifold_drive",
             SecretProject::SingularityContainment => "singularity_containment",
             SecretProject::BlackHoleHarvester => "black_hole_harvester",
+            SecretProject::TectonicBuster => "tectonic_buster",
         }
     }
 
@@ -622,11 +632,12 @@ impl SecretProject {
             "manifold_drive" => Some(SecretProject::ManifoldDrive),
             "singularity_containment" => Some(SecretProject::SingularityContainment),
             "black_hole_harvester" => Some(SecretProject::BlackHoleHarvester),
+            "tectonic_buster" => Some(SecretProject::TectonicBuster),
             _ => None,
         }
     }
 
-    pub fn all() -> [SecretProject; 7] {
+    pub fn all() -> [SecretProject; 8] {
         [
             SecretProject::WeatherPattern,
             SecretProject::ClinicalImmortality,
@@ -635,6 +646,7 @@ impl SecretProject {
             SecretProject::ManifoldDrive,
             SecretProject::SingularityContainment,
             SecretProject::BlackHoleHarvester,
+            SecretProject::TectonicBuster,
         ]
     }
 }

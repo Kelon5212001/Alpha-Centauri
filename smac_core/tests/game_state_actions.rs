@@ -6277,7 +6277,7 @@ fn planet_buster_vaporizes_surrounding_area() {
             let tx = 8 + dx;
             let ty = 8 + dy;
             let idx = ty as usize * game.width + tx as usize;
-            assert_eq!(game.tiles[idx].terrain, smac_core::Terrain::Crater);
+            assert_eq!(game.tiles[idx].terrain, smac_core::Terrain::NuclearCrater);
             assert_eq!(game.tiles[idx].elevation, -10);
         }
     }

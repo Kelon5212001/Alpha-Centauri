@@ -2302,6 +2302,9 @@ fn choose_ai_production_for_base(
                 crate::model::SecretProject::BlackHoleHarvester => {
                     crate::ProductionItem::BlackHoleHarvester
                 }
+                crate::model::SecretProject::TectonicBuster => {
+                    crate::ProductionItem::TectonicBuster
+                }
             };
 
             if state.is_production_available(owner, item) {
@@ -3241,10 +3244,20 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         if let Some(target_base_id) = choose_ai_offensive_base_target(state, owner) {
             if let Some(target_base) = state.base(target_base_id) {
                 combat_unit_ids.retain(|&id| !drop_pod_ids.contains(&id));
+                let count = drop_pod_ids.len();
+                let tx = target_base.x;
+                let ty = target_base.y;
                 battle_groups.push(AiBattleGroup {
-                    objective: AiObjective::Assemble(target_base.x, target_base.y), // Direct teleport target
+                    objective: AiObjective::Assemble(tx, ty), // Direct teleport target
                     unit_ids: drop_pod_ids,
                 });
+                state.push_log(format!(
+                    "TACTICS: {} formed a Shock Group of {} drop pods targeting ({}, {}).",
+                    state.faction_name(owner),
+                    count,
+                    tx,
+                    ty
+                ));
             }
         }
     }
@@ -3381,14 +3394,20 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     }
                 }
 
-                // Air Patrol logic
+                // Air Patrol, Intercept, or Scramble logic
                 if state.unit_is_aircraft(unit.id)
                     && state.tile(unit.x, unit.y).and_then(|t| t.base).is_some()
                     && unit.moves_left == 1
                 {
+                    let choice = state.sample_noise(unit.id as i32, state.turn as i32, 999) % 3;
+                    let activity = match choice {
+                        0 => crate::model::UnitActivity::Patrol,
+                        1 => crate::model::UnitActivity::Intercept,
+                        _ => crate::model::UnitActivity::Scramble,
+                    };
                     let _ = state.apply_action(GameAction::SetUnitActivity {
                         unit_id: unit.id,
-                        activity: crate::model::UnitActivity::Patrol,
+                        activity,
                     });
                     continue;
                 }
@@ -4023,6 +4042,73 @@ fn choose_ai_colony_target(state: &GameState, unit: &crate::Unit) -> Option<(usi
     best_spaced.or(best_relaxed).map(|(x, y, _)| (x, y))
 }
 
+fn try_ai_orbital_insertion(
+    state: &mut GameState,
+    unit_id: usize,
+    target_x: usize,
+    target_y: usize,
+) -> bool {
+    let unit = match state.unit(unit_id) {
+        Some(u) => u,
+        None => return false,
+    };
+    let owner = unit.owner;
+
+    // Check if target tile is explored land tile
+    let target_is_valid = state.tile(target_x, target_y)
+        .map(|t| t.terrain.is_land() && t.explored_by_owner.contains(&owner))
+        .unwrap_or(false);
+
+    if target_is_valid {
+        // Try to move/attack directly at target_x, target_y first
+        if state.apply_action(GameAction::MoveUnit {
+            unit_id,
+            target_x,
+            target_y,
+        }).is_ok() {
+            state.push_log(format!(
+                "SHOCK TACTICS: AI Unit {} (Drop Pod) orbital-inserted to ({}, {}).",
+                unit_id, target_x, target_y
+            ));
+            return true;
+        }
+
+        // If direct move/attack failed, try to insert to an adjacent empty land tile
+        for dy in -1isize..=1 {
+            for dx in -1isize..=1 {
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+                let tx = target_x as isize + dx;
+                let ty = target_y as isize + dy;
+                if tx >= 0 && ty >= 0 && tx < state.width as isize && ty < state.height as isize {
+                    let tx = tx as usize;
+                    let ty = ty as usize;
+                    let is_empty_land = state.tile(tx, ty).map(|t| {
+                        t.terrain.is_land()
+                        && t.explored_by_owner.contains(&owner)
+                        && t.unit.is_none()
+                    }).unwrap_or(false);
+                    if is_empty_land {
+                        if state.apply_action(GameAction::MoveUnit {
+                            unit_id,
+                            target_x: tx,
+                            target_y: ty,
+                        }).is_ok() {
+                            state.push_log(format!(
+                                "SHOCK TACTICS: AI Unit {} (Drop Pod) orbital-inserted next to target at ({}, {}).",
+                                unit_id, tx, ty
+                            ));
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 fn try_ai_move_toward(
     state: &mut GameState,
     unit_id: usize,
@@ -4032,6 +4118,12 @@ fn try_ai_move_toward(
     target_y: usize,
 ) -> bool {
     let current_distance = manhattan(from_x, from_y, target_x, target_y);
+
+    if state.unit_has_ability(unit_id, Ability::DropPod) && current_distance > 1 {
+        if try_ai_orbital_insertion(state, unit_id, target_x, target_y) {
+            return true;
+        }
+    }
     
     // If we are a sea unit targeting land, we might want to stay adjacent (dist 1)
     let is_sea_unit = state.unit_is_sea_unit(unit_id);

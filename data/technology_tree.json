@@ -296,7 +296,7 @@
     "enables": {
       "units": [],
       "facilities": ["fusion_lab"],
-      "secret_projects": ["singularity_containment", "black_hole_harvester"],
+      "secret_projects": ["singularity_containment", "black_hole_harvester", "tectonic_buster"],
       "weapons": ["planet_buster"],
       "armor": ["monolith_armor"],
       "abilities": [],

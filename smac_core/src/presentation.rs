@@ -162,6 +162,7 @@ pub fn terrain_name(terrain: Terrain) -> &'static str {
         Terrain::Rocky => "Rocky",
         Terrain::Fungus => "Xenofungus",
         Terrain::Crater => "Nuclear Crater",
+        Terrain::NuclearCrater => "Nuclear Crater",
     }
 }
 
@@ -173,6 +174,7 @@ pub fn terrain_symbol(terrain: Terrain) -> &'static str {
         Terrain::Rocky => "^",
         Terrain::Fungus => "F",
         Terrain::Crater => "X",
+        Terrain::NuclearCrater => "X",
     }
 }
 
@@ -487,7 +489,8 @@ pub fn production_role_badge(item: ProductionItem) -> &'static str {
         | ProductionItem::OrbitalElevator
         | ProductionItem::ManifoldDrive
         | ProductionItem::SingularityContainment
-        | ProductionItem::BlackHoleHarvester => "✧WP",
+        | ProductionItem::BlackHoleHarvester
+        | ProductionItem::TectonicBuster => "✧WP",
         ProductionItem::ProbeTeam => "ESP",
         ProductionItem::SeaTransport => unit_role_badge(UnitKind::SeaTransport),
         ProductionItem::CustomUnit(_) => "✧CST",
@@ -534,7 +537,8 @@ pub fn production_role_category(item: ProductionItem) -> &'static str {
         | ProductionItem::OrbitalElevator
         | ProductionItem::ManifoldDrive
         | ProductionItem::SingularityContainment
-        | ProductionItem::BlackHoleHarvester => "Wonder",
+        | ProductionItem::BlackHoleHarvester
+        | ProductionItem::TectonicBuster => "Wonder",
         ProductionItem::CustomUnit(_) => "Custom",
         ProductionItem::StockpileEnergy => "Wealth",
         ProductionItem::SkyHydroponics
@@ -635,6 +639,9 @@ pub fn production_role_summary(item: ProductionItem) -> &'static str {
         ProductionItem::BlackHoleHarvester => {
             "Global wonder that extracts energy from the void, essential for Black Hole Harvesting."
         }
+        ProductionItem::TectonicBuster => {
+            "Global wonder that harnesses tectonic forces, resetting faction toxicity and granting a free Tectonic Buster."
+        }
         ProductionItem::CustomUnit(_) => {
             "A unit designed in your workshop with specialized components."
         }
@@ -694,6 +701,9 @@ pub fn production_tooltip_summary(item: ProductionItem) -> String {
             }
             SecretProject::BlackHoleHarvester => {
                 parts.push("Effect: Draws infinite power from the void. Combined with Singularity Containment, grants Singularity Mastery victory.".to_string());
+            }
+            SecretProject::TectonicBuster => {
+                parts.push("Effect: Resets faction toxicity to 0 and spawns a free Tectonic Buster unit.".to_string());
             }
         }
     }

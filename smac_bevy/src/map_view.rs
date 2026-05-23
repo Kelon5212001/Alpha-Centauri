@@ -105,7 +105,7 @@ fn sync_map_terrain(
                     Some(Terrain::Rolling) => assets.rolling.clone(),
                     Some(Terrain::Rocky) => assets.rocky.clone(),
                     Some(Terrain::Fungus) => assets.fungus.clone(),
-                    Some(Terrain::Crater) => assets.crater.clone(),
+                    Some(Terrain::Crater) | Some(Terrain::NuclearCrater) => assets.crater.clone(),
                     _ => assets.ocean.clone(),
                 };
 
