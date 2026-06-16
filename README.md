@@ -2,7 +2,7 @@
 
 This repository is a Rust-first SMAC-inspired strategy project with a playable `egui` front end, a large deterministic core crate, bundled JSON game content, and an embedded `glsmac/` reference codebase.
 
-This README reflects the current repository state as of 2026-05-17 after the simulation-stabilization work, the Bevy client transition, advanced-warfare AI, the planetary-council diplomacy foundation, Sprint O stability hardening, Sprint P sweep recovery, Sprint Q expansion-outlier elimination, and Sprint R council-aware AI strategy.
+This README reflects the current repository state as of 2026-05-17 after the simulation-stabilization work, the Bevy client transition, advanced-warfare AI, the planetary-council diplomacy foundation, Sprint O stability hardening, Sprint P sweep recovery, Sprint Q expansion-outlier elimination, Sprint R council-aware AI strategy, and Sprint S midgame conflict pressure.
 
 ## Current State
 
@@ -101,8 +101,8 @@ Current verified demo behavior on that profile:
 Current known gameplay limitations on that same profile:
 
 - the support-collapse regression remains removed, and the current sampled sweep no longer has low-expansion outliers
-- the remaining simulation weaknesses are now more about unrest, pacing, and midgame drama than survival or basic expansion
-- the later turns are still more economy/research churn than warfare, captures, or project races
+- the remaining simulation weaknesses are now more about making conflict legally/diplomatically consistent than making conflict happen at all
+- Sprint S made raids, captures, and rivalry pressure more active; Sprint T is focused on ensuring first strikes, betrayals, defensive responses, and wartime combat are categorized correctly
 
 Current verified multi-seed sweep signal on `10` seeds (`1` through `10`) for the same `20x20` / `100`-turn profile:
 
@@ -110,7 +110,7 @@ Current verified multi-seed sweep signal on `10` seeds (`1` through `10`) for th
 - famine events are currently `0/10`, support-disband events are `0/10`, and starvation events are `0/10`
 - the player side now clears `3` bases in all sampled runs
 - the AI side now clears `3` bases in all sampled runs
-- the current sweep is no longer flagging broad expansion failures; the remaining work has shifted to stronger strategy, conflict generation, and political behavior
+- the current sweep is no longer flagging broad expansion failures; Sprint S added stronger conflict pressure; the live work has shifted to Sprint T diplomacy/combat consistency, strategic reversals, and alliance mechanics
 
 Current transcendence pacing rule:
 
@@ -159,9 +159,9 @@ Current validated bundled content counts:
 
 - 5 factions
 - 17 techs
-- 14 units
-- 19 facilities
-- 41 production items
+- 16 units
+- 20 facilities
+- 45 production items
 
 ## Repository Layout
 
@@ -231,7 +231,7 @@ Current Bevy build notes:
 Observed validation result:
 
 ```text
-Content validation passed: 5 factions, 17 techs, 14 units, 19 facilities, 41 production items.
+Content validation passed: 5 factions, 17 techs, 16 units, 20 facilities, 45 production items.
 ```
 
 Observed autoplay result on the verified demo profile:
@@ -251,14 +251,20 @@ aggregate | terminal 0 / 10 | bankruptcies 0 | famines 0 | starvation 0 | suppor
 
 ## Current Focus
 
-The visual-transition work is established, and the repo is now in `Phase 4: Advanced Strategy And World Mechanics`.
+The visual-transition work is established, and the repo is now in `Phase 4: Advanced Strategy And World Mechanics`, but Sprint T is deliberately focused on diplomacy/combat consistency before any additional visual expansion.
 
-Immediate next sprint:
+Completed latest sprint:
 
-1. Preserve the restored `0/10` sweep baseline across terminal, famine, starvation, support, and low-expansion metrics.
-2. Increase midgame conflict pressure so the sim produces more border tension, raids, and strategic reversals instead of mostly economic churn.
-3. Keep `smac_bevy` verification lightweight while continuing terrain-transition and presentation work behind that stable gameplay baseline.
-4. Expand council outcomes later into stronger diplomatic victory/campaign-resolution mechanics once the conflict layer is more active.
+- `Sprint S: Midgame Conflict Pressure` is complete. It made raids, contested borders, captures, and faction dominance contests more active.
+
+Live active sprint:
+
+1. Implement and harden war declaration on attack so neutral, Treaty, and Pact first strikes transition through the diplomacy layer with distinct escalation/betrayal logs.
+2. Make tactical AI diplomacy-aware: raids, threats, target selection, and first strikes must respect current diplomatic state or explicitly escalate through diplomacy.
+3. Strengthen Pact mechanics through shared vision, mutual-defense responses, ally-defense behavior, and council-vote affinity.
+4. Add strategic retreat behavior so damaged, elite, or outmatched units preserve force and regroup instead of suiciding.
+5. Add late-game economy support only after diplomacy correctness is stable.
+6. Keep `smac_bevy` secondary and lightweight/headless by default; gameplay authority remains in deterministic `smac_core`, and `smac_gui` remains the stable playable/debug view layer.
 
 Detailed sprint history and the Gemini handoff live in:
 
@@ -271,7 +277,7 @@ What is true now:
 - the workspace is green and currently verifies `283` passing tests
 - this shell locally reverified the full workspace, including the default `smac_bevy` test path, on 2026-05-17
 - the 100-turn seed-`7` demo still completes without a terminal outcome
-- Sprint O fixed the seed-`7` Sparta collapse, Sprint P restored the no-famine/no-support baseline, Sprint Q removed the remaining sampled AI low-expansion outliers, and Sprint R made council behavior strategically active
+- Sprint O fixed the seed-`7` Sparta collapse, Sprint P restored the no-famine/no-support baseline, Sprint Q removed the remaining sampled AI low-expansion outliers, Sprint R made council behavior strategically active, and Sprint S completed the midgame conflict-pressure pass
 - the 10-seed proving sweep now reaches turn `100` without premature terminal outcomes
 - multi-seed diagnostics now show `0/10` famine/support-collapse outcomes on the verified sweep
 - multi-seed diagnostics now show `0/10` AI low-expansion outcomes on the verified sweep

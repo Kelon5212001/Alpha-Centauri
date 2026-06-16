@@ -1,4 +1,258 @@
-use smac_core::{DiplomacyStatus, GameState, GameAction, Unit, UnitKind, Facility, ProductionItem, Base, Terrain, GovernorMode};
+use smac_core::{
+    Base, DiplomacyStatus, Facility, GameAction, GameState, GameStateSnapshot, GovernorMode,
+    ProbeAction, ProductionItem, Terrain, Unit, UnitKind,
+};
+
+fn stage_adjacent_attack(game: &mut GameState, attacker_owner: usize, defender_owner: usize) {
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    game.units.push(Unit {
+        id: 0,
+        owner: attacker_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 3,
+        y: 3,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[3 * game.width + 3].unit = Some(0);
+
+    game.units.push(Unit {
+        id: 1,
+        owner: defender_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 3,
+        y: 4,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[4 * game.width + 3].unit = Some(1);
+}
+
+fn attack_staged_defender(game: &mut GameState) {
+    game.apply_action(GameAction::MoveUnit {
+        unit_id: 0,
+        target_x: 3,
+        target_y: 4,
+    })
+    .expect("combat move should resolve");
+}
+
+fn set_relation(game: &mut GameState, a: usize, b: usize, status: DiplomacyStatus, attitude: i32) {
+    game.relations[a][b].status = status;
+    game.relations[b][a].status = status;
+    game.relations[a][b].attitude = attitude;
+    game.relations[b][a].attitude = attitude;
+}
+
+#[test]
+fn neutral_attack_escalates_to_war_with_first_strike_log() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let attacker = game.player_owner();
+    let defender = game.ai_owner();
+    set_relation(&mut game, attacker, defender, DiplomacyStatus::Truce, 0);
+    stage_adjacent_attack(&mut game, attacker, defender);
+
+    attack_staged_defender(&mut game);
+
+    assert_eq!(
+        game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert!(game.log.iter().any(|entry| {
+        entry.message.contains("ESCALATION:")
+            && entry.message.contains("first strike")
+            && entry.message.contains("Truce")
+    }));
+}
+
+#[test]
+fn treaty_attack_escalates_to_war_with_treaty_violation_log() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let attacker = game.player_owner();
+    let defender = game.ai_owner();
+    set_relation(&mut game, attacker, defender, DiplomacyStatus::Treaty, 10);
+    stage_adjacent_attack(&mut game, attacker, defender);
+
+    attack_staged_defender(&mut game);
+
+    assert_eq!(
+        game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert!(game.log.iter().any(|entry| {
+        entry.message.contains("ESCALATION:") && entry.message.contains("violated Treaty")
+    }));
+}
+
+#[test]
+fn pact_attack_escalates_to_war_with_betrayal_log_and_larger_penalty() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let attacker = game.player_owner();
+    let defender = game.ai_owner();
+    set_relation(&mut game, attacker, defender, DiplomacyStatus::Pact, 80);
+    stage_adjacent_attack(&mut game, attacker, defender);
+
+    attack_staged_defender(&mut game);
+
+    assert_eq!(
+        game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(game.relations[defender][attacker].attitude, 10);
+    assert!(game.log.iter().any(|entry| {
+        entry.message.contains("BETRAYAL:") && entry.message.contains("Pact ally")
+    }));
+}
+
+#[test]
+fn already_war_attack_does_not_emit_escalation_log() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let attacker = game.player_owner();
+    let defender = game.ai_owner();
+    set_relation(&mut game, attacker, defender, DiplomacyStatus::War, -80);
+    stage_adjacent_attack(&mut game, attacker, defender);
+
+    attack_staged_defender(&mut game);
+
+    assert_eq!(
+        game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.message.contains("COMBAT: wartime")));
+    assert!(!game.log.iter().any(|entry| {
+        entry.message.contains("ESCALATION:") || entry.message.contains("BETRAYAL:")
+    }));
+}
+
+#[test]
+fn escalation_survives_snapshot_roundtrip() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let attacker = game.player_owner();
+    let defender = game.ai_owner();
+    set_relation(&mut game, attacker, defender, DiplomacyStatus::Treaty, 25);
+    stage_adjacent_attack(&mut game, attacker, defender);
+
+    attack_staged_defender(&mut game);
+
+    let restored = GameStateSnapshot::from(&game).into_game_state();
+    assert_eq!(
+        restored.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        restored.relations[defender][attacker].attitude,
+        game.relations[defender][attacker].attitude
+    );
+    assert!(restored
+        .log
+        .iter()
+        .any(|entry| entry.message.contains("violated Treaty")));
+}
+
+#[test]
+fn tactical_ai_does_not_attack_treaty_or_pact_targets() {
+    for status in [DiplomacyStatus::Treaty, DiplomacyStatus::Pact] {
+        let mut game = GameState::new_game(10, 10, 12345);
+        let attacker = game.ai_owner();
+        let defender = game.player_owner();
+        set_relation(&mut game, attacker, defender, status, 50);
+        stage_adjacent_attack(&mut game, attacker, defender);
+
+        smac_core::run_ai_tactics_for_owner(&mut game, attacker);
+
+        assert_eq!(game.relations[attacker][defender].status, status);
+        assert!(game.unit(1).map(|unit| unit.alive).unwrap_or(false));
+        assert!(!game.log.iter().any(|entry| {
+            entry.message.contains("ESCALATION:")
+                || entry.message.contains("BETRAYAL:")
+                || entry.message.contains("COMBAT: wartime")
+        }));
+    }
+}
+
+#[test]
+fn probe_sabotage_removes_highest_value_facility_without_stack_order_dependence() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let probe_owner = game.player_owner();
+    let target_owner = game.ai_owner();
+
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    game.units.push(Unit {
+        id: 0,
+        owner: probe_owner,
+        kind: UnitKind::ProbeTeam,
+        design_index: 0,
+        x: 4,
+        y: 5,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[5 * game.width + 4].unit = Some(0);
+
+    game.bases.push(Base {
+        id: 0,
+        owner: target_owner,
+        name: "Sabotage Target".to_string(),
+        x: 5,
+        y: 5,
+        population: 2,
+        nutrients_stock: 0,
+        minerals_stock: 0,
+        production: ProductionItem::ScoutPatrol,
+        production_queue: Vec::new(),
+        facilities: vec![Facility::CommandCenter, Facility::RecyclingTanks],
+        governor_mode: GovernorMode::Off,
+    });
+    game.tiles[5 * game.width + 5].base = Some(0);
+
+    game.apply_action(GameAction::PerformProbeAction {
+        unit_id: 0,
+        target_x: 5,
+        target_y: 5,
+        action: ProbeAction::SabotageFacility,
+    })
+    .expect("probe sabotage should succeed");
+
+    let facilities = &game.base(0).expect("target base should exist").facilities;
+    assert!(!facilities.contains(&Facility::CommandCenter));
+    assert!(facilities.contains(&Facility::RecyclingTanks));
+    assert!(!game.unit(0).map(|unit| unit.alive).unwrap_or(false));
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.message.contains("sabotaged CommandCenter")));
+}
 
 #[test]
 fn test_auto_war_on_attack_ally() {
@@ -61,7 +315,10 @@ fn test_auto_war_on_attack_ally() {
     assert!(res.is_ok());
 
     // Verify they are now at War
-    assert_eq!(game.relations[owner_a][owner_b].status, DiplomacyStatus::War);
+    assert_eq!(
+        game.relations[owner_a][owner_b].status,
+        DiplomacyStatus::War
+    );
 }
 
 #[test]
@@ -75,7 +332,7 @@ fn test_mutual_defense_cascade() {
     // A and B are at Truce, B and C are at Pact
     game.relations[owner_a][owner_b].status = DiplomacyStatus::Truce;
     game.relations[owner_b][owner_a].status = DiplomacyStatus::Truce;
-    
+
     game.relations[owner_b][owner_c].status = DiplomacyStatus::Pact;
     game.relations[owner_c][owner_b].status = DiplomacyStatus::Pact;
 
@@ -83,11 +340,22 @@ fn test_mutual_defense_cascade() {
     game.relations[owner_c][owner_a].status = DiplomacyStatus::Truce;
 
     // A declares war on B
-    game.update_diplomacy(owner_a, owner_b, DiplomacyStatus::War).unwrap();
+    game.update_diplomacy(owner_a, owner_b, DiplomacyStatus::War)
+        .unwrap();
 
     // C (Pact ally of B) should now also be at War with A!
-    assert_eq!(game.relations[owner_a][owner_c].status, DiplomacyStatus::War);
-    assert_eq!(game.relations[owner_c][owner_a].status, DiplomacyStatus::War);
+    assert_eq!(
+        game.relations[owner_a][owner_c].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        game.relations[owner_c][owner_a].status,
+        DiplomacyStatus::War
+    );
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.message.contains("DEFENSIVE RESPONSE:")));
 }
 
 #[test]

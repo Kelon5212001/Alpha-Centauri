@@ -1223,7 +1223,9 @@ impl GameState {
                     return true;
                 }
                 for other_id in 0..self.factions.len() {
-                    if other_id != owner && self.relations[owner][other_id].status == DiplomacyStatus::Pact {
+                    if other_id != owner
+                        && self.relations[owner][other_id].status == DiplomacyStatus::Pact
+                    {
                         if tile.visible_by_owner.contains(&other_id) {
                             return true;
                         }
@@ -1241,7 +1243,9 @@ impl GameState {
                     return true;
                 }
                 for other_id in 0..self.factions.len() {
-                    if other_id != owner && self.relations[owner][other_id].status == DiplomacyStatus::Pact {
+                    if other_id != owner
+                        && self.relations[owner][other_id].status == DiplomacyStatus::Pact
+                    {
                         if tile.explored_by_owner.contains(&other_id) {
                             return true;
                         }
@@ -1568,7 +1572,10 @@ impl GameState {
         }
     }
 
-    pub fn command_center_turn_traces_for_owner(&self, owner: usize) -> Vec<CommandCenterTurnTrace> {
+    pub fn command_center_turn_traces_for_owner(
+        &self,
+        owner: usize,
+    ) -> Vec<CommandCenterTurnTrace> {
         self.command_center_turn_traces
             .iter()
             .filter(|trace| trace.turn == self.turn && trace.owner == owner)
@@ -1593,17 +1600,18 @@ impl GameState {
             .map(|base| (base.id, base.name.clone(), base.minerals_stock))
             .collect();
         for (base_id, base_name, minerals_stock) in snapshots {
-            self.command_center_turn_traces.push(CommandCenterTurnTrace {
-                turn: self.turn,
-                owner,
-                base_id,
-                base_name,
-                post_production_stock: minerals_stock,
-                post_interdiction_stock: minerals_stock,
-                upkeep_drain: 0,
-                upkeep_order_index: None,
-                end_stock: minerals_stock,
-            });
+            self.command_center_turn_traces
+                .push(CommandCenterTurnTrace {
+                    turn: self.turn,
+                    owner,
+                    base_id,
+                    base_name,
+                    post_production_stock: minerals_stock,
+                    post_interdiction_stock: minerals_stock,
+                    upkeep_drain: 0,
+                    upkeep_order_index: None,
+                    end_stock: minerals_stock,
+                });
         }
     }
 
@@ -1614,11 +1622,9 @@ impl GameState {
             .map(|base| (base.id, base.minerals_stock))
             .collect();
         for (base_id, minerals_stock) in snapshots {
-            if let Some(trace) = self
-                .command_center_turn_traces
-                .iter_mut()
-                .find(|trace| trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id)
-            {
+            if let Some(trace) = self.command_center_turn_traces.iter_mut().find(|trace| {
+                trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id
+            }) {
                 trace.post_interdiction_stock = minerals_stock;
                 trace.end_stock = minerals_stock;
             }
@@ -1632,11 +1638,9 @@ impl GameState {
             .map(|base| (base.id, base.minerals_stock))
             .collect();
         for (base_id, minerals_stock) in snapshots {
-            if let Some(trace) = self
-                .command_center_turn_traces
-                .iter_mut()
-                .find(|trace| trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id)
-            {
+            if let Some(trace) = self.command_center_turn_traces.iter_mut().find(|trace| {
+                trace.turn == self.turn && trace.owner == owner && trace.base_id == base_id
+            }) {
                 trace.end_stock = minerals_stock;
             }
         }
@@ -5235,9 +5239,7 @@ impl GameState {
                 crate::model::SecretProject::BlackHoleHarvester => {
                     ProductionItem::BlackHoleHarvester
                 }
-                crate::model::SecretProject::TectonicBuster => {
-                    ProductionItem::TectonicBuster
-                }
+                crate::model::SecretProject::TectonicBuster => ProductionItem::TectonicBuster,
             };
 
             let built_info = self
@@ -8820,9 +8822,11 @@ impl GameState {
             }
 
             // Already being built by this owner elsewhere
-            if self.bases.iter().any(|b| {
-                b.owner == owner && b.production.secret_project() == Some(project)
-            }) {
+            if self
+                .bases
+                .iter()
+                .any(|b| b.owner == owner && b.production.secret_project() == Some(project))
+            {
                 return false;
             }
         }
@@ -9313,10 +9317,7 @@ impl GameState {
 
             // AUTO-DECLARE WAR on Attack
             if defender.owner != self.native_owner() && unit_snapshot.owner != self.native_owner() {
-                let status = self.relations[unit_snapshot.owner][defender.owner].status;
-                if status != DiplomacyStatus::War {
-                    self.update_diplomacy(unit_snapshot.owner, defender.owner, DiplomacyStatus::War)?;
-                }
+                self.escalate_attack_to_war(unit_snapshot.owner, defender.owner)?;
             }
 
             self.resolve_combat(unit_id, defender_id, target_x, target_y);
@@ -9336,16 +9337,8 @@ impl GameState {
             let owner = self.bases[base_id].owner;
             if owner != unit_snapshot.owner {
                 // AUTO-DECLARE WAR on Capture
-                if owner != self.native_owner()
-                    && unit_snapshot.owner != self.native_owner()
-                {
-                    if self.relations[unit_snapshot.owner][owner].status != DiplomacyStatus::War {
-                        let _ = self.update_diplomacy(
-                            unit_snapshot.owner,
-                            owner,
-                            DiplomacyStatus::War,
-                        );
-                    }
+                if owner != self.native_owner() && unit_snapshot.owner != self.native_owner() {
+                    let _ = self.escalate_attack_to_war(unit_snapshot.owner, owner);
                 }
 
                 self.bases[base_id].owner = unit_snapshot.owner;
@@ -9451,7 +9444,10 @@ impl GameState {
         }
 
         let faction_name = self.faction_name(unit_snapshot.owner).to_string();
-        self.push_log(format!("{faction_name} founded {name} at ({}, {}).", unit_snapshot.x, unit_snapshot.y));
+        self.push_log(format!(
+            "{faction_name} founded {name} at ({}, {}).",
+            unit_snapshot.x, unit_snapshot.y
+        ));
 
         self.update_player_visibility();
         self.check_game_over();
@@ -9942,11 +9938,20 @@ impl GameState {
                     return Err("Cannot sabotage your own base.".to_string());
                 }
 
-                if self.bases[base_id].facilities.is_empty() {
+                let Some((facility_index, destroyed)) = self.bases[base_id]
+                    .facilities
+                    .iter()
+                    .enumerate()
+                    .max_by_key(|(_, facility)| {
+                        ProductionItem::from_facility(**facility)
+                            .map(content::production_cost)
+                            .unwrap_or(0)
+                    })
+                    .map(|(index, facility)| (index, *facility))
+                else {
                     return Err("Base has no facilities to sabotage.".to_string());
-                }
-
-                let destroyed = self.bases[base_id].facilities.pop().unwrap(); // Just pop the last one for now
+                };
+                self.bases[base_id].facilities.remove(facility_index);
 
                 self.destroy_unit(unit_id);
 
@@ -10062,30 +10067,64 @@ impl GameState {
         let name_b = self.faction_name(faction_b).to_string();
 
         let msg = match status {
-            DiplomacyStatus::War => format!("DIPLOMACY: {} has declared war on {}!", name_a, name_b),
-            DiplomacyStatus::Truce => format!("DIPLOMACY: {} and {} have signed a Truce.", name_a, name_b),
-            DiplomacyStatus::Treaty => format!("DIPLOMACY: {} and {} have signed a Treaty.", name_a, name_b),
-            DiplomacyStatus::Pact => format!("DIPLOMACY: {} and {} have signed a Pact.", name_a, name_b),
+            DiplomacyStatus::War => {
+                format!("DIPLOMACY: {} has declared war on {}!", name_a, name_b)
+            }
+            DiplomacyStatus::Truce => {
+                format!("DIPLOMACY: {} and {} have signed a Truce.", name_a, name_b)
+            }
+            DiplomacyStatus::Treaty => {
+                format!("DIPLOMACY: {} and {} have signed a Treaty.", name_a, name_b)
+            }
+            DiplomacyStatus::Pact => {
+                format!("DIPLOMACY: {} and {} have signed a Pact.", name_a, name_b)
+            }
         };
         self.push_event_log(EventCategory::Diplomacy, msg);
 
         if status == DiplomacyStatus::War {
             // Mutual defense cascade: If B has a Pact with ally_b, ally_b declares war on A
             let allies_b: Vec<usize> = (0..self.factions.len())
-                .filter(|&id| id != faction_b && id != faction_a && self.relations[faction_b][id].status == DiplomacyStatus::Pact)
+                .filter(|&id| {
+                    id != faction_b
+                        && id != faction_a
+                        && self.relations[faction_b][id].status == DiplomacyStatus::Pact
+                })
                 .collect();
             for ally_id in allies_b {
                 if self.relations[faction_a][ally_id].status != DiplomacyStatus::War {
+                    self.push_event_log(
+                        EventCategory::Diplomacy,
+                        format!(
+                            "DEFENSIVE RESPONSE: {} honors their Pact with {} against {}.",
+                            self.faction_name(ally_id),
+                            self.faction_name(faction_b),
+                            self.faction_name(faction_a)
+                        ),
+                    );
                     let _ = self.update_diplomacy(faction_a, ally_id, DiplomacyStatus::War);
                 }
             }
 
             // Mutual defense cascade: If A has a Pact with ally_a, ally_a declares war on B
             let allies_a: Vec<usize> = (0..self.factions.len())
-                .filter(|&id| id != faction_a && id != faction_b && self.relations[faction_a][id].status == DiplomacyStatus::Pact)
+                .filter(|&id| {
+                    id != faction_a
+                        && id != faction_b
+                        && self.relations[faction_a][id].status == DiplomacyStatus::Pact
+                })
                 .collect();
             for ally_id in allies_a {
                 if self.relations[faction_b][ally_id].status != DiplomacyStatus::War {
+                    self.push_event_log(
+                        EventCategory::Diplomacy,
+                        format!(
+                            "DEFENSIVE RESPONSE: {} honors their Pact with {} against {}.",
+                            self.faction_name(ally_id),
+                            self.faction_name(faction_a),
+                            self.faction_name(faction_b)
+                        ),
+                    );
                     let _ = self.update_diplomacy(faction_b, ally_id, DiplomacyStatus::War);
                 }
             }
@@ -10096,6 +10135,55 @@ impl GameState {
         }
 
         Ok(())
+    }
+
+    pub fn escalate_attack_to_war(
+        &mut self,
+        attacker: usize,
+        defender: usize,
+    ) -> Result<(), String> {
+        if attacker >= self.factions.len() || defender >= self.factions.len() {
+            return Err("Invalid faction index.".to_string());
+        }
+        if attacker == defender {
+            return Ok(());
+        }
+
+        let old_status = self.relations[attacker][defender].status;
+        if old_status == DiplomacyStatus::War {
+            return Ok(());
+        }
+
+        let attacker_name = self.faction_name(attacker).to_string();
+        let defender_name = self.faction_name(defender).to_string();
+        let (message, penalty) = match old_status {
+            DiplomacyStatus::Truce => (
+                format!(
+                    "ESCALATION: {attacker_name} launched a first strike against {defender_name}; Truce is broken and War begins."
+                ),
+                -25,
+            ),
+            DiplomacyStatus::Treaty => (
+                format!(
+                    "ESCALATION: {attacker_name} violated Treaty protections with a first strike against {defender_name}; War begins."
+                ),
+                -40,
+            ),
+            DiplomacyStatus::Pact => (
+                format!(
+                    "BETRAYAL: {attacker_name} betrayed Pact ally {defender_name} with a hostile attack; War begins."
+                ),
+                -70,
+            ),
+            DiplomacyStatus::War => unreachable!("already handled above"),
+        };
+
+        self.push_event_log(EventCategory::Diplomacy, message);
+        self.relations[defender][attacker].attitude =
+            (self.relations[defender][attacker].attitude + penalty).clamp(-100, 100);
+        self.relations[attacker][defender].attitude =
+            (self.relations[attacker][defender].attitude + penalty / 2).clamp(-100, 100);
+        self.update_diplomacy(attacker, defender, DiplomacyStatus::War)
     }
 
     pub fn find_interceptor(&self, target_unit_id: usize, x: usize, y: usize) -> Option<usize> {
@@ -10120,7 +10208,9 @@ impl GameState {
             }
 
             // Determine allowed range (Chebyshev distance)
-            let dist = (unit.x as isize - x as isize).abs().max((unit.y as isize - y as isize).abs());
+            let dist = (unit.x as isize - x as isize)
+                .abs()
+                .max((unit.y as isize - y as isize).abs());
 
             if is_patrol && dist > 1 {
                 continue;
@@ -10179,12 +10269,16 @@ impl GameState {
             .ok_or("Unit not found")?;
 
         // Check if unit can enter the target terrain
-        if !self.tiles[self.tile_index(target_x, target_y)].terrain.is_land()
+        if !self.tiles[self.tile_index(target_x, target_y)]
+            .terrain
+            .is_land()
             && !self.unit_can_enter_ocean(unit_id)
         {
             return Err("That unit cannot enter the ocean.".to_string());
         }
-        if self.tiles[self.tile_index(target_x, target_y)].terrain.is_land()
+        if self.tiles[self.tile_index(target_x, target_y)]
+            .terrain
+            .is_land()
             && !self.unit_can_enter_land(unit_id)
         {
             return Err("That unit cannot enter land.".to_string());
@@ -11359,20 +11453,18 @@ impl GameState {
         let Some(attacker) = self.unit(attacker_id).cloned() else {
             return;
         };
-        
+
         let Some(defender) = self.unit(defender_id).cloned() else {
             return;
         };
 
         // AUTO-DECLARE WAR on Attack
         // If factions are not the same, not Native, and are not currently at War
-        if attacker.owner != defender.owner 
-            && attacker.owner != self.native_owner() 
-            && defender.owner != self.native_owner() 
+        if attacker.owner != defender.owner
+            && attacker.owner != self.native_owner()
+            && defender.owner != self.native_owner()
         {
-            if self.relations[attacker.owner][defender.owner].status != DiplomacyStatus::War {
-                let _ = self.update_diplomacy(attacker.owner, defender.owner, DiplomacyStatus::War);
-            }
+            let _ = self.escalate_attack_to_war(attacker.owner, defender.owner);
         }
 
         // PLANET BUSTER: Massive destructive power
@@ -11547,6 +11639,15 @@ impl GameState {
 
         let attacker_name = self.faction_name(attacker.owner).to_string();
         let defender_name = self.faction_name(defender.owner).to_string();
+        let combat_prefix = if attacker.owner != defender.owner
+            && attacker.owner != self.native_owner()
+            && defender.owner != self.native_owner()
+            && self.relations[attacker.owner][defender.owner].status == DiplomacyStatus::War
+        {
+            "COMBAT: wartime"
+        } else {
+            "COMBAT:"
+        };
 
         if attack_score >= defense_score {
             self.destroy_unit(defender_id);
@@ -11554,14 +11655,14 @@ impl GameState {
             self.set_unit_moves(attacker_id, 0);
             self.promote_unit(attacker_id);
             self.push_log(format!(
-                "COMBAT: {attacker_name} {} (atk: {attack_score}) destroyed {defender_name} {} (def: {defense_score}).",
+                "{combat_prefix} {attacker_name} {} (atk: {attack_score}) destroyed {defender_name} {} (def: {defense_score}).",
                 presentation::unit_name(attacker.kind),
                 presentation::unit_name(defender.kind)
             ));
         } else {
             self.destroy_unit(attacker_id);
             self.push_log(format!(
-                "COMBAT: {attacker_name} {} (atk: {attack_score}) was destroyed by {defender_name} {} (def: {defense_score}).",
+                "{combat_prefix} {attacker_name} {} (atk: {attack_score}) was destroyed by {defender_name} {} (def: {defense_score}).",
                 presentation::unit_name(attacker.kind),
                 presentation::unit_name(defender.kind)
             ));
@@ -11880,8 +11981,9 @@ impl GameState {
 
         let pacted_factions: Vec<usize> = (0..self.factions.len())
             .filter(|&id| {
-                id != player_owner 
-                    && (has_empath_guild || self.relations[player_owner][id].status == DiplomacyStatus::Pact)
+                id != player_owner
+                    && (has_empath_guild
+                        || self.relations[player_owner][id].status == DiplomacyStatus::Pact)
             })
             .collect();
 
@@ -12030,7 +12132,11 @@ impl GameState {
         None
     }
 
-    pub fn complete_production_for_testing(&mut self, base_id: usize, item: ProductionItem) -> bool {
+    pub fn complete_production_for_testing(
+        &mut self,
+        base_id: usize,
+        item: ProductionItem,
+    ) -> bool {
         let owner = if let Some(base) = self.bases.iter().find(|b| b.id == base_id) {
             base.owner
         } else {
