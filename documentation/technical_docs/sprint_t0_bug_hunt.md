@@ -11,6 +11,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Probe-team facility sabotage no longer removes whichever facility happens to be last in the base facility vector. It now deterministically removes the highest-production-cost sabotage target available on the base.
 - Existing Sprint T diplomacy regression tests now also cover AI restraint around Treaty/Pact targets, escalation snapshot persistence, and mutual-defense response logging.
 - Damaged-unit and stalled-attack AI decisions now emit typed diagnostics for strategic retreats and avoided hopeless attacks so autoplay sweeps can separate caution from combat failures.
+- Content validation now catches production entries that map to runtime items missing from `ProductionItem::all`, and facility definitions must round-trip through their production-item mapping.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -23,6 +24,12 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Strategic retreat diagnostics**: Damaged combat units and vulnerable non-combat units that successfully fall back now generate `STRATEGIC RETREAT` typed event logs.
 - **Hopeless-attack avoidance diagnostics**: Small under-strength attack groups that stage instead of charging heavily defended targets now generate `AVOIDED ATTACK` typed event logs.
 - **Autoplay telemetry**: The autoplay sweep event-kind report now includes strategic-retreat and avoided-attack totals alongside wartime combat and escalation categories.
+
+## Sprint T-0.5 Content Validation Lockdown Follow-up
+
+- **Production/runtime item coverage**: `validate_content` now rejects production entries whose IDs map to runtime items that are omitted from `ProductionItem::all`.
+- **Facility production roundtrip**: Runtime facilities must have a production item, and that production item must map back to the same facility so sabotage, build queues, and content validation share the same source of truth.
+- **Naval production coverage**: Sea Colony Pod and Sea Transport are now included in the runtime production-item inventory covered by validation and tests.
 
 ## Features And Refinements To Add Or Harden Next
 
@@ -67,8 +74,8 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
     - Add presentation-state tests for selected unit/base IDs that disappear after combat, capture, or disbanding.
 
 11. **Content validation gaps**
-    - Validate that every facility referenced by code has a production definition and every production facility has a runtime facility definition.
-    - Validate sabotage eligibility and maintenance/upkeep fields for all facilities.
+    - Extend validation to sabotage eligibility classes once some facilities become intentionally immune or partially protected.
+    - Validate maintenance/upkeep balance bands for all facilities instead of only requiring non-negative values.
 
 12. **Documentation drift**
     - Keep README, ROADMAP, sprint logs, and validation-count references aligned with the actual `validate_content` output.

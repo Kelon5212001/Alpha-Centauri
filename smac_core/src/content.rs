@@ -732,10 +732,7 @@ fn scenario_anchors(width: usize, height: usize) -> Vec<(&'static str, ScenarioA
         ),
         (
             RuntimeRole::Ai.as_str(),
-            ScenarioAnchorPoint {
-                x: ai_x,
-                y: ai_y,
-            },
+            ScenarioAnchorPoint { x: ai_x, y: ai_y },
         ),
         (
             "midline",
@@ -1921,6 +1918,20 @@ fn validate_facilities(errors: &mut Vec<String>) {
                 facility.content_id()
             ));
         }
+
+        let Some(item) = crate::ProductionItem::from_facility(facility) else {
+            errors.push(format!(
+                "facility '{}' is not mapped to a production item",
+                facility.content_id()
+            ));
+            continue;
+        };
+        if item.facility() != Some(facility) {
+            errors.push(format!(
+                "facility '{}' production item does not map back to the same facility",
+                facility.content_id()
+            ));
+        }
     }
 }
 
@@ -1948,6 +1959,13 @@ fn validate_production(errors: &mut Vec<String>) {
             ));
             continue;
         };
+
+        if !crate::ProductionItem::all().contains(&item) {
+            errors.push(format!(
+                "production '{}' maps to a runtime item missing from ProductionItem::all",
+                definition.id
+            ));
+        }
 
         match definition.build_kind.as_str() {
             "unit" => {

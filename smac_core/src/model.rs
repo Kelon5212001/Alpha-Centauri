@@ -470,10 +470,11 @@ impl ProductionItem {
         }
     }
 
-    pub fn all() -> [ProductionItem; 43] {
+    pub fn all() -> [ProductionItem; 45] {
         [
             ProductionItem::ScoutPatrol,
             ProductionItem::ColonyPod,
+            ProductionItem::SeaColonyPod,
             ProductionItem::Former,
             ProductionItem::Speeder,
             ProductionItem::ResonanceLaser,
@@ -511,6 +512,7 @@ impl ProductionItem {
             ProductionItem::BlackHoleHarvester,
             ProductionItem::TectonicBuster,
             ProductionItem::ProbeTeam,
+            ProductionItem::SeaTransport,
             ProductionItem::StockpileEnergy,
             ProductionItem::SkyHydroponics,
             ProductionItem::SolarTransmitter,

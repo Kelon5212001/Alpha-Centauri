@@ -159,10 +159,7 @@ fn scenario_anchor_offsets_resolve_expected_ai_positions() {
         .iter()
         .any(|position| position.x == 11 && position.y == 11));
     assert!(scenario.starting_units.iter().any(|unit| {
-        unit.owner == roles.ai
-            && unit.kind == UnitKind::ScoutPatrol
-            && unit.x == 10
-            && unit.y == 11
+        unit.owner == roles.ai && unit.kind == UnitKind::ScoutPatrol && unit.x == 10 && unit.y == 11
     }));
 }
 
@@ -228,9 +225,13 @@ fn production_definitions_load_and_match_runtime_mapping() {
     let definitions = load_production_definitions().expect("bundled production JSON should parse");
 
     assert_eq!(definitions.len(), 45);
+    assert_eq!(ProductionItem::all().len(), definitions.len());
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "former"));
+    assert!(definitions
+        .iter()
+        .any(|definition| definition.id == "sea_colony_pod"));
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "speeder"));
@@ -243,6 +244,9 @@ fn production_definitions_load_and_match_runtime_mapping() {
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "raider_speeder"));
+    assert!(definitions
+        .iter()
+        .any(|definition| definition.id == "sea_transport"));
     assert!(definitions
         .iter()
         .any(|definition| definition.id == "transit_hub"));
@@ -268,6 +272,10 @@ fn production_definitions_load_and_match_runtime_mapping() {
         Some(UnitKind::ColonyPod)
     );
     assert_eq!(
+        production_unit_kind(ProductionItem::SeaColonyPod),
+        Some(UnitKind::SeaColonyPod)
+    );
+    assert_eq!(
         production_unit_kind(ProductionItem::Speeder),
         Some(UnitKind::Speeder)
     );
@@ -278,6 +286,10 @@ fn production_definitions_load_and_match_runtime_mapping() {
     assert_eq!(
         production_unit_kind(ProductionItem::RaiderSpeeder),
         Some(UnitKind::RaiderSpeeder)
+    );
+    assert_eq!(
+        production_unit_kind(ProductionItem::SeaTransport),
+        Some(UnitKind::SeaTransport)
     );
     assert_eq!(
         production_unit_kind(ProductionItem::GarrisonGuard),
