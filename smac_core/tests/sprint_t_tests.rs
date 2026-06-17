@@ -45,6 +45,48 @@ fn stage_adjacent_attack(game: &mut GameState, attacker_owner: usize, defender_o
     game.tiles[4 * game.width + 3].unit = Some(1);
 }
 
+fn stage_adjacent_base_target(game: &mut GameState, attacker_owner: usize, defender_owner: usize) {
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    game.units.push(Unit {
+        id: 0,
+        owner: attacker_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 3,
+        y: 3,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[3 * game.width + 3].unit = Some(0);
+
+    game.bases.push(Base {
+        id: 0,
+        owner: defender_owner,
+        name: "Border Base".to_string(),
+        x: 3,
+        y: 4,
+        population: 1,
+        nutrients_stock: 0,
+        minerals_stock: 0,
+        production: ProductionItem::ScoutPatrol,
+        production_queue: Vec::new(),
+        facilities: Vec::new(),
+        governor_mode: GovernorMode::Off,
+    });
+    game.tiles[4 * game.width + 3].base = Some(0);
+}
+
 fn attack_staged_defender(game: &mut GameState) {
     game.apply_action(GameAction::MoveUnit {
         unit_id: 0,
@@ -198,6 +240,95 @@ fn tactical_ai_does_not_attack_treaty_or_pact_targets() {
             )
         }));
     }
+}
+
+#[test]
+fn tactical_ai_does_not_capture_treaty_or_pact_bases() {
+    for status in [DiplomacyStatus::Treaty, DiplomacyStatus::Pact] {
+        let mut game = GameState::new_game(10, 10, 12345);
+        let attacker = game.ai_owner();
+        let defender = game.player_owner();
+        set_relation(&mut game, attacker, defender, status, 50);
+        stage_adjacent_base_target(&mut game, attacker, defender);
+
+        smac_core::run_ai_tactics_for_owner(&mut game, attacker);
+
+        assert_eq!(game.relations[attacker][defender].status, status);
+        assert_eq!(game.base(0).expect("base should exist").owner, defender);
+        assert_ne!(game.unit(0).map(|unit| (unit.x, unit.y)), Some((3, 4)));
+        assert!(!game.log.iter().any(|entry| {
+            matches!(
+                entry.kind,
+                EventLogKind::FirstStrikeEscalation
+                    | EventLogKind::TreatyViolation
+                    | EventLogKind::PactBetrayal
+                    | EventLogKind::WartimeCombat
+            )
+        }));
+    }
+}
+
+#[test]
+fn tactical_ai_truce_base_capture_requires_escalation_intent() {
+    let mut cautious_game = GameState::new_game(10, 10, 12345);
+    let attacker = cautious_game.ai_owner();
+    let defender = cautious_game.player_owner();
+    set_relation(
+        &mut cautious_game,
+        attacker,
+        defender,
+        DiplomacyStatus::Truce,
+        -80,
+    );
+    cautious_game
+        .faction_mut(attacker)
+        .expect("AI faction should exist")
+        .personality
+        .aggression = 5;
+    stage_adjacent_base_target(&mut cautious_game, attacker, defender);
+
+    smac_core::run_ai_tactics_for_owner(&mut cautious_game, attacker);
+
+    assert_eq!(
+        cautious_game.relations[attacker][defender].status,
+        DiplomacyStatus::Truce
+    );
+    assert_eq!(
+        cautious_game.base(0).expect("base should exist").owner,
+        defender
+    );
+
+    let mut hostile_game = GameState::new_game(10, 10, 12345);
+    let attacker = hostile_game.ai_owner();
+    let defender = hostile_game.player_owner();
+    set_relation(
+        &mut hostile_game,
+        attacker,
+        defender,
+        DiplomacyStatus::Truce,
+        -80,
+    );
+    hostile_game
+        .faction_mut(attacker)
+        .expect("AI faction should exist")
+        .personality
+        .aggression = 10;
+    stage_adjacent_base_target(&mut hostile_game, attacker, defender);
+
+    smac_core::run_ai_tactics_for_owner(&mut hostile_game, attacker);
+
+    assert_eq!(
+        hostile_game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        hostile_game.base(0).expect("base should exist").owner,
+        attacker
+    );
+    assert!(hostile_game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::FirstStrikeEscalation));
 }
 
 #[test]

@@ -13,6 +13,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Damaged-unit and stalled-attack AI decisions now emit typed diagnostics for strategic retreats and avoided hopeless attacks so autoplay sweeps can separate caution from combat failures.
 - Content validation now catches production entries that map to runtime items missing from `ProductionItem::all`, and facility definitions must round-trip through their production-item mapping.
 - Save/load regression coverage now preserves cascaded war states and typed event-kind counts across snapshot roundtrips, including legacy log migration for new retreat and avoided-attack event kinds.
+- AI attack-legality regression coverage now includes base-capture targets, proving Treaty/Pact bases stay protected and Truce base captures require explicit escalation intent.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -37,6 +38,11 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Cascaded diplomacy persistence**: Snapshot roundtrips now cover attack-triggered war escalation plus Pact mutual-defense cascades, preserving both relation status and typed event-kind counts.
 - **Legacy event-kind migration**: Legacy save migration now has regression coverage for first-strike, defensive-response, strategic-retreat, and avoided-attack log classification.
 
+## Sprint T-0.7 AI Attack-Legality Matrix Follow-up
+
+- **Protected base targets**: Tactical AI now has regression coverage proving Treaty and Pact base targets are not captured or escalated accidentally.
+- **Truce escalation gate for bases**: AI base captures from Truce now have coverage for both cautious restraint and high-aggression escalation intent.
+
 ## Features And Refinements To Add Or Harden Next
 
 1. **Diplomacy/combat consistency**
@@ -44,7 +50,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
    - Add a dedicated diplomatic memory model for grievances, betrayals, and defensive-war legitimacy.
 
 2. **AI attack legality**
-   - Add broader regression coverage for every AI offensive path now that explicit escalation intent protects non-war targets.
+   - Add remaining regression coverage for bombardment, probe-hostile actions, transports/cargo, and naval offensive paths under War/Truce/Treaty/Pact.
    - Extend autoplay diagnostics from aggregate typed counters into per-faction legal-combat, first-strike, retreat, and avoided-attack trend lines.
 
 3. **Pact/shared vision cleanup**
