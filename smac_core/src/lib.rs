@@ -122,10 +122,11 @@ pub use game_state::TopBarDisplayState;
 pub use game_state::UnitSelectionDisplayState;
 pub use model::{
     ActionableAlert, AlertPriority, Base, BaseAreaRole, CommandCenterTurnTrace, ConvoyRoute,
-    ConvoyRouteKind, ConvoyRouteSummary, DiplomacyStatus, DiplomaticRelation, Economics,
-    EventCategory, EventLogEntry, EventLogKind, Facility, Faction, FutureSociety, GameAction,
-    GameOver, GameState, GovernorMode, Improvement, Politics, ProbeAction, ProductionItem,
-    SecretProject, Tech, Terrain, Tile, TurnSummary, Unit, UnitActivity, UnitKind, Values, Yields,
+    ConvoyRouteKind, ConvoyRouteSummary, CouncilVote, DiplomacyStatus, DiplomaticRelation,
+    Economics, EventCategory, EventLogEntry, EventLogKind, Facility, Faction, FutureSociety,
+    GameAction, GameOver, GameState, GovernorMode, Improvement, Politics, ProbeAction,
+    ProductionItem, SecretProject, Tech, Terrain, Tile, TurnSummary, Unit, UnitActivity, UnitKind,
+    Values, Yields,
 };
 pub use presentation::MapOverlay;
 pub use save::current_save_slot_label;

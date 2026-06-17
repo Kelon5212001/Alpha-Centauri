@@ -9912,6 +9912,7 @@ impl GameState {
                 }
 
                 let stolen_tech = stealable[0]; // Simple selection for now
+                self.escalate_attack_to_war(unit.owner, target_owner)?;
                 if let Some(faction) = self.faction_mut(unit.owner) {
                     faction.known_techs.push(stolen_tech);
                     faction.techs_discovered += 1;
@@ -9953,6 +9954,7 @@ impl GameState {
                 else {
                     return Err("Base has no facilities to sabotage.".to_string());
                 };
+                self.escalate_attack_to_war(unit.owner, target_owner)?;
                 self.bases[base_id].facilities.remove(facility_index);
 
                 self.destroy_unit(unit_id);
@@ -9984,6 +9986,7 @@ impl GameState {
                     ));
                 }
 
+                self.escalate_attack_to_war(unit.owner, target_owner)?;
                 self.factions[unit.owner].energy -= energy_cost;
                 self.units[target_unit_id].owner = unit.owner;
 

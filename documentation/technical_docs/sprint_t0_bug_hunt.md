@@ -14,6 +14,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Content validation now catches production entries that map to runtime items missing from `ProductionItem::all`, and facility definitions must round-trip through their production-item mapping.
 - Save/load regression coverage now preserves cascaded war states and typed event-kind counts across snapshot roundtrips, including legacy log migration for new retreat and avoided-attack event kinds.
 - AI attack-legality regression coverage now includes base-capture targets, proving Treaty/Pact bases stay protected and Truce base captures require explicit escalation intent.
+- Probe-team hostile actions now escalate through diplomacy for tech theft, facility sabotage, and unit subversion; council sessions and expanded Pact visibility downgrades have snapshot/regression coverage.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -43,6 +44,14 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Protected base targets**: Tactical AI now has regression coverage proving Treaty and Pact base targets are not captured or escalated accidentally.
 - **Truce escalation gate for bases**: AI base captures from Truce now have coverage for both cautious restraint and high-aggression escalation intent.
 
+## Sprint T-0.8 Five-Task Lockdown Follow-up
+
+- **Probe tech theft escalation**: Successful tech theft now transitions non-war targets through the diplomacy escalation layer.
+- **Probe sabotage escalation**: Successful facility sabotage now produces Treaty/Pact/Truce escalation semantics before destroying the target facility.
+- **Probe subversion escalation**: Successful unit subversion now escalates diplomacy before ownership changes.
+- **Council save/load coverage**: Active council sessions, governor state, meeting turn, and pending votes now roundtrip through snapshots.
+- **Pact visibility downgrade matrix**: Pact-derived visibility/exploration now has downgrade coverage for Treaty, Truce, and War.
+
 ## Features And Refinements To Add Or Harden Next
 
 1. **Diplomacy/combat consistency**
@@ -50,7 +59,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
    - Add a dedicated diplomatic memory model for grievances, betrayals, and defensive-war legitimacy.
 
 2. **AI attack legality**
-   - Add remaining regression coverage for bombardment, probe-hostile actions, transports/cargo, and naval offensive paths under War/Truce/Treaty/Pact.
+   - Add remaining regression coverage for bombardment, transports/cargo, and naval offensive paths under War/Truce/Treaty/Pact.
    - Extend autoplay diagnostics from aggregate typed counters into per-faction legal-combat, first-strike, retreat, and avoided-attack trend lines.
 
 3. **Pact/shared vision cleanup**
@@ -62,7 +71,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
    - Add regression tests for regrouping and re-targeting after failed attacks, beyond the current retreat and avoided-attack event-kind coverage.
 
 5. **Save/load determinism**
-   - Add roundtrip tests for active council sessions and battle-group-relevant unit state beyond the current cascaded-war/event-kind coverage.
+   - Add roundtrip tests for battle-group-relevant unit state beyond the current cascaded-war/event-kind/council coverage.
    - Add deterministic replay checks for fixed seeds after save/load at mid-turn boundaries.
 
 6. **Facility/project/effect coverage**

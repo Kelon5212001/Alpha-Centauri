@@ -1,10 +1,10 @@
 use smac_core::{
     current_save_slot_label, filtered_sorted_save_slots, matches_save_filters, save_browser_counts,
     save_browser_counts_text, save_browser_display_state, save_filter_label, save_slot_label,
-    save_sort_label, set_save_sort, sort_save_slots, Base, DiplomacyStatus, EventLogKind,
-    GameAction, GameState, GameStateSnapshot, GovernorMode, ProductionItem, SaveBrowserQuery,
-    SaveFilterCategory, SaveSlotCategory, SaveSlotListing, SaveSlotMetadata, SaveSortColumn,
-    Terrain, Unit, UnitActivity, UnitKind, GAME_STATE_SNAPSHOT_VERSION,
+    save_sort_label, set_save_sort, sort_save_slots, Base, CouncilVote, DiplomacyStatus,
+    EventLogKind, GameAction, GameState, GameStateSnapshot, GovernorMode, ProductionItem,
+    SaveBrowserQuery, SaveFilterCategory, SaveSlotCategory, SaveSlotListing, SaveSlotMetadata,
+    SaveSortColumn, Terrain, Unit, UnitActivity, UnitKind, GAME_STATE_SNAPSHOT_VERSION,
 };
 use std::fs;
 
@@ -148,6 +148,35 @@ fn snapshot_roundtrip_preserves_convoy_routes() {
 
     assert_eq!(restored.convoy_routes.len(), 1);
     assert_eq!(restored.base_trade_links(0), 1);
+}
+
+#[test]
+fn snapshot_roundtrip_preserves_active_council_session() {
+    let mut game = GameState::new_game(16, 16, 42);
+    game.council.is_active = true;
+    game.council.governor_id = Some(game.player_owner());
+    game.council.last_meeting_turn = 12;
+    game.council.pending_votes = vec![CouncilVote {
+        faction_id: game.player_owner(),
+        candidate_id: game.ai_owner(),
+        weight: 3,
+    }];
+
+    let json = GameStateSnapshot::from(&game)
+        .to_json_pretty()
+        .expect("snapshot should serialize");
+    let restored = GameStateSnapshot::from_json(&json)
+        .expect("snapshot should deserialize")
+        .into_game_state();
+
+    assert!(restored.council.is_active);
+    assert_eq!(restored.council.governor_id, Some(game.player_owner()));
+    assert_eq!(restored.council.last_meeting_turn, 12);
+    assert_eq!(restored.council.pending_votes.len(), 1);
+    assert_eq!(
+        restored.council.pending_votes[0].candidate_id,
+        game.ai_owner()
+    );
 }
 
 #[test]

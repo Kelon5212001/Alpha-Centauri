@@ -1,6 +1,6 @@
 use smac_core::{
     Base, DiplomacyStatus, EventLogKind, Facility, GameAction, GameState, GameStateSnapshot,
-    GovernorMode, ProbeAction, ProductionItem, Terrain, Unit, UnitKind,
+    GovernorMode, ProbeAction, ProductionItem, Tech, Terrain, Unit, UnitKind,
 };
 
 fn stage_adjacent_attack(game: &mut GameState, attacker_owner: usize, defender_owner: usize) {
@@ -31,6 +31,90 @@ fn stage_adjacent_attack(game: &mut GameState, attacker_owner: usize, defender_o
     game.units.push(Unit {
         id: 1,
         owner: defender_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 3,
+        y: 4,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[4 * game.width + 3].unit = Some(1);
+}
+
+fn stage_adjacent_probe_base(game: &mut GameState, probe_owner: usize, target_owner: usize) {
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    game.units.push(Unit {
+        id: 0,
+        owner: probe_owner,
+        kind: UnitKind::ProbeTeam,
+        design_index: 0,
+        x: 3,
+        y: 3,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[3 * game.width + 3].unit = Some(0);
+
+    game.bases.push(Base {
+        id: 0,
+        owner: target_owner,
+        name: "Probe Target".to_string(),
+        x: 3,
+        y: 4,
+        population: 2,
+        nutrients_stock: 0,
+        minerals_stock: 0,
+        production: ProductionItem::ScoutPatrol,
+        production_queue: Vec::new(),
+        facilities: vec![Facility::NetworkNode, Facility::RecyclingTanks],
+        governor_mode: GovernorMode::Off,
+    });
+    game.tiles[4 * game.width + 3].base = Some(0);
+}
+
+fn stage_adjacent_probe_unit(game: &mut GameState, probe_owner: usize, target_owner: usize) {
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    game.units.push(Unit {
+        id: 0,
+        owner: probe_owner,
+        kind: UnitKind::ProbeTeam,
+        design_index: 0,
+        x: 3,
+        y: 3,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[3 * game.width + 3].unit = Some(0);
+
+    game.units.push(Unit {
+        id: 1,
+        owner: target_owner,
         kind: UnitKind::ScoutPatrol,
         design_index: 0,
         x: 3,
@@ -391,6 +475,112 @@ fn tactical_ai_escalates_from_truce_only_with_explicit_intent() {
 }
 
 #[test]
+fn probe_steal_tech_escalates_treaty_to_war() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let probe_owner = game.player_owner();
+    let target_owner = game.ai_owner();
+    set_relation(
+        &mut game,
+        probe_owner,
+        target_owner,
+        DiplomacyStatus::Treaty,
+        30,
+    );
+    stage_adjacent_probe_base(&mut game, probe_owner, target_owner);
+    game.factions[probe_owner].known_techs = vec![Tech::CentauriEcology];
+    game.factions[target_owner].known_techs = vec![Tech::CentauriEcology, Tech::IndustrialBase];
+
+    game.apply_action(GameAction::PerformProbeAction {
+        unit_id: 0,
+        target_x: 3,
+        target_y: 4,
+        action: ProbeAction::StealTech,
+    })
+    .expect("probe tech theft should resolve");
+
+    assert_eq!(
+        game.relations[probe_owner][target_owner].status,
+        DiplomacyStatus::War
+    );
+    assert!(game.factions[probe_owner]
+        .known_techs
+        .contains(&Tech::IndustrialBase));
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::TreatyViolation));
+}
+
+#[test]
+fn probe_sabotage_escalates_pact_betrayal_to_war() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let probe_owner = game.player_owner();
+    let target_owner = game.ai_owner();
+    set_relation(
+        &mut game,
+        probe_owner,
+        target_owner,
+        DiplomacyStatus::Pact,
+        80,
+    );
+    stage_adjacent_probe_base(&mut game, probe_owner, target_owner);
+
+    game.apply_action(GameAction::PerformProbeAction {
+        unit_id: 0,
+        target_x: 3,
+        target_y: 4,
+        action: ProbeAction::SabotageFacility,
+    })
+    .expect("probe sabotage should resolve");
+
+    assert_eq!(
+        game.relations[probe_owner][target_owner].status,
+        DiplomacyStatus::War
+    );
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::PactBetrayal));
+}
+
+#[test]
+fn probe_subvert_unit_escalates_truce_to_war() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let probe_owner = game.player_owner();
+    let target_owner = game.ai_owner();
+    set_relation(
+        &mut game,
+        probe_owner,
+        target_owner,
+        DiplomacyStatus::Truce,
+        -20,
+    );
+    stage_adjacent_probe_unit(&mut game, probe_owner, target_owner);
+    game.factions[probe_owner].energy = 100;
+
+    game.apply_action(GameAction::PerformProbeAction {
+        unit_id: 0,
+        target_x: 3,
+        target_y: 4,
+        action: ProbeAction::SubvertUnit,
+    })
+    .expect("probe subversion should resolve");
+
+    assert_eq!(
+        game.relations[probe_owner][target_owner].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        game.unit(1).expect("target unit should survive").owner,
+        probe_owner
+    );
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::FirstStrikeEscalation));
+}
+
+#[test]
 fn probe_sabotage_removes_highest_value_facility_without_stack_order_dependence() {
     let mut game = GameState::new_game(10, 10, 12345);
     let probe_owner = game.player_owner();
@@ -594,11 +784,19 @@ fn pact_visibility_and_exploration_drop_when_pact_downgrades() {
     assert!(game.tile_visible_to_owner(5, 5, owner_a));
     assert!(game.tile_explored_by_owner(5, 5, owner_a));
 
-    game.update_diplomacy(owner_a, owner_b, DiplomacyStatus::Treaty)
-        .expect("pact downgrade should succeed");
+    for downgraded_status in [
+        DiplomacyStatus::Treaty,
+        DiplomacyStatus::Truce,
+        DiplomacyStatus::War,
+    ] {
+        let mut downgraded = game.clone();
+        downgraded
+            .update_diplomacy(owner_a, owner_b, downgraded_status)
+            .expect("pact downgrade should succeed");
 
-    assert!(!game.tile_visible_to_owner(5, 5, owner_a));
-    assert!(!game.tile_explored_by_owner(5, 5, owner_a));
+        assert!(!downgraded.tile_visible_to_owner(5, 5, owner_a));
+        assert!(!downgraded.tile_explored_by_owner(5, 5, owner_a));
+    }
 }
 
 #[test]
