@@ -1,6 +1,6 @@
 # Sprint T-0 Bug Hunt And Regression Lockdown
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Scope
 
@@ -10,6 +10,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 
 - Probe-team facility sabotage no longer removes whichever facility happens to be last in the base facility vector. It now deterministically removes the highest-production-cost sabotage target available on the base.
 - Existing Sprint T diplomacy regression tests now also cover AI restraint around Treaty/Pact targets, escalation snapshot persistence, and mutual-defense response logging.
+- Damaged-unit and stalled-attack AI decisions now emit typed diagnostics for strategic retreats and avoided hopeless attacks so autoplay sweeps can separate caution from combat failures.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -17,23 +18,29 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **T-0.2 AI escalation intent and diagnostics**: AI offensive targeting can escalate from Truce only when explicit aggression and hostile-attitude gates are met; Treaty and Pact targets remain protected from accidental tactical attacks, and autoplay sweeps now report typed wartime/escalation/betrayal/defensive-response counters.
 - **T-0.3 Pact visibility cleanup**: Pact-derived visibility/exploration now has regression coverage proving allied intelligence disappears when the Pact downgrades.
 
+## Sprint T-0.4 Strategic AI Lockdown Follow-up
+
+- **Strategic retreat diagnostics**: Damaged combat units and vulnerable non-combat units that successfully fall back now generate `STRATEGIC RETREAT` typed event logs.
+- **Hopeless-attack avoidance diagnostics**: Small under-strength attack groups that stage instead of charging heavily defended targets now generate `AVOIDED ATTACK` typed event logs.
+- **Autoplay telemetry**: The autoplay sweep event-kind report now includes strategic-retreat and avoided-attack totals alongside wartime combat and escalation categories.
+
 ## Features And Refinements To Add Or Harden Next
 
 1. **Diplomacy/combat consistency**
-   - Add a typed combat-event enum instead of relying on log-string matching for wartime combat, first strikes, betrayals, and defensive responses.
+   - Expand the typed event taxonomy beyond the current escalation/retreat categories into a dedicated combat-event payload with actor, defender, target tile, and diplomatic pre-state.
    - Add a dedicated diplomatic memory model for grievances, betrayals, and defensive-war legitimacy.
 
 2. **AI attack legality**
-   - Add explicit AI escalation intent before any non-war offensive move.
-   - Add autoplay diagnostics that count legal wartime combats separately from first-strike escalations and Pact betrayals.
+   - Add broader regression coverage for every AI offensive path now that explicit escalation intent protects non-war targets.
+   - Extend autoplay diagnostics from aggregate typed counters into per-faction legal-combat, first-strike, retreat, and avoided-attack trend lines.
 
 3. **Pact/shared vision cleanup**
    - Add tests for Pact visibility loss when a Pact downgrades to Treaty/Truce/War.
    - Add UI affordances that explain which tiles are visible through allied intelligence.
 
 4. **Strategic AI stuck states**
-   - Add stuck-group telemetry for raid groups that spend multiple turns staging without closing distance.
-   - Add regression tests for retreating, regrouping, and re-targeting after failed attacks.
+   - Extend current retreat/avoided-attack telemetry into stuck-group counters for raid groups that spend multiple turns staging without closing distance.
+   - Add regression tests for regrouping and re-targeting after failed attacks, beyond the current retreat and avoided-attack event-kind coverage.
 
 5. **Save/load determinism**
    - Add roundtrip tests for active council sessions, battle-group-relevant unit state, and diplomacy logs after cascaded wars.

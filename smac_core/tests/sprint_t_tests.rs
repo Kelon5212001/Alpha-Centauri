@@ -550,6 +550,91 @@ fn test_non_combat_unit_retreat_threat() {
 }
 
 #[test]
+fn damaged_combat_unit_logs_strategic_retreat() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let player_owner = game.player_owner();
+    let ai_owner = game.ai_owner();
+
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+
+    set_relation(&mut game, ai_owner, player_owner, DiplomacyStatus::War, -50);
+
+    game.bases.push(Base {
+        id: 0,
+        owner: ai_owner,
+        name: "Fallback Base".to_string(),
+        x: 0,
+        y: 0,
+        population: 2,
+        nutrients_stock: 0,
+        minerals_stock: 0,
+        production: ProductionItem::ScoutPatrol,
+        production_queue: Vec::new(),
+        facilities: Vec::new(),
+        governor_mode: GovernorMode::Off,
+    });
+    game.tiles[0].base = Some(0);
+
+    game.units.push(Unit {
+        id: 0,
+        owner: ai_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 3,
+        y: 3,
+        moves_left: 1,
+        hp: 3,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[3 * game.width + 3].unit = Some(0);
+
+    game.units.push(Unit {
+        id: 1,
+        owner: player_owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x: 4,
+        y: 4,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: smac_core::UnitActivity::None,
+    });
+    game.tiles[4 * game.width + 4].unit = Some(1);
+
+    smac_core::run_ai_tactics_for_owner(&mut game, ai_owner);
+
+    let scout = game.unit(0).unwrap();
+    assert!(
+        scout.x < 3 || scout.y < 3,
+        "damaged scout should fall back toward base"
+    );
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::StrategicRetreat));
+}
+
+#[test]
+fn event_kind_classifies_avoided_hopeless_attack() {
+    assert_eq!(
+        EventLogKind::classify("AVOIDED ATTACK: Spartans held Scout Patrol back."),
+        EventLogKind::AvoidedHopelessAttack
+    );
+}
+
+#[test]
 fn test_fusion_lab_energy() {
     let mut game = GameState::new_game(10, 10, 12345);
     let owner = game.player_owner();

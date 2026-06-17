@@ -1,8 +1,8 @@
 use smac_core::content_api::{facility_maintenance, production_name};
 use smac_core::{
     command_center_choice_source_for_base, offense_readiness_for_owner,
-    AiCommandCenterChoiceSource, CommandCenterTurnTrace, EventLogKind, Facility, GameOver, GameState,
-    GovernorMode, ProductionItem, Tech,
+    AiCommandCenterChoiceSource, CommandCenterTurnTrace, EventLogKind, Facility, GameOver,
+    GameState, GovernorMode, ProductionItem, Tech,
 };
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -232,6 +232,8 @@ struct RunSummary {
     treaty_violations: usize,
     pact_betrayals: usize,
     defensive_responses: usize,
+    strategic_retreats: usize,
+    avoided_hopeless_attacks: usize,
     bankruptcies: usize,
     facility_bankruptcies: usize,
     unit_bankruptcies: usize,
@@ -352,6 +354,8 @@ fn run() -> Result<(), String> {
     let mut total_treaty_violations = 0usize;
     let mut total_pact_betrayals = 0usize;
     let mut total_defensive_responses = 0usize;
+    let mut total_strategic_retreats = 0usize;
+    let mut total_avoided_hopeless_attacks = 0usize;
     let mut total_bankruptcies = 0usize;
     let mut total_facility_bankruptcies = 0usize;
     let mut total_unit_bankruptcies = 0usize;
@@ -473,6 +477,8 @@ fn run() -> Result<(), String> {
         total_treaty_violations += summary.treaty_violations;
         total_pact_betrayals += summary.pact_betrayals;
         total_defensive_responses += summary.defensive_responses;
+        total_strategic_retreats += summary.strategic_retreats;
+        total_avoided_hopeless_attacks += summary.avoided_hopeless_attacks;
         total_bankruptcies += summary.bankruptcies;
         total_facility_bankruptcies += summary.facility_bankruptcies;
         total_unit_bankruptcies += summary.unit_bankruptcies;
@@ -505,7 +511,8 @@ fn run() -> Result<(), String> {
         total_command_center_scrap_large_bases += summary.command_center_scrap_large_bases;
         total_command_center_scrap_low_yield_bases += summary.command_center_scrap_low_yield_bases;
         total_command_center_scrap_mid_yield_bases += summary.command_center_scrap_mid_yield_bases;
-        total_command_center_scrap_high_yield_bases += summary.command_center_scrap_high_yield_bases;
+        total_command_center_scrap_high_yield_bases +=
+            summary.command_center_scrap_high_yield_bases;
         total_command_center_scrap_safe_bases += summary.command_center_scrap_safe_bases;
         total_command_center_scrap_pressured_bases += summary.command_center_scrap_pressured_bases;
         total_command_center_scrap_isolated_bases += summary.command_center_scrap_isolated_bases;
@@ -532,10 +539,8 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_balanced_governed;
         total_command_center_scrap_economy_governed +=
             summary.command_center_scrap_economy_governed;
-        total_command_center_scrap_other_governed +=
-            summary.command_center_scrap_other_governed;
-        total_command_center_scrap_off_governed +=
-            summary.command_center_scrap_off_governed;
+        total_command_center_scrap_other_governed += summary.command_center_scrap_other_governed;
+        total_command_center_scrap_off_governed += summary.command_center_scrap_off_governed;
         total_command_center_scrap_defense_governed +=
             summary.command_center_scrap_defense_governed;
         total_command_center_scrap_recovery_governed +=
@@ -548,8 +553,7 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_off_plan_transit_hub;
         total_command_center_scrap_off_plan_patrol_grid +=
             summary.command_center_scrap_off_plan_patrol_grid;
-        total_command_center_scrap_off_plan_other +=
-            summary.command_center_scrap_off_plan_other;
+        total_command_center_scrap_off_plan_other += summary.command_center_scrap_off_plan_other;
         total_command_center_scrap_off_plan_command_center +=
             summary.command_center_scrap_off_plan_command_center;
         total_command_center_scrap_off_plan_trade_exchange +=
@@ -564,8 +568,7 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_off_plan_forward_depot;
         total_command_center_scrap_off_plan_sensor_array +=
             summary.command_center_scrap_off_plan_sensor_array;
-        total_command_center_scrap_off_plan_none +=
-            summary.command_center_scrap_off_plan_none;
+        total_command_center_scrap_off_plan_none += summary.command_center_scrap_off_plan_none;
         total_command_center_scrap_while_building_command_center +=
             summary.command_center_scrap_while_building_command_center;
         total_command_center_scrap_while_building_freight_depot +=
@@ -574,12 +577,9 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_while_building_hologram_theatre;
         total_command_center_scrap_while_building_other +=
             summary.command_center_scrap_while_building_other;
-        total_command_center_scrap_active_switched +=
-            summary.command_center_scrap_active_switched;
-        total_command_center_scrap_active_promoted +=
-            summary.command_center_scrap_active_promoted;
-        total_command_center_scrap_active_unknown +=
-            summary.command_center_scrap_active_unknown;
+        total_command_center_scrap_active_switched += summary.command_center_scrap_active_switched;
+        total_command_center_scrap_active_promoted += summary.command_center_scrap_active_promoted;
+        total_command_center_scrap_active_unknown += summary.command_center_scrap_active_unknown;
         total_command_center_scrap_active_age_one_turn +=
             summary.command_center_scrap_active_age_one_turn;
         total_command_center_scrap_active_age_two_to_five_turns +=
@@ -610,18 +610,12 @@ fn run() -> Result<(), String> {
             summary.command_center_scrap_switched_stayed_on_command_center;
         total_command_center_scrap_switched_away_and_back +=
             summary.command_center_scrap_switched_away_and_back;
-        total_command_center_scrap_repeat_rebuild +=
-            summary.command_center_scrap_repeat_rebuild;
-        total_command_center_scrap_first_attempt +=
-            summary.command_center_scrap_first_attempt;
-        total_command_center_scrap_recent_rebuild +=
-            summary.command_center_scrap_recent_rebuild;
-        total_command_center_scrap_mid_rebuild +=
-            summary.command_center_scrap_mid_rebuild;
-        total_command_center_scrap_late_rebuild +=
-            summary.command_center_scrap_late_rebuild;
-        total_command_center_scrap_no_prior_scrap +=
-            summary.command_center_scrap_no_prior_scrap;
+        total_command_center_scrap_repeat_rebuild += summary.command_center_scrap_repeat_rebuild;
+        total_command_center_scrap_first_attempt += summary.command_center_scrap_first_attempt;
+        total_command_center_scrap_recent_rebuild += summary.command_center_scrap_recent_rebuild;
+        total_command_center_scrap_mid_rebuild += summary.command_center_scrap_mid_rebuild;
+        total_command_center_scrap_late_rebuild += summary.command_center_scrap_late_rebuild;
+        total_command_center_scrap_no_prior_scrap += summary.command_center_scrap_no_prior_scrap;
         for (name, count) in &summary.scrap_facility_counts {
             *total_scrap_counts.entry(*name).or_default() += *count;
         }
@@ -1017,12 +1011,14 @@ fn run() -> Result<(), String> {
         ai_zero_unit_runs
     );
     println!(
-        "event-kinds | wartime-combat {} | first-strike {} | treaty-violation {} | pact-betrayal {} | defensive-response {}",
+        "event-kinds | wartime-combat {} | first-strike {} | treaty-violation {} | pact-betrayal {} | defensive-response {} | strategic-retreat {} | avoided-attack {}",
         total_wartime_combats,
         total_first_strike_escalations,
         total_treaty_violations,
         total_pact_betrayals,
-        total_defensive_responses
+        total_defensive_responses,
+        total_strategic_retreats,
+        total_avoided_hopeless_attacks
     );
 
     Ok(())
@@ -1040,6 +1036,8 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut treaty_violations = 0usize;
     let mut pact_betrayals = 0usize;
     let mut defensive_responses = 0usize;
+    let mut strategic_retreats = 0usize;
+    let mut avoided_hopeless_attacks = 0usize;
     let mut bankruptcies = 0usize;
     let mut facility_bankruptcies = 0usize;
     let mut unit_bankruptcies = 0usize;
@@ -1156,8 +1154,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         .collect();
     let mut player_last_command_center_scrap_turn: HashMap<String, usize> = HashMap::new();
     let mut ai_last_command_center_scrap_turn: HashMap<String, usize> = HashMap::new();
-    let mut player_pending_command_center_activation: HashMap<String, PendingCommandCenterActivation> =
-        HashMap::new();
+    let mut player_pending_command_center_activation: HashMap<
+        String,
+        PendingCommandCenterActivation,
+    > = HashMap::new();
     let mut ai_pending_command_center_activation: HashMap<String, PendingCommandCenterActivation> =
         HashMap::new();
     let mut player_command_center_active_streaks: HashMap<String, usize> = HashMap::new();
@@ -1178,16 +1178,19 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
             &ai_command_center_active_streaks,
             &ai_base_snapshots,
         );
-        let player_command_center_choice_sources: HashMap<String, Option<AiCommandCenterChoiceSource>> =
-            game.bases_for(game.player_owner())
-                .into_iter()
-                .map(|base| {
-                    (
-                        base.name.clone(),
-                        command_center_choice_source_for_base(&game, base.id, game.player_owner()),
-                    )
-                })
-                .collect();
+        let player_command_center_choice_sources: HashMap<
+            String,
+            Option<AiCommandCenterChoiceSource>,
+        > = game
+            .bases_for(game.player_owner())
+            .into_iter()
+            .map(|base| {
+                (
+                    base.name.clone(),
+                    command_center_choice_source_for_base(&game, base.id, game.player_owner()),
+                )
+            })
+            .collect();
         let ai_command_center_choice_sources: HashMap<String, Option<AiCommandCenterChoiceSource>> =
             game.bases_for(game.ai_owner())
                 .into_iter()
@@ -1242,36 +1245,46 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
             game.player_owner(),
             completed_turns,
         ));
-        ai_peak_base_stress =
-            ai_peak_base_stress.max(owner_peak_base_stress(&game, game.ai_owner(), completed_turns));
-        player_peak_support =
-            player_peak_support.max(owner_peak_support(&game, game.player_owner(), completed_turns));
-        ai_peak_support = ai_peak_support.max(owner_peak_support(&game, game.ai_owner(), completed_turns));
+        ai_peak_base_stress = ai_peak_base_stress.max(owner_peak_base_stress(
+            &game,
+            game.ai_owner(),
+            completed_turns,
+        ));
+        player_peak_support = player_peak_support.max(owner_peak_support(
+            &game,
+            game.player_owner(),
+            completed_turns,
+        ));
+        ai_peak_support =
+            ai_peak_support.max(owner_peak_support(&game, game.ai_owner(), completed_turns));
 
         for entry in game.log.iter().filter(|entry| entry.turn == game.turn) {
             if let Some((base_name, item_name)) =
                 switched_production_message_parts(entry.message.as_str())
             {
-                let (pending_map, choice_sources) =
-                    if player_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name) {
-                        (
-                            &mut player_pending_command_center_activation,
-                            &player_command_center_choice_sources,
-                        )
-                    } else if ai_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name)
-                    {
-                        (
-                            &mut ai_pending_command_center_activation,
-                            &ai_command_center_choice_sources,
-                        )
-                    } else {
-                        continue;
-                    };
+                let (pending_map, choice_sources) = if player_base_snapshots
+                    .iter()
+                    .any(|snapshot| snapshot.base_name == base_name)
+                {
+                    (
+                        &mut player_pending_command_center_activation,
+                        &player_command_center_choice_sources,
+                    )
+                } else if ai_base_snapshots
+                    .iter()
+                    .any(|snapshot| snapshot.base_name == base_name)
+                {
+                    (
+                        &mut ai_pending_command_center_activation,
+                        &ai_command_center_choice_sources,
+                    )
+                } else {
+                    continue;
+                };
                 let pending = pending_map.entry(base_name.to_string()).or_default();
                 if item_name == "Command Center" {
                     pending.last_activation_source = Some(CommandCenterActivationSource::Switched);
-                    pending.last_switch_reason =
-                        choice_sources.get(base_name).copied().flatten();
+                    pending.last_switch_reason = choice_sources.get(base_name).copied().flatten();
                     pending.switch_to_command_center_count += 1;
                     pending.currently_on_switched_command_center = true;
                 } else if pending.currently_on_switched_command_center {
@@ -1283,18 +1296,19 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                 promoted_production_message_parts(entry.message.as_str())
             {
                 if item_name == "Command Center" {
-                    let pending_map =
-                        if player_base_snapshots.iter().any(|snapshot| snapshot.base_name == base_name)
-                        {
-                            &mut player_pending_command_center_activation
-                        } else if ai_base_snapshots
-                            .iter()
-                            .any(|snapshot| snapshot.base_name == base_name)
-                        {
-                            &mut ai_pending_command_center_activation
-                        } else {
-                            continue;
-                        };
+                    let pending_map = if player_base_snapshots
+                        .iter()
+                        .any(|snapshot| snapshot.base_name == base_name)
+                    {
+                        &mut player_pending_command_center_activation
+                    } else if ai_base_snapshots
+                        .iter()
+                        .any(|snapshot| snapshot.base_name == base_name)
+                    {
+                        &mut ai_pending_command_center_activation
+                    } else {
+                        continue;
+                    };
                     let pending = pending_map.entry(base_name.to_string()).or_default();
                     pending.last_activation_source = Some(CommandCenterActivationSource::Promoted);
                     pending.currently_on_switched_command_center = false;
@@ -1312,14 +1326,14 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                 EventLogKind::TreatyViolation => treaty_violations += 1,
                 EventLogKind::PactBetrayal => pact_betrayals += 1,
                 EventLogKind::DefensiveResponse => defensive_responses += 1,
+                EventLogKind::StrategicRetreat => strategic_retreats += 1,
+                EventLogKind::AvoidedHopelessAttack => avoided_hopeless_attacks += 1,
                 EventLogKind::General => {}
             }
             if entry.message.contains("captured") {
                 captures += 1;
             }
-            if entry.message.contains("DIPLOMACY:")
-                && entry.message.contains("signed a War")
-            {
+            if entry.message.contains("DIPLOMACY:") && entry.message.contains("signed a War") {
                 war_declarations += 1;
             }
             if entry.message.contains("BANKRUPTCY:") {
@@ -1355,14 +1369,16 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                         }
                     }
                     if entry.message.contains("CommandCenter") {
-                        if let Some((owner, base_name)) = bankruptcy_base_name(entry.message.as_str(), &game)
+                        if let Some((owner, base_name)) =
+                            bankruptcy_base_name(entry.message.as_str(), &game)
                         {
                             let snapshots = if owner == game.player_owner() {
                                 &player_base_snapshots
                             } else {
                                 &ai_base_snapshots
                             };
-                            let pending_command_center_activation = if owner == game.player_owner() {
+                            let pending_command_center_activation = if owner == game.player_owner()
+                            {
                                 &mut player_pending_command_center_activation
                             } else {
                                 &mut ai_pending_command_center_activation
@@ -1387,8 +1403,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                             } else {
                                 &mut ai_last_command_center_scrap_turn
                             };
-                            if let Some(snapshot) =
-                                snapshots.iter().find(|snapshot| snapshot.base_name == base_name)
+                            if let Some(snapshot) = snapshots
+                                .iter()
+                                .find(|snapshot| snapshot.base_name == base_name)
                             {
                                 match snapshot.local_unit_count {
                                     0 => command_center_scrap_empty_bases += 1,
@@ -1524,7 +1541,12 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                     ProductionItem::CommandCenter => {
                                         command_center_scrap_while_building_command_center += 1;
                                         let progress_pct = ((snapshot.minerals_stock * 100)
-                                            / game.production_cost(owner, ProductionItem::CommandCenter).max(1))
+                                            / game
+                                                .production_cost(
+                                                    owner,
+                                                    ProductionItem::CommandCenter,
+                                                )
+                                                .max(1))
                                         .clamp(0, 999);
                                         match progress_pct {
                                             i32::MIN..=24 => {
@@ -1574,8 +1596,11 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                                 } else {
                                                     command_center_scrap_switched_multi_cycle += 1;
                                                 }
-                                                if pending_activation.switched_away_after_command_center {
-                                                    command_center_scrap_switched_away_and_back += 1;
+                                                if pending_activation
+                                                    .switched_away_after_command_center
+                                                {
+                                                    command_center_scrap_switched_away_and_back +=
+                                                        1;
                                                 } else {
                                                     command_center_scrap_switched_stayed_on_command_center += 1;
                                                 }
@@ -1618,7 +1643,10 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                                 } else {
                                     command_center_scrap_first_attempt += 1;
                                 }
-                                match last_command_center_scrap_turn.get(&snapshot.base_name).copied() {
+                                match last_command_center_scrap_turn
+                                    .get(&snapshot.base_name)
+                                    .copied()
+                                {
                                     Some(previous_turn) => {
                                         let gap = completed_turns.saturating_sub(previous_turn);
                                         if gap <= 5 {
@@ -1644,7 +1672,9 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
                 }
             }
             if entry.message.contains("spent ")
-                && entry.message.contains(" energy reserves to cover mineral support")
+                && entry
+                    .message
+                    .contains(" energy reserves to cover mineral support")
             {
                 emergency_support_payments += 1;
                 if let Some(amount) = entry
@@ -1700,6 +1730,8 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         treaty_violations,
         pact_betrayals,
         defensive_responses,
+        strategic_retreats,
+        avoided_hopeless_attacks,
         bankruptcies,
         facility_bankruptcies,
         unit_bankruptcies,
@@ -1827,7 +1859,11 @@ fn owner_metrics(
     let support = game.faction_support_summary(owner);
     let live_units = game.live_units_for(owner);
     let (facility_upkeep, convoy_upkeep, _, total_upkeep) = game.faction_upkeep_breakdown(owner);
-    let current_max_base_facilities = bases.iter().map(|base| base.facilities.len()).max().unwrap_or(0);
+    let current_max_base_facilities = bases
+        .iter()
+        .map(|base| base.facilities.len())
+        .max()
+        .unwrap_or(0);
     let current_max_base_facility_upkeep = bases
         .iter()
         .map(|base| base_facility_upkeep(base))
@@ -1877,7 +1913,8 @@ fn owner_metrics(
         industrial_base_known: faction
             .map(|f| f.known_techs.contains(&Tech::IndustrialBase))
             .unwrap_or(false),
-        command_center_available: game.is_production_available(owner, ProductionItem::CommandCenter),
+        command_center_available: game
+            .is_production_available(owner, ProductionItem::CommandCenter),
         peak_supported_units: peak_support.supported_units,
         peak_unit_upkeep: peak_support.unit_upkeep,
         peak_colony_pods: peak_support.colony_pods,
@@ -1915,7 +1952,8 @@ fn owner_metrics(
         command_center_low_mineral_bases: command_center_builds.low_mineral_bases,
         command_center_base_turns: command_center_turn_flow.base_turns,
         command_center_loss_turns: command_center_turn_flow.loss_turns,
-        command_center_positive_yield_loss_turns: command_center_turn_flow.positive_yield_loss_turns,
+        command_center_positive_yield_loss_turns: command_center_turn_flow
+            .positive_yield_loss_turns,
         command_center_avg_start_stock: command_center_turn_flow.avg_start_stock(),
         command_center_avg_end_stock: command_center_turn_flow.avg_end_stock(),
         command_center_avg_yield_minerals: command_center_turn_flow.avg_yield_minerals(),
@@ -1925,11 +1963,9 @@ fn owner_metrics(
             .avg_post_production_stock(),
         command_center_avg_post_interdiction_stock: command_center_turn_flow
             .avg_post_interdiction_stock(),
-        command_center_avg_exact_upkeep_drain: command_center_turn_flow
-            .avg_exact_upkeep_drain(),
+        command_center_avg_exact_upkeep_drain: command_center_turn_flow.avg_exact_upkeep_drain(),
         command_center_drained_trace_turns: command_center_turn_flow.drained_trace_turns,
-        command_center_avg_upkeep_order_index: command_center_turn_flow
-            .avg_upkeep_order_index(),
+        command_center_avg_upkeep_order_index: command_center_turn_flow.avg_upkeep_order_index(),
         command_center_completed_turns: command_center_turn_flow.completed_turns,
         command_center_switched_turns: command_center_turn_flow.switched_turns,
         command_center_lost_base_turns: command_center_turn_flow.lost_base_turns,
@@ -1944,12 +1980,14 @@ fn owner_metrics(
         command_center_loss_with_bankruptcy: command_center_turn_flow.loss_with_bankruptcy,
         command_center_loss_with_emergency_support: command_center_turn_flow
             .loss_with_emergency_support,
-        command_center_loss_with_support_famine: command_center_turn_flow
-            .loss_with_support_famine,
+        command_center_loss_with_support_famine: command_center_turn_flow.loss_with_support_famine,
     }
 }
 
-fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<ActiveCommandCenterBaseStart> {
+fn active_command_center_base_starts(
+    game: &GameState,
+    owner: usize,
+) -> Vec<ActiveCommandCenterBaseStart> {
     let support_drain = owner_support_drain_estimates(game, owner);
     game.bases_for(owner)
         .into_iter()
@@ -1974,7 +2012,9 @@ fn active_command_center_base_starts(game: &GameState, owner: usize) -> Vec<Acti
                 collapsing_freight_routes: route_statuses
                     .iter()
                     .filter(|(_, kind, _, intercepted, integrity)| {
-                        *kind == smac_core::ConvoyRouteKind::Freight && *intercepted && *integrity <= 1
+                        *kind == smac_core::ConvoyRouteKind::Freight
+                            && *intercepted
+                            && *integrity <= 1
                     })
                     .count(),
                 estimated_support_drain: support_drain.get(&base.id).copied().unwrap_or_default(),
@@ -2007,7 +2047,9 @@ fn owner_turn_economy_signals(game: &GameState, owner: usize) -> OwnerTurnEconom
             signals.bankruptcy = true;
         }
         if entry.message.contains("spent ")
-            && entry.message.contains(" energy reserves to cover mineral support")
+            && entry
+                .message
+                .contains(" energy reserves to cover mineral support")
             && entry.message.contains(&faction_name)
         {
             signals.emergency_support_payment = true;
@@ -2038,7 +2080,10 @@ fn owner_base_turn_snapshots(game: &GameState, owner: usize) -> Vec<BaseTurnSnap
             logistics_stress: game.base_logistics_stress_score(base.id),
             governor_mode: base.governor_mode,
             recommended_governor_mode: game.recommended_governor_mode_for_base(base.id),
-            first_logistics_plan_item: game.base_logistics_plan_items(base.id, 1).into_iter().next(),
+            first_logistics_plan_item: game
+                .base_logistics_plan_items(base.id, 1)
+                .into_iter()
+                .next(),
             population: base.population,
             minerals: game
                 .operational_base_yields(base.id)
@@ -2052,7 +2097,9 @@ fn owner_base_turn_snapshots(game: &GameState, owner: usize) -> Vec<BaseTurnSnap
             local_unit_count: game
                 .units
                 .iter()
-                .filter(|unit| unit.alive && unit.owner == owner && unit.x == base.x && unit.y == base.y)
+                .filter(|unit| {
+                    unit.alive && unit.owner == owner && unit.x == base.x && unit.y == base.y
+                })
                 .count(),
             has_freight_depot: base.facilities.contains(&Facility::FreightDepot),
             has_transit_hub: base.facilities.contains(&Facility::TransitHub),
@@ -2123,7 +2170,11 @@ fn bankruptcy_base_name<'a>(message: &'a str, game: &GameState) -> Option<(usize
     } else {
         return None;
     };
-    let base_name = message.split(" in ").nth(1)?.split(" to cover debt").next()?;
+    let base_name = message
+        .split(" in ")
+        .nth(1)?
+        .split(" to cover debt")
+        .next()?;
     Some((owner, base_name))
 }
 
@@ -2221,7 +2272,9 @@ fn owner_command_center_build_metrics(
             continue;
         }
         active_count += 1;
-        let cost = game.production_cost(owner, ProductionItem::CommandCenter).max(1);
+        let cost = game
+            .production_cost(owner, ProductionItem::CommandCenter)
+            .max(1);
         let progress_pct = ((base.minerals_stock * 100) / cost).clamp(0, 999);
         total_progress_pct += progress_pct;
         max_progress_pct = max_progress_pct.max(progress_pct);
@@ -2351,11 +2404,14 @@ impl OwnerCommandCenterTurnFlow {
 }
 
 fn base_had_production_reset(game: &GameState, base_name: &str) -> bool {
-    game.log.iter().filter(|entry| entry.turn == game.turn).any(|entry| {
-        entry.message.contains(base_name)
-            && (entry.message.contains("switched production to")
-                || entry.message.contains("promoted "))
-    })
+    game.log
+        .iter()
+        .filter(|entry| entry.turn == game.turn)
+        .any(|entry| {
+            entry.message.contains(base_name)
+                && (entry.message.contains("switched production to")
+                    || entry.message.contains("promoted "))
+        })
 }
 
 fn switched_production_message_parts(message: &str) -> Option<(&str, &str)> {
@@ -2531,8 +2587,18 @@ impl PartialOrd for OwnerPeakBaseStress {
 
 impl Ord for OwnerPeakBaseStress {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (self.facility_upkeep, self.optional_upkeep, self.facilities, self.turn)
-            .cmp(&(other.facility_upkeep, other.optional_upkeep, other.facilities, other.turn))
+        (
+            self.facility_upkeep,
+            self.optional_upkeep,
+            self.facilities,
+            self.turn,
+        )
+            .cmp(&(
+                other.facility_upkeep,
+                other.optional_upkeep,
+                other.facilities,
+                other.turn,
+            ))
     }
 }
 
@@ -2579,7 +2645,10 @@ impl Ord for OwnerPeakSupport {
             .cmp(&other.unit_upkeep)
             .then_with(|| self.supported_units.cmp(&other.supported_units))
             .then_with(|| self.combat_units.cmp(&other.combat_units))
-            .then_with(|| self.field_formers_saturated.cmp(&other.field_formers_saturated))
+            .then_with(|| {
+                self.field_formers_saturated
+                    .cmp(&other.field_formers_saturated)
+            })
             .then_with(|| {
                 self.field_formers_with_nearby_work
                     .cmp(&other.field_formers_with_nearby_work)
@@ -2652,7 +2721,11 @@ fn nearest_base_gap(game: &GameState, owner: usize, other: usize) -> i32 {
 }
 
 fn yn(value: bool) -> &'static str {
-    if value { "y" } else { "n" }
+    if value {
+        "y"
+    } else {
+        "n"
+    }
 }
 
 fn blocker_label(item: Option<ProductionItem>, count: usize) -> String {

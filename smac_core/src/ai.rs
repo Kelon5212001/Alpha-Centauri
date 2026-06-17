@@ -3431,8 +3431,19 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     && group_size < minimum_attack_group_size
                     && !is_unit_on_friendly_base(state, &unit);
 
-                if is_lost_cause || should_ai_unit_retreat(state, &unit) {
+                let should_retreat = should_ai_unit_retreat(state, &unit);
+                if is_lost_cause || should_retreat {
+                    let was_on_friendly_base = is_unit_on_friendly_base(state, &unit);
                     if try_ai_retreat(state, &unit) {
+                        if !was_on_friendly_base {
+                            log_ai_retreat_event(
+                                state,
+                                owner,
+                                &unit,
+                                Some((tx, ty)),
+                                is_lost_cause,
+                            );
+                        }
                         continue;
                     }
                 }
@@ -3450,6 +3461,7 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
                     && dist > 1
                     && aggression < 8
                 {
+                    log_ai_avoided_attack_event(state, owner, &unit, tx, ty);
                     // Stage nearby instead of charging in solo
                     continue;
                 }
@@ -3503,7 +3515,11 @@ pub fn run_ai_tactics_for_owner(state: &mut GameState, owner: usize) {
         }
 
         if should_ai_unit_retreat(state, &unit) {
+            let was_on_friendly_base = is_unit_on_friendly_base(state, &unit);
             if try_ai_retreat(state, &unit) {
+                if !was_on_friendly_base {
+                    log_ai_retreat_event(state, owner, &unit, None, false);
+                }
                 continue;
             }
         }
@@ -4311,6 +4327,43 @@ fn should_ai_unit_retreat(state: &GameState, unit: &crate::Unit) -> bool {
 
     let pressure = military_pressure_near_base(state, unit.x, unit.y, unit.owner);
     pressure > 0 || !is_unit_on_friendly_base(state, unit)
+}
+
+fn log_ai_retreat_event(
+    state: &mut GameState,
+    owner: usize,
+    unit: &crate::Unit,
+    target: Option<(usize, usize)>,
+    avoided_attack: bool,
+) {
+    if avoided_attack {
+        if let Some((tx, ty)) = target {
+            log_ai_avoided_attack_event(state, owner, unit, tx, ty);
+        }
+        return;
+    }
+
+    let faction_name = state.faction_name(owner).to_string();
+    let unit_name = content::unit_name(unit.kind.clone());
+    state.push_log(format!(
+        "STRATEGIC RETREAT: {} withdrew {} from ({}, {}) toward safer ground.",
+        faction_name, unit_name, unit.x, unit.y
+    ));
+}
+
+fn log_ai_avoided_attack_event(
+    state: &mut GameState,
+    owner: usize,
+    unit: &crate::Unit,
+    target_x: usize,
+    target_y: usize,
+) {
+    let faction_name = state.faction_name(owner).to_string();
+    let unit_name = content::unit_name(unit.kind.clone());
+    state.push_log(format!(
+        "AVOIDED ATTACK: {} held {} back from a hopeless assault near ({}, {}).",
+        faction_name, unit_name, target_x, target_y
+    ));
 }
 
 fn try_ai_retreat(state: &mut GameState, unit: &crate::Unit) -> bool {

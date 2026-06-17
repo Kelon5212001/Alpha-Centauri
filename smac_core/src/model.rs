@@ -1268,6 +1268,8 @@ pub enum EventLogKind {
     TreatyViolation,
     PactBetrayal,
     DefensiveResponse,
+    StrategicRetreat,
+    AvoidedHopelessAttack,
 }
 
 impl EventLogKind {
@@ -1280,6 +1282,10 @@ impl EventLogKind {
             Self::PactBetrayal
         } else if message.contains("DEFENSIVE RESPONSE:") {
             Self::DefensiveResponse
+        } else if message.contains("STRATEGIC RETREAT:") {
+            Self::StrategicRetreat
+        } else if message.contains("AVOIDED ATTACK:") {
+            Self::AvoidedHopelessAttack
         } else if message.contains("ESCALATION:") {
             Self::FirstStrikeEscalation
         } else {
