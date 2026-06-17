@@ -1,6 +1,6 @@
 use smac_core::{
-    Base, DiplomacyStatus, Facility, GameAction, GameState, GameStateSnapshot, GovernorMode,
-    ProbeAction, ProductionItem, Terrain, Unit, UnitKind,
+    Base, DiplomacyStatus, EventLogKind, Facility, GameAction, GameState, GameStateSnapshot,
+    GovernorMode, ProbeAction, ProductionItem, Terrain, Unit, UnitKind,
 };
 
 fn stage_adjacent_attack(game: &mut GameState, attacker_owner: usize, defender_owner: usize) {
@@ -75,11 +75,10 @@ fn neutral_attack_escalates_to_war_with_first_strike_log() {
         game.relations[attacker][defender].status,
         DiplomacyStatus::War
     );
-    assert!(game.log.iter().any(|entry| {
-        entry.message.contains("ESCALATION:")
-            && entry.message.contains("first strike")
-            && entry.message.contains("Truce")
-    }));
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::FirstStrikeEscalation));
 }
 
 #[test]
@@ -96,9 +95,10 @@ fn treaty_attack_escalates_to_war_with_treaty_violation_log() {
         game.relations[attacker][defender].status,
         DiplomacyStatus::War
     );
-    assert!(game.log.iter().any(|entry| {
-        entry.message.contains("ESCALATION:") && entry.message.contains("violated Treaty")
-    }));
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::TreatyViolation));
 }
 
 #[test]
@@ -116,9 +116,10 @@ fn pact_attack_escalates_to_war_with_betrayal_log_and_larger_penalty() {
         DiplomacyStatus::War
     );
     assert_eq!(game.relations[defender][attacker].attitude, 10);
-    assert!(game.log.iter().any(|entry| {
-        entry.message.contains("BETRAYAL:") && entry.message.contains("Pact ally")
-    }));
+    assert!(game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::PactBetrayal));
 }
 
 #[test]
@@ -138,9 +139,14 @@ fn already_war_attack_does_not_emit_escalation_log() {
     assert!(game
         .log
         .iter()
-        .any(|entry| entry.message.contains("COMBAT: wartime")));
+        .any(|entry| entry.kind == EventLogKind::WartimeCombat));
     assert!(!game.log.iter().any(|entry| {
-        entry.message.contains("ESCALATION:") || entry.message.contains("BETRAYAL:")
+        matches!(
+            entry.kind,
+            EventLogKind::FirstStrikeEscalation
+                | EventLogKind::TreatyViolation
+                | EventLogKind::PactBetrayal
+        )
     }));
 }
 
@@ -166,7 +172,7 @@ fn escalation_survives_snapshot_roundtrip() {
     assert!(restored
         .log
         .iter()
-        .any(|entry| entry.message.contains("violated Treaty")));
+        .any(|entry| entry.kind == EventLogKind::TreatyViolation));
 }
 
 #[test]
@@ -183,11 +189,74 @@ fn tactical_ai_does_not_attack_treaty_or_pact_targets() {
         assert_eq!(game.relations[attacker][defender].status, status);
         assert!(game.unit(1).map(|unit| unit.alive).unwrap_or(false));
         assert!(!game.log.iter().any(|entry| {
-            entry.message.contains("ESCALATION:")
-                || entry.message.contains("BETRAYAL:")
-                || entry.message.contains("COMBAT: wartime")
+            matches!(
+                entry.kind,
+                EventLogKind::FirstStrikeEscalation
+                    | EventLogKind::TreatyViolation
+                    | EventLogKind::PactBetrayal
+                    | EventLogKind::WartimeCombat
+            )
         }));
     }
+}
+
+#[test]
+fn tactical_ai_escalates_from_truce_only_with_explicit_intent() {
+    let mut cautious_game = GameState::new_game(10, 10, 12345);
+    let attacker = cautious_game.ai_owner();
+    let defender = cautious_game.player_owner();
+    set_relation(
+        &mut cautious_game,
+        attacker,
+        defender,
+        DiplomacyStatus::Truce,
+        -80,
+    );
+    cautious_game
+        .faction_mut(attacker)
+        .expect("AI faction should exist")
+        .personality
+        .aggression = 5;
+    stage_adjacent_attack(&mut cautious_game, attacker, defender);
+
+    smac_core::run_ai_tactics_for_owner(&mut cautious_game, attacker);
+
+    assert_eq!(
+        cautious_game.relations[attacker][defender].status,
+        DiplomacyStatus::Truce
+    );
+    assert!(cautious_game
+        .unit(1)
+        .map(|unit| unit.alive)
+        .unwrap_or(false));
+
+    let mut hostile_game = GameState::new_game(10, 10, 12345);
+    let attacker = hostile_game.ai_owner();
+    let defender = hostile_game.player_owner();
+    set_relation(
+        &mut hostile_game,
+        attacker,
+        defender,
+        DiplomacyStatus::Truce,
+        -80,
+    );
+    hostile_game
+        .faction_mut(attacker)
+        .expect("AI faction should exist")
+        .personality
+        .aggression = 10;
+    stage_adjacent_attack(&mut hostile_game, attacker, defender);
+
+    smac_core::run_ai_tactics_for_owner(&mut hostile_game, attacker);
+
+    assert_eq!(
+        hostile_game.relations[attacker][defender].status,
+        DiplomacyStatus::War
+    );
+    assert!(hostile_game
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::FirstStrikeEscalation));
 }
 
 #[test]
@@ -355,7 +424,7 @@ fn test_mutual_defense_cascade() {
     assert!(game
         .log
         .iter()
-        .any(|entry| entry.message.contains("DEFENSIVE RESPONSE:")));
+        .any(|entry| entry.kind == EventLogKind::DefensiveResponse));
 }
 
 #[test]
@@ -374,6 +443,31 @@ fn test_shared_vision_and_exploration() {
 
     // A should see it as explored
     assert!(game.tile_explored_by_owner(5, 5, owner_a));
+}
+
+#[test]
+fn pact_visibility_and_exploration_drop_when_pact_downgrades() {
+    let mut game = GameState::new_game(10, 10, 12345);
+    let owner_a = 1;
+    let owner_b = 2;
+    set_relation(&mut game, owner_a, owner_b, DiplomacyStatus::Pact, 80);
+    for tile in &mut game.tiles {
+        tile.visible_by_owner.clear();
+        tile.explored_by_owner.clear();
+    }
+
+    let idx = 5 * game.width + 5;
+    game.tiles[idx].visible_by_owner.insert(owner_b);
+    game.tiles[idx].explored_by_owner.insert(owner_b);
+
+    assert!(game.tile_visible_to_owner(5, 5, owner_a));
+    assert!(game.tile_explored_by_owner(5, 5, owner_a));
+
+    game.update_diplomacy(owner_a, owner_b, DiplomacyStatus::Treaty)
+        .expect("pact downgrade should succeed");
+
+    assert!(!game.tile_visible_to_owner(5, 5, owner_a));
+    assert!(!game.tile_explored_by_owner(5, 5, owner_a));
 }
 
 #[test]

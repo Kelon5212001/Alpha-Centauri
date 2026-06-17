@@ -1253,8 +1253,39 @@ pub enum EventCategory {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EventLogEntry {
     pub category: EventCategory,
+    #[serde(default)]
+    pub kind: EventLogKind,
     pub message: String,
     pub turn: i32,
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub enum EventLogKind {
+    #[default]
+    General,
+    WartimeCombat,
+    FirstStrikeEscalation,
+    TreatyViolation,
+    PactBetrayal,
+    DefensiveResponse,
+}
+
+impl EventLogKind {
+    pub fn classify(message: &str) -> Self {
+        if message.contains("COMBAT: wartime") {
+            Self::WartimeCombat
+        } else if message.contains("violated Treaty") {
+            Self::TreatyViolation
+        } else if message.contains("BETRAYAL:") {
+            Self::PactBetrayal
+        } else if message.contains("DEFENSIVE RESPONSE:") {
+            Self::DefensiveResponse
+        } else if message.contains("ESCALATION:") {
+            Self::FirstStrikeEscalation
+        } else {
+            Self::General
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]

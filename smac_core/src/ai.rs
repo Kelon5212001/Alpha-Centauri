@@ -798,7 +798,7 @@ fn choose_ai_offensive_base_target(state: &GameState, owner: usize) -> Option<us
     state
         .bases
         .iter()
-        .filter(|base| is_ai_wartime_target(state, owner, base.owner))
+        .filter(|base| is_ai_offensive_target(state, owner, base.owner))
         .min_by_key(|base| offensive_base_priority(state, owner, base.id))
         .map(|base| base.id)
 }
@@ -808,7 +808,7 @@ fn choose_ai_naval_invasion_target(state: &GameState, owner: usize) -> Option<us
         .bases
         .iter()
         .filter(|base| {
-            is_ai_wartime_target(state, owner, base.owner) && is_base_coastal(state, base.id)
+            is_ai_offensive_target(state, owner, base.owner) && is_base_coastal(state, base.id)
         })
         .min_by_key(|base| {
             let priority = offensive_base_priority(state, owner, base.id);
@@ -5240,7 +5240,7 @@ mod tests {
         AiTacticalSignals,
     };
     use crate::{
-        model::{EventCategory, EventLogEntry},
+        model::{EventCategory, EventLogEntry, EventLogKind},
         Base, GameState, GovernorMode, ProductionItem, Tech, Terrain, Unit, UnitActivity, UnitKind,
     };
 
@@ -6965,6 +6965,7 @@ mod tests {
         let faction_name = game.faction_name(owner).to_string();
         game.log.push(EventLogEntry {
             category: EventCategory::Economics,
+            kind: EventLogKind::General,
             message: format!(
                 "BANKRUPTCY: {} scrapped CommandCenter in Repeat Relief to cover debt!",
                 faction_name
@@ -7180,6 +7181,7 @@ mod tests {
         let faction_name = game.faction_name(owner).to_string();
         game.log.push(EventLogEntry {
             category: EventCategory::Economics,
+            kind: EventLogKind::General,
             message: format!(
                 "BANKRUPTCY: {} scrapped CommandCenter in Queued Relief to cover debt!",
                 faction_name
@@ -7757,6 +7759,7 @@ mod tests {
         let faction_name = game.faction_name(owner).to_string();
         game.log.push(EventLogEntry {
             category: EventCategory::Economics,
+            kind: EventLogKind::General,
             message: format!(
                 "BANKRUPTCY: {} scrapped CommandCenter in Repeat Relief to cover debt!",
                 faction_name
@@ -7848,6 +7851,7 @@ mod tests {
         let faction_name = game.faction_name(owner).to_string();
         game.log.push(EventLogEntry {
             category: EventCategory::Economics,
+            kind: EventLogKind::General,
             message: format!(
                 "BANKRUPTCY: {} scrapped CommandCenter in Queued Relief to cover debt!",
                 faction_name
@@ -9329,11 +9333,24 @@ fn is_ai_ally(state: &GameState, owner: usize, other_id: usize) -> bool {
 }
 
 fn is_ai_offensive_target(state: &GameState, owner: usize, other_id: usize) -> bool {
-    is_ai_wartime_target(state, owner, other_id)
+    is_ai_wartime_target(state, owner, other_id) || has_ai_escalation_intent(state, owner, other_id)
 }
 
 fn is_ai_wartime_target(state: &GameState, owner: usize, other_id: usize) -> bool {
     owner != other_id && state.relations[owner][other_id].status == crate::DiplomacyStatus::War
+}
+
+fn has_ai_escalation_intent(state: &GameState, owner: usize, other_id: usize) -> bool {
+    if owner == other_id || state.relations[owner][other_id].status != crate::DiplomacyStatus::Truce
+    {
+        return false;
+    }
+    let Some(faction) = state.faction(owner) else {
+        return false;
+    };
+    faction.is_ai
+        && faction.personality.aggression >= 9
+        && state.relations[owner][other_id].attitude <= -50
 }
 
 fn is_base_coastal(state: &GameState, base_id: usize) -> bool {

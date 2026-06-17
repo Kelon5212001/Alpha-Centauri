@@ -2,9 +2,9 @@ use crate::ai;
 use crate::content;
 use crate::model::{
     Base, BaseAreaRole, CommandCenterTurnTrace, DemandKind, DiplomacyStatus, DiplomaticRelation,
-    Economics, EventCategory, EventLogEntry, Facility, FutureSociety, GameAction, GameOver,
-    GameState, GovernorMode, Improvement, Politics, ProbeAction, ProductionItem, SecretProject,
-    Tech, Terrain, Tile, Unit, UnitActivity, UnitKind, Values, Yields,
+    Economics, EventCategory, EventLogEntry, EventLogKind, Facility, FutureSociety, GameAction,
+    GameOver, GameState, GovernorMode, Improvement, Politics, ProbeAction, ProductionItem,
+    SecretProject, Tech, Terrain, Tile, Unit, UnitActivity, UnitKind, Values, Yields,
 };
 use crate::presentation;
 use crate::{Ability, Chassis, UnitDesign, Weapon};
@@ -1562,8 +1562,10 @@ impl GameState {
     }
 
     pub fn push_event_log(&mut self, category: EventCategory, message: String) {
+        let kind = EventLogKind::classify(&message);
         self.log.push(EventLogEntry {
             category,
+            kind,
             message,
             turn: self.turn,
         });
