@@ -47,6 +47,70 @@ fn count_kind(game: &GameState, kind: EventLogKind) -> usize {
     game.log.iter().filter(|entry| entry.kind == kind).count()
 }
 
+fn replay_signature(game: &GameState) -> String {
+    let mut parts = vec![format!("turn:{}", game.turn)];
+    parts.push(format!("game_over:{:?}", game.game_over));
+    parts.push(format!("projects:{:?}", game.built_secret_projects));
+
+    for faction in &game.factions {
+        parts.push(format!(
+            "faction:{}:{}:{}:{:?}:{}:{}:{}:{}:{}",
+            faction.id,
+            faction.energy,
+            faction.research,
+            faction.current_research,
+            faction.techs_discovered,
+            faction.known_techs.len(),
+            faction.food_security,
+            faction.ai_dependence,
+            faction.planet_toxicity
+        ));
+    }
+
+    for base in &game.bases {
+        parts.push(format!(
+            "base:{}:{}:{}:{}:{}:{}:{:?}:{:?}",
+            base.id,
+            base.owner,
+            base.population,
+            base.nutrients_stock,
+            base.minerals_stock,
+            base.name,
+            base.production,
+            base.facilities
+        ));
+    }
+
+    for unit in &game.units {
+        parts.push(format!(
+            "unit:{}:{}:{:?}:{}:{}:{}:{}:{:?}",
+            unit.id, unit.owner, unit.kind, unit.x, unit.y, unit.hp, unit.alive, unit.activity
+        ));
+    }
+
+    for row in &game.relations {
+        for relation in row {
+            parts.push(format!("rel:{:?}:{}", relation.status, relation.attitude));
+        }
+    }
+
+    let event_kinds = [
+        EventLogKind::General,
+        EventLogKind::WartimeCombat,
+        EventLogKind::FirstStrikeEscalation,
+        EventLogKind::TreatyViolation,
+        EventLogKind::PactBetrayal,
+        EventLogKind::DefensiveResponse,
+        EventLogKind::StrategicRetreat,
+        EventLogKind::AvoidedHopelessAttack,
+    ];
+    for kind in event_kinds {
+        parts.push(format!("kind:{:?}:{}", kind, count_kind(game, kind)));
+    }
+
+    parts.join("|")
+}
+
 fn empty_tiles(width: usize, height: usize) -> Vec<smac_core::Tile> {
     let mut tiles = Vec::with_capacity(width * height);
     for y in 0..height {
@@ -148,6 +212,28 @@ fn snapshot_roundtrip_preserves_convoy_routes() {
 
     assert_eq!(restored.convoy_routes.len(), 1);
     assert_eq!(restored.base_trade_links(0), 1);
+}
+
+#[test]
+fn snapshot_midrun_replay_matches_fixed_seed_continuation() {
+    let mut control = GameState::new_game(16, 16, 4242);
+    for _ in 0..2 {
+        control.end_turn();
+    }
+
+    let json = GameStateSnapshot::from(&control)
+        .to_json_pretty()
+        .expect("snapshot should serialize");
+    let mut restored = GameStateSnapshot::from_json(&json)
+        .expect("snapshot should deserialize")
+        .into_game_state();
+
+    for _ in 0..3 {
+        control.end_turn();
+        restored.end_turn();
+    }
+
+    assert_eq!(replay_signature(&restored), replay_signature(&control));
 }
 
 #[test]

@@ -15,6 +15,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Save/load regression coverage now preserves cascaded war states and typed event-kind counts across snapshot roundtrips, including legacy log migration for new retreat and avoided-attack event kinds.
 - AI attack-legality regression coverage now includes base-capture targets, proving Treaty/Pact bases stay protected and Truce base captures require explicit escalation intent.
 - Probe-team hostile actions now escalate through diplomacy for tech theft, facility sabotage, and unit subversion; council sessions and expanded Pact visibility downgrades have snapshot/regression coverage.
+- Fixed-seed midrun save/load replay now has a deterministic continuation signature check so restored snapshots can be compared against uninterrupted play without relying on wall-clock profiler log text.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -52,6 +53,11 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Council save/load coverage**: Active council sessions, governor state, meeting turn, and pending votes now roundtrip through snapshots.
 - **Pact visibility downgrade matrix**: Pact-derived visibility/exploration now has downgrade coverage for Treaty, Truce, and War.
 
+## Sprint T-0.9 Deterministic Replay Follow-up
+
+- **Midrun replay parity**: Fixed-seed games now have regression coverage that saves after multiple turns, restores from snapshot JSON, advances both branches, and compares deterministic game-state signatures.
+- **Profiler-log isolation**: The replay signature intentionally compares state and typed event-kind counts rather than wall-clock profiler messages.
+
 ## Features And Refinements To Add Or Harden Next
 
 1. **Diplomacy/combat consistency**
@@ -72,7 +78,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 
 5. **Save/load determinism**
    - Add roundtrip tests for battle-group-relevant unit state beyond the current cascaded-war/event-kind/council coverage.
-   - Add deterministic replay checks for fixed seeds after save/load at mid-turn boundaries.
+   - Extend deterministic replay checks from end-turn boundaries into true mid-action/mid-turn save points.
 
 6. **Facility/project/effect coverage**
    - Add coverage ensuring every facility effect has at least one direct behavior test.
