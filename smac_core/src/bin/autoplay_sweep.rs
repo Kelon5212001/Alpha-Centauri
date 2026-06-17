@@ -1,7 +1,7 @@
 use smac_core::content_api::{facility_maintenance, production_name};
 use smac_core::{
     command_center_choice_source_for_base, offense_readiness_for_owner,
-    AiCommandCenterChoiceSource, CommandCenterTurnTrace, Facility, GameOver, GameState,
+    AiCommandCenterChoiceSource, CommandCenterTurnTrace, EventLogKind, Facility, GameOver, GameState,
     GovernorMode, ProductionItem, Tech,
 };
 use std::collections::HashMap;
@@ -227,6 +227,11 @@ struct RunSummary {
     combats: usize,
     captures: usize,
     war_declarations: usize,
+    wartime_combats: usize,
+    first_strike_escalations: usize,
+    treaty_violations: usize,
+    pact_betrayals: usize,
+    defensive_responses: usize,
     bankruptcies: usize,
     facility_bankruptcies: usize,
     unit_bankruptcies: usize,
@@ -342,6 +347,11 @@ fn run() -> Result<(), String> {
     let mut total_combats = 0usize;
     let mut total_captures = 0usize;
     let mut total_wars = 0usize;
+    let mut total_wartime_combats = 0usize;
+    let mut total_first_strike_escalations = 0usize;
+    let mut total_treaty_violations = 0usize;
+    let mut total_pact_betrayals = 0usize;
+    let mut total_defensive_responses = 0usize;
     let mut total_bankruptcies = 0usize;
     let mut total_facility_bankruptcies = 0usize;
     let mut total_unit_bankruptcies = 0usize;
@@ -458,6 +468,11 @@ fn run() -> Result<(), String> {
         total_combats += summary.combats;
         total_captures += summary.captures;
         total_wars += summary.war_declarations;
+        total_wartime_combats += summary.wartime_combats;
+        total_first_strike_escalations += summary.first_strike_escalations;
+        total_treaty_violations += summary.treaty_violations;
+        total_pact_betrayals += summary.pact_betrayals;
+        total_defensive_responses += summary.defensive_responses;
         total_bankruptcies += summary.bankruptcies;
         total_facility_bankruptcies += summary.facility_bankruptcies;
         total_unit_bankruptcies += summary.unit_bankruptcies;
@@ -1001,6 +1016,14 @@ fn run() -> Result<(), String> {
         player_zero_unit_runs,
         ai_zero_unit_runs
     );
+    println!(
+        "event-kinds | wartime-combat {} | first-strike {} | treaty-violation {} | pact-betrayal {} | defensive-response {}",
+        total_wartime_combats,
+        total_first_strike_escalations,
+        total_treaty_violations,
+        total_pact_betrayals,
+        total_defensive_responses
+    );
 
     Ok(())
 }
@@ -1012,6 +1035,11 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
     let mut combats = 0usize;
     let mut captures = 0usize;
     let mut war_declarations = 0usize;
+    let mut wartime_combats = 0usize;
+    let mut first_strike_escalations = 0usize;
+    let mut treaty_violations = 0usize;
+    let mut pact_betrayals = 0usize;
+    let mut defensive_responses = 0usize;
     let mut bankruptcies = 0usize;
     let mut facility_bankruptcies = 0usize;
     let mut unit_bankruptcies = 0usize;
@@ -1277,6 +1305,14 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
             }
             if entry.message.contains("COMBAT:") || entry.message.contains("BOMBARDMENT:") {
                 combats += 1;
+            }
+            match entry.kind {
+                EventLogKind::WartimeCombat => wartime_combats += 1,
+                EventLogKind::FirstStrikeEscalation => first_strike_escalations += 1,
+                EventLogKind::TreatyViolation => treaty_violations += 1,
+                EventLogKind::PactBetrayal => pact_betrayals += 1,
+                EventLogKind::DefensiveResponse => defensive_responses += 1,
+                EventLogKind::General => {}
             }
             if entry.message.contains("captured") {
                 captures += 1;
@@ -1659,6 +1695,11 @@ fn run_seed(seed: u32, config: &Config) -> RunSummary {
         combats,
         captures,
         war_declarations,
+        wartime_combats,
+        first_strike_escalations,
+        treaty_violations,
+        pact_betrayals,
+        defensive_responses,
         bankruptcies,
         facility_bankruptcies,
         unit_bankruptcies,

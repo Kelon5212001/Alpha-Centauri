@@ -14,7 +14,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
 - **T-0.1 Typed event classification**: Event log entries now carry a structured kind for wartime combat, first-strike escalation, Treaty violation, Pact betrayal, and defensive response instead of requiring tests to parse only free-form log text.
-- **T-0.2 AI escalation intent**: AI offensive targeting can escalate from Truce only when explicit aggression and hostile-attitude gates are met; Treaty and Pact targets remain protected from accidental tactical attacks.
+- **T-0.2 AI escalation intent and diagnostics**: AI offensive targeting can escalate from Truce only when explicit aggression and hostile-attitude gates are met; Treaty and Pact targets remain protected from accidental tactical attacks, and autoplay sweeps now report typed wartime/escalation/betrayal/defensive-response counters.
 - **T-0.3 Pact visibility cleanup**: Pact-derived visibility/exploration now has regression coverage proving allied intelligence disappears when the Pact downgrades.
 
 ## Features And Refinements To Add Or Harden Next
