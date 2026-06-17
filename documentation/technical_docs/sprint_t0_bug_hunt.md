@@ -12,6 +12,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Existing Sprint T diplomacy regression tests now also cover AI restraint around Treaty/Pact targets, escalation snapshot persistence, and mutual-defense response logging.
 - Damaged-unit and stalled-attack AI decisions now emit typed diagnostics for strategic retreats and avoided hopeless attacks so autoplay sweeps can separate caution from combat failures.
 - Content validation now catches production entries that map to runtime items missing from `ProductionItem::all`, and facility definitions must round-trip through their production-item mapping.
+- Save/load regression coverage now preserves cascaded war states and typed event-kind counts across snapshot roundtrips, including legacy log migration for new retreat and avoided-attack event kinds.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -30,6 +31,11 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Production/runtime item coverage**: `validate_content` now rejects production entries whose IDs map to runtime items that are omitted from `ProductionItem::all`.
 - **Facility production roundtrip**: Runtime facilities must have a production item, and that production item must map back to the same facility so sabotage, build queues, and content validation share the same source of truth.
 - **Naval production coverage**: Sea Colony Pod and Sea Transport are now included in the runtime production-item inventory covered by validation and tests.
+
+## Sprint T-0.6 Save/Load Determinism Follow-up
+
+- **Cascaded diplomacy persistence**: Snapshot roundtrips now cover attack-triggered war escalation plus Pact mutual-defense cascades, preserving both relation status and typed event-kind counts.
+- **Legacy event-kind migration**: Legacy save migration now has regression coverage for first-strike, defensive-response, strategic-retreat, and avoided-attack log classification.
 
 ## Features And Refinements To Add Or Harden Next
 
@@ -50,7 +56,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
    - Add regression tests for regrouping and re-targeting after failed attacks, beyond the current retreat and avoided-attack event-kind coverage.
 
 5. **Save/load determinism**
-   - Add roundtrip tests for active council sessions, battle-group-relevant unit state, and diplomacy logs after cascaded wars.
+   - Add roundtrip tests for active council sessions and battle-group-relevant unit state beyond the current cascaded-war/event-kind coverage.
    - Add deterministic replay checks for fixed seeds after save/load at mid-turn boundaries.
 
 6. **Facility/project/effect coverage**
