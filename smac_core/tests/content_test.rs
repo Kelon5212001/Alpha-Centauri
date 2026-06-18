@@ -362,6 +362,38 @@ fn production_definitions_load_and_match_runtime_mapping() {
 }
 
 #[test]
+fn facility_definitions_have_effects_and_balanced_maintenance() {
+    let definitions = load_facility_definitions().expect("bundled facility JSON should parse");
+
+    for definition in definitions {
+        assert!(
+            (0..=5).contains(&definition.maintenance),
+            "{} maintenance should stay in the supported validation band",
+            definition.id
+        );
+        let has_yield_bonus = definition.yield_bonus.nutrients != 0
+            || definition.yield_bonus.minerals != 0
+            || definition.yield_bonus.energy != 0;
+        let has_runtime_effect = definition.defense_bonus != 0
+            || definition.stability_bonus != 0
+            || definition.repair_bonus != 0
+            || definition.training_bonus != 0
+            || definition.growth_threshold_reduction != 0
+            || definition.free_unit_support_bonus != 0
+            || definition.mobility_bonus != 0
+            || definition.psi_support_bonus != 0
+            || definition.convoy_capacity_bonus != 0
+            || definition.convoy_security_bonus != 0
+            || has_yield_bonus;
+        assert!(
+            has_runtime_effect,
+            "{} should declare at least one runtime effect",
+            definition.id
+        );
+    }
+}
+
+#[test]
 fn facility_definitions_load_and_match_runtime_mapping() {
     let definitions = load_facility_definitions().expect("bundled facility JSON should parse");
 

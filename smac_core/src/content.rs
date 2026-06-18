@@ -1905,6 +1905,32 @@ fn validate_facilities(errors: &mut Vec<String>) {
                 facility.id, facility.maintenance
             ));
         }
+        if facility.maintenance > 5 {
+            errors.push(format!(
+                "facility '{}' maintenance is outside the supported balance band: {}",
+                facility.id, facility.maintenance
+            ));
+        }
+        let has_yield_bonus = facility.yield_bonus.nutrients != 0
+            || facility.yield_bonus.minerals != 0
+            || facility.yield_bonus.energy != 0;
+        let has_runtime_effect = facility.defense_bonus != 0
+            || facility.stability_bonus != 0
+            || facility.repair_bonus != 0
+            || facility.training_bonus != 0
+            || facility.growth_threshold_reduction != 0
+            || facility.free_unit_support_bonus != 0
+            || facility.mobility_bonus != 0
+            || facility.psi_support_bonus != 0
+            || facility.convoy_capacity_bonus != 0
+            || facility.convoy_security_bonus != 0
+            || has_yield_bonus;
+        if !has_runtime_effect {
+            errors.push(format!(
+                "facility '{}' has no runtime effect fields set",
+                facility.id
+            ));
+        }
     }
 
     for facility in crate::Facility::all() {
