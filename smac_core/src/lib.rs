@@ -55,12 +55,12 @@ pub mod units;
 pub use units::components::{Ability, Armor, Chassis, Morale, Weapon};
 pub use units::definitions::UnitDesign;
 
-pub use content::RuntimeRole;
-pub use content::RuntimeRoles;
 pub use ai::{
     command_center_choice_source_for_base, offense_readiness_for_owner, run_ai_tactics,
     run_ai_tactics_for_owner, AiCommandCenterChoiceSource, AiOffenseReadiness,
 };
+pub use content::RuntimeRole;
+pub use content::RuntimeRoles;
 pub use game_state::base_focus_filter_label;
 pub use game_state::base_sort_mode_label;
 pub use game_state::logistics_route_filter_label;
@@ -122,10 +122,11 @@ pub use game_state::TopBarDisplayState;
 pub use game_state::UnitSelectionDisplayState;
 pub use model::{
     ActionableAlert, AlertPriority, Base, BaseAreaRole, CommandCenterTurnTrace, ConvoyRoute,
-    ConvoyRouteKind, ConvoyRouteSummary, DiplomacyStatus, DiplomaticRelation, Economics,
-    EventCategory, EventLogEntry, Facility, Faction, FutureSociety, GameAction, GameOver,
-    GameState, GovernorMode, Improvement, Politics, ProductionItem, SecretProject, Tech, Terrain,
-    Tile, TurnSummary, Unit, UnitActivity, UnitKind, Values, Yields,
+    ConvoyRouteKind, ConvoyRouteSummary, CouncilVote, DiplomacyStatus, DiplomaticRelation,
+    Economics, EventCategory, EventLogEntry, EventLogKind, Facility, Faction, FutureSociety,
+    GameAction, GameOver, GameState, GovernorMode, Improvement, Politics, ProbeAction,
+    ProductionItem, SecretProject, Tech, Terrain, Tile, TurnSummary, Unit, UnitActivity, UnitKind,
+    Values, Yields,
 };
 pub use presentation::MapOverlay;
 pub use save::current_save_slot_label;

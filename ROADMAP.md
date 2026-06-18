@@ -8,7 +8,7 @@ This file is the live status tracker for the active Rust workspace.
 
 Current phase: `Phase 4: Advanced Strategy And World Mechanics`
 
-The repository is past the initial cleanup and stabilization recovery work. The current emphasis is: preserve the now-clean multi-seed simulation baseline from Sprint Q and Sprint R, then broaden strategy through stronger midgame conflict generation.
+The repository is past the initial cleanup, stabilization recovery, and Sprint S midgame conflict-pressure work. The current emphasis is Sprint T: Strategic Reversals And Alliances, with diplomacy/combat consistency fixed before any additional visual or unrelated feature expansion.
 
 ## Current Status
 
@@ -40,7 +40,7 @@ Current Bevy verification notes:
 
 Still true at the repo level:
 
-- content validation count remains `5 factions, 17 techs, 14 units, 19 facilities, 41 production items`
+- content validation count remains `5 factions, 17 techs, 16 units, 20 facilities, 45 production items`
 - the default autoplay demo remains `100` turns on `20x20` with seed `7`
 - the currently verified 10-seed sweep aggregate is:
   - `terminal 0 / 10`
@@ -93,27 +93,35 @@ For the detailed per-sprint breakdown, use the sprint log instead of this status
 
 ## Immediate Next Tasks
 
-1. Preserve the `0/10` multi-seed baseline across terminal, famine, starvation, support, and low-expansion metrics.
-2. Add stronger midgame conflict triggers so the sim produces more raids, border tension, and contested expansion.
-3. Keep documenting the `smac_bevy` desktop/audio host-package path while leaving default verification lightweight.
-4. Expand council outcomes later into stronger diplomatic-victory/campaign-resolution mechanics once the conflict layer is more active.
+1. Treat `Sprint S: Midgame Conflict Pressure` as complete and keep its active-conflict gains covered by autoplay sweeps.
+2. Implement `Sprint T: Strategic Reversals And Alliances`, starting with war declaration on attack and legal categorization of combat events as wartime combat, escalation, betrayal, or defensive response.
+3. Make tactical AI diplomacy-aware so raid, threat, and attack selection respects current relations or deliberately escalates through the diplomacy layer.
+4. Strengthen Pact mechanics with shared vision/intelligence, mutual defense, ally-defense behavior, and council-voting affinity.
+5. Add strategic retreat and regrouping behavior for damaged, elite, or outmatched units.
+6. Add late-game economy support only after diplomacy correctness is stable.
+7. Keep `smac_bevy` secondary: default verification stays lightweight/headless, gameplay authority remains in deterministic `smac_core`, and `smac_gui` remains the stable playable/debug view layer.
 
 ## Recommended Near-Term Order
 
 1. Use `autoplay_sweep` as the baseline diagnostic for gameplay changes instead of tuning against one seed.
-2. Hold the current no-famine/no-support/no-low-expansion baseline while expanding strategic behavior.
-3. Add stronger conflict drivers before resuming broader terrain-transition polish and Bevy presentation work.
-4. Revisit council outcome resolution after the conflict layer creates more meaningful political stakes.
+2. Preserve the no-famine/no-support/no-low-expansion baseline while validating that new combat events are legally categorized.
+3. Fix diplomacy/combat consistency first: war on attack, first-strike escalation logs, Pact betrayal penalties, and mutual-defense responses.
+4. Then improve Pact value, ally-defense behavior, and strategic retreats.
+5. Only after diplomacy correctness is stable, add late-game economy support and revisit broader terrain-transition or Bevy presentation work.
+
+Sprint T-0 bug-hunt findings and the stabilization backlog live in
+`documentation/technical_docs/sprint_t0_bug_hunt.md`.
 
 ## Current Milestone Slice
 
-Current slice: `Simulation Baseline Stabilized After Sprint R`
+Current slice: `Sprint T: Strategic Reversals And Alliances`
 
 - keep the core deterministic and green
-- preserve the seed-`7` Sparta fix, the clean 10-seed proving baseline, and the new council-governorship gate
-- keep diplomacy and council behavior stable from that base
-- increase strategic pressure so the midgame is more eventful
-- then continue terrain-transition and presentation work without destabilizing the sim
+- preserve the seed-`7` Sparta fix, clean sweep baselines, council-governorship gate, and Sprint S conflict activity
+- make all hostile attacks transition through diplomacy when the factions are not already at war
+- distinguish wartime combat, first-strike escalation, Pact betrayal, mutual defense, and defensive response events in logs
+- make tactical AI diplomacy-aware before adding unrelated systems
+- keep Bevy presentation work secondary until diplomacy/combat consistency is stable
 
 ## Prior History
 

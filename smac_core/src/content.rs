@@ -732,10 +732,7 @@ fn scenario_anchors(width: usize, height: usize) -> Vec<(&'static str, ScenarioA
         ),
         (
             RuntimeRole::Ai.as_str(),
-            ScenarioAnchorPoint {
-                x: ai_x,
-                y: ai_y,
-            },
+            ScenarioAnchorPoint { x: ai_x, y: ai_y },
         ),
         (
             "midline",
@@ -1908,6 +1905,32 @@ fn validate_facilities(errors: &mut Vec<String>) {
                 facility.id, facility.maintenance
             ));
         }
+        if facility.maintenance > 5 {
+            errors.push(format!(
+                "facility '{}' maintenance is outside the supported balance band: {}",
+                facility.id, facility.maintenance
+            ));
+        }
+        let has_yield_bonus = facility.yield_bonus.nutrients != 0
+            || facility.yield_bonus.minerals != 0
+            || facility.yield_bonus.energy != 0;
+        let has_runtime_effect = facility.defense_bonus != 0
+            || facility.stability_bonus != 0
+            || facility.repair_bonus != 0
+            || facility.training_bonus != 0
+            || facility.growth_threshold_reduction != 0
+            || facility.free_unit_support_bonus != 0
+            || facility.mobility_bonus != 0
+            || facility.psi_support_bonus != 0
+            || facility.convoy_capacity_bonus != 0
+            || facility.convoy_security_bonus != 0
+            || has_yield_bonus;
+        if !has_runtime_effect {
+            errors.push(format!(
+                "facility '{}' has no runtime effect fields set",
+                facility.id
+            ));
+        }
     }
 
     for facility in crate::Facility::all() {
@@ -1918,6 +1941,20 @@ fn validate_facilities(errors: &mut Vec<String>) {
         {
             errors.push(format!(
                 "missing facility definition for '{}'",
+                facility.content_id()
+            ));
+        }
+
+        let Some(item) = crate::ProductionItem::from_facility(facility) else {
+            errors.push(format!(
+                "facility '{}' is not mapped to a production item",
+                facility.content_id()
+            ));
+            continue;
+        };
+        if item.facility() != Some(facility) {
+            errors.push(format!(
+                "facility '{}' production item does not map back to the same facility",
                 facility.content_id()
             ));
         }
@@ -1948,6 +1985,13 @@ fn validate_production(errors: &mut Vec<String>) {
             ));
             continue;
         };
+
+        if !crate::ProductionItem::all().contains(&item) {
+            errors.push(format!(
+                "production '{}' maps to a runtime item missing from ProductionItem::all",
+                definition.id
+            ));
+        }
 
         match definition.build_kind.as_str() {
             "unit" => {

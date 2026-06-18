@@ -1,11 +1,115 @@
 use smac_core::{
     current_save_slot_label, filtered_sorted_save_slots, matches_save_filters, save_browser_counts,
     save_browser_counts_text, save_browser_display_state, save_filter_label, save_slot_label,
-    save_sort_label, set_save_sort, sort_save_slots, Base, GameState, GameStateSnapshot,
-    GovernorMode, ProductionItem, SaveBrowserQuery, SaveFilterCategory, SaveSlotCategory,
-    SaveSlotListing, SaveSlotMetadata, SaveSortColumn, GAME_STATE_SNAPSHOT_VERSION,
+    save_sort_label, set_save_sort, sort_save_slots, Base, CouncilVote, DiplomacyStatus,
+    EventLogKind, GameAction, GameState, GameStateSnapshot, GovernorMode, ProductionItem,
+    SaveBrowserQuery, SaveFilterCategory, SaveSlotCategory, SaveSlotListing, SaveSlotMetadata,
+    SaveSortColumn, Terrain, Unit, UnitActivity, UnitKind, GAME_STATE_SNAPSHOT_VERSION,
 };
 use std::fs;
+
+fn set_relation(game: &mut GameState, a: usize, b: usize, status: DiplomacyStatus, attitude: i32) {
+    game.relations[a][b].status = status;
+    game.relations[b][a].status = status;
+    game.relations[a][b].attitude = attitude;
+    game.relations[b][a].attitude = attitude;
+}
+
+fn clear_units_bases_and_flatten(game: &mut GameState) {
+    game.units.clear();
+    game.bases.clear();
+    for tile in &mut game.tiles {
+        tile.unit = None;
+        tile.base = None;
+        tile.terrain = Terrain::Flat;
+    }
+}
+
+fn add_scout(game: &mut GameState, id: usize, owner: usize, x: usize, y: usize) {
+    game.units.push(Unit {
+        id,
+        owner,
+        kind: UnitKind::ScoutPatrol,
+        design_index: 0,
+        x,
+        y,
+        moves_left: 1,
+        hp: 10,
+        experience: 0,
+        alive: true,
+        cargo_unit_ids: Vec::new(),
+        activity: UnitActivity::None,
+    });
+    game.tiles[y * game.width + x].unit = Some(id);
+}
+
+fn count_kind(game: &GameState, kind: EventLogKind) -> usize {
+    game.log.iter().filter(|entry| entry.kind == kind).count()
+}
+
+fn replay_signature(game: &GameState) -> String {
+    let mut parts = vec![format!("turn:{}", game.turn)];
+    parts.push(format!("game_over:{:?}", game.game_over));
+    parts.push(format!("projects:{:?}", game.built_secret_projects));
+
+    for faction in &game.factions {
+        parts.push(format!(
+            "faction:{}:{}:{}:{:?}:{}:{}:{}:{}:{}",
+            faction.id,
+            faction.energy,
+            faction.research,
+            faction.current_research,
+            faction.techs_discovered,
+            faction.known_techs.len(),
+            faction.food_security,
+            faction.ai_dependence,
+            faction.planet_toxicity
+        ));
+    }
+
+    for base in &game.bases {
+        parts.push(format!(
+            "base:{}:{}:{}:{}:{}:{}:{:?}:{:?}",
+            base.id,
+            base.owner,
+            base.population,
+            base.nutrients_stock,
+            base.minerals_stock,
+            base.name,
+            base.production,
+            base.facilities
+        ));
+    }
+
+    for unit in &game.units {
+        parts.push(format!(
+            "unit:{}:{}:{:?}:{}:{}:{}:{}:{:?}",
+            unit.id, unit.owner, unit.kind, unit.x, unit.y, unit.hp, unit.alive, unit.activity
+        ));
+    }
+
+    for row in &game.relations {
+        for relation in row {
+            parts.push(format!("rel:{:?}:{}", relation.status, relation.attitude));
+        }
+    }
+
+    let event_kinds = [
+        EventLogKind::General,
+        EventLogKind::WartimeCombat,
+        EventLogKind::FirstStrikeEscalation,
+        EventLogKind::TreatyViolation,
+        EventLogKind::PactBetrayal,
+        EventLogKind::DefensiveResponse,
+        EventLogKind::StrategicRetreat,
+        EventLogKind::AvoidedHopelessAttack,
+    ];
+    for kind in event_kinds {
+        parts.push(format!("kind:{:?}:{}", kind, count_kind(game, kind)));
+    }
+
+    parts.join("|")
+}
 
 fn empty_tiles(width: usize, height: usize) -> Vec<smac_core::Tile> {
     let mut tiles = Vec::with_capacity(width * height);
@@ -108,6 +212,157 @@ fn snapshot_roundtrip_preserves_convoy_routes() {
 
     assert_eq!(restored.convoy_routes.len(), 1);
     assert_eq!(restored.base_trade_links(0), 1);
+}
+
+#[test]
+fn snapshot_midrun_replay_matches_fixed_seed_continuation() {
+    let mut control = GameState::new_game(16, 16, 4242);
+    for _ in 0..2 {
+        control.end_turn();
+    }
+
+    let json = GameStateSnapshot::from(&control)
+        .to_json_pretty()
+        .expect("snapshot should serialize");
+    let mut restored = GameStateSnapshot::from_json(&json)
+        .expect("snapshot should deserialize")
+        .into_game_state();
+
+    for _ in 0..3 {
+        control.end_turn();
+        restored.end_turn();
+    }
+
+    assert_eq!(replay_signature(&restored), replay_signature(&control));
+}
+
+#[test]
+fn snapshot_roundtrip_preserves_active_council_session() {
+    let mut game = GameState::new_game(16, 16, 42);
+    game.council.is_active = true;
+    game.council.governor_id = Some(game.player_owner());
+    game.council.last_meeting_turn = 12;
+    game.council.pending_votes = vec![CouncilVote {
+        faction_id: game.player_owner(),
+        candidate_id: game.ai_owner(),
+        weight: 3,
+    }];
+
+    let json = GameStateSnapshot::from(&game)
+        .to_json_pretty()
+        .expect("snapshot should serialize");
+    let restored = GameStateSnapshot::from_json(&json)
+        .expect("snapshot should deserialize")
+        .into_game_state();
+
+    assert!(restored.council.is_active);
+    assert_eq!(restored.council.governor_id, Some(game.player_owner()));
+    assert_eq!(restored.council.last_meeting_turn, 12);
+    assert_eq!(restored.council.pending_votes.len(), 1);
+    assert_eq!(
+        restored.council.pending_votes[0].candidate_id,
+        game.ai_owner()
+    );
+}
+
+#[test]
+fn snapshot_roundtrip_preserves_cascaded_war_event_kinds() {
+    let mut game = GameState::new_game(10, 10, 9876);
+    clear_units_bases_and_flatten(&mut game);
+
+    let aggressor = 0;
+    let defender = 1;
+    let ally = 2;
+    set_relation(&mut game, aggressor, defender, DiplomacyStatus::Truce, -20);
+    set_relation(&mut game, defender, ally, DiplomacyStatus::Pact, 80);
+    set_relation(&mut game, aggressor, ally, DiplomacyStatus::Truce, -10);
+    add_scout(&mut game, 0, aggressor, 3, 3);
+    add_scout(&mut game, 1, defender, 3, 4);
+
+    game.apply_action(GameAction::MoveUnit {
+        unit_id: 0,
+        target_x: 3,
+        target_y: 4,
+    })
+    .expect("attack should escalate through diplomacy and resolve combat");
+
+    assert_eq!(
+        game.relations[aggressor][defender].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(game.relations[aggressor][ally].status, DiplomacyStatus::War);
+    assert!(count_kind(&game, EventLogKind::FirstStrikeEscalation) > 0);
+    assert!(count_kind(&game, EventLogKind::DefensiveResponse) > 0);
+
+    let json = GameStateSnapshot::from(&game)
+        .to_json_pretty()
+        .expect("snapshot should serialize");
+    let restored = GameStateSnapshot::from_json(&json)
+        .expect("snapshot should deserialize")
+        .into_game_state();
+
+    assert_eq!(
+        restored.relations[aggressor][defender].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        restored.relations[aggressor][ally].status,
+        DiplomacyStatus::War
+    );
+    assert_eq!(
+        count_kind(&restored, EventLogKind::FirstStrikeEscalation),
+        count_kind(&game, EventLogKind::FirstStrikeEscalation)
+    );
+    assert_eq!(
+        count_kind(&restored, EventLogKind::DefensiveResponse),
+        count_kind(&game, EventLogKind::DefensiveResponse)
+    );
+}
+
+#[test]
+fn legacy_snapshot_migration_classifies_typed_event_kinds() {
+    let width = 8;
+    let height = 8;
+    let legacy_v1 = serde_json::json!({
+        "version": 1,
+        "width": width,
+        "height": height,
+        "seed": 5,
+        "turn": 7,
+        "tiles": empty_tiles(width, height),
+        "units": [],
+        "bases": [],
+        "factions": [],
+        "log": [
+            "ESCALATION: Spartans launched a first strike.",
+            "DEFENSIVE RESPONSE: Pact ally entered the war.",
+            "STRATEGIC RETREAT: Gaia withdrew Scout Patrol.",
+            "AVOIDED ATTACK: Spartans held Scout Patrol back."
+        ],
+        "game_over": null
+    });
+
+    let migrated = GameStateSnapshot::from_json(
+        &serde_json::to_string_pretty(&legacy_v1).expect("legacy json should serialize"),
+    )
+    .expect("legacy snapshot should migrate");
+
+    assert!(migrated
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::FirstStrikeEscalation));
+    assert!(migrated
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::DefensiveResponse));
+    assert!(migrated
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::StrategicRetreat));
+    assert!(migrated
+        .log
+        .iter()
+        .any(|entry| entry.kind == EventLogKind::AvoidedHopelessAttack));
 }
 
 #[test]

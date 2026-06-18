@@ -349,6 +349,7 @@ impl GameStateSnapshot {
                             .into_iter()
                             .map(|message| crate::model::EventLogEntry {
                                 category: crate::model::EventCategory::General,
+                                kind: crate::model::EventLogKind::classify(&message),
                                 message,
                                 turn: legacy.turn,
                             })
@@ -401,6 +402,7 @@ impl GameStateSnapshot {
                         .into_iter()
                         .map(|message| crate::model::EventLogEntry {
                             category: crate::model::EventCategory::General,
+                            kind: crate::model::EventLogKind::classify(&message),
                             message,
                             turn: legacy.turn,
                         })

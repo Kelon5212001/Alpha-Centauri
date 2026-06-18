@@ -1,4 +1,11 @@
-use smac_core::{Base, GameState, GovernorMode, ProductionItem, Terrain, Unit, UnitKind};
+use smac_core::{
+    Base, DiplomacyStatus, GameState, GovernorMode, ProductionItem, Terrain, Unit, UnitKind,
+};
+
+fn set_war(game: &mut GameState, a: usize, b: usize) {
+    game.relations[a][b].status = DiplomacyStatus::War;
+    game.relations[b][a].status = DiplomacyStatus::War;
+}
 
 #[test]
 fn ai_turn_switches_base_production_to_policy_preference() {
@@ -686,6 +693,7 @@ fn ai_prefers_scouts_when_player_military_pressure_is_nearby() {
         activity: smac_core::UnitActivity::None,
     });
 
+    set_war(&mut game, ai_owner, player_owner);
     game.end_turn();
 
     assert_eq!(
@@ -795,6 +803,7 @@ fn ai_can_choose_garrison_guard_under_frontline_pressure_without_facility_need()
         activity: smac_core::UnitActivity::None,
     });
 
+    set_war(&mut game, ai_owner, player_owner);
     game.end_turn();
 
     assert_eq!(
@@ -904,6 +913,7 @@ fn ai_prefers_raider_speeders_when_mobility_and_attack_pressure_are_available() 
         activity: smac_core::UnitActivity::None,
     });
 
+    set_war(&mut game, ai_owner, player_owner);
     game.end_turn();
 
     assert_eq!(
@@ -1009,6 +1019,7 @@ fn ai_prefers_standard_speeders_when_terrain_is_poor_for_raiding() {
         activity: smac_core::UnitActivity::None,
     });
 
+    set_war(&mut game, ai_owner, player_owner);
     game.end_turn();
 
     assert_eq!(
