@@ -17,6 +17,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - Probe-team hostile actions now escalate through diplomacy for tech theft, facility sabotage, and unit subversion; council sessions and expanded Pact visibility downgrades have snapshot/regression coverage.
 - Fixed-seed midrun save/load replay now has a deterministic continuation signature check so restored snapshots can be compared against uninterrupted play without relying on wall-clock profiler log text.
 - Facility definitions now fail validation when they declare no runtime effect/yield bonus or drift outside the supported maintenance band.
+- GUI map/base rendering no longer unwraps stale base or selected-unit lookups while drawing rush-build controls, hover tooltips, or path previews.
 
 ## Sprint T-0.1 Through T-0.3 Lockdown Work
 
@@ -64,6 +65,11 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
 - **Facility effect presence**: Bundled facility definitions must now declare at least one runtime effect field or yield bonus, preventing inert content entries from passing validation.
 - **Maintenance balance band**: Facility upkeep is validated against the supported `0..=5` band instead of only rejecting negative maintenance.
 
+## Sprint T-0.11 GUI Stale-Selection Safety Follow-up
+
+- **Base-panel stale lookup guard**: Rush-build cost rendering now reuses a checked base lookup instead of unwrapping the base a second time after presentation-state generation.
+- **Map hover/path preview guard**: Map hover and selected-unit path preview rendering now tolerate missing hover positions or stale selected-unit IDs without panicking.
+
 ## Features And Refinements To Add Or Harden Next
 
 1. **Diplomacy/combat consistency**
@@ -103,7 +109,7 @@ Sprint T-0 is a stabilization pass. It should not add broad new systems before t
    - Add tests for queue rollover when a just-unlocked item becomes available mid-turn.
 
 10. **GUI/core mismatch**
-    - Remove remaining GUI-side `unwrap()` calls on mutable game entities where stale selections can occur.
+    - Audit remaining GUI-side `unwrap()` calls that rely on invariant owner/faction state versus mutable map entities.
     - Add presentation-state tests for selected unit/base IDs that disappear after combat, capture, or disbanding.
 
 11. **Content validation gaps**

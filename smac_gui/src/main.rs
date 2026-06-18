@@ -1104,23 +1104,28 @@ impl SmacApp {
                 ui.colored_label(color, tag.label_text);
             }
         });
-        ui.horizontal(|ui| {
-            ui.label(&base_panel.production_text);
-            let cost_minerals = smac_core::content_api::production_cost(
-                self.game.base(base_id).unwrap().production,
-            );
-            let remaining =
-                (cost_minerals - self.game.base(base_id).unwrap().minerals_stock).max(0);
-            let rush_cost = remaining * 2;
+        if let Some((production, minerals_stock)) = self
+            .game
+            .base(base_id)
+            .map(|base| (base.production, base.minerals_stock))
+        {
+            ui.horizontal(|ui| {
+                ui.label(&base_panel.production_text);
+                let cost_minerals = smac_core::content_api::production_cost(production);
+                let remaining = (cost_minerals - minerals_stock).max(0);
+                let rush_cost = remaining * 2;
 
-            if ui
-                .button(format!("Rush ({} E)", rush_cost))
-                .on_hover_text("Complete current production item using energy credits.")
-                .clicked()
-            {
-                let _ = self.apply_action(GameAction::RushBuild { base_id });
-            }
-        });
+                if ui
+                    .button(format!("Rush ({} E)", rush_cost))
+                    .on_hover_text("Complete current production item using energy credits.")
+                    .clicked()
+                {
+                    let _ = self.apply_action(GameAction::RushBuild { base_id });
+                }
+            });
+        } else {
+            ui.label(&base_panel.production_text);
+        }
         ui.small(&base_panel.production_role_text);
         ui.small(&base_panel.production_dependency_text);
         ui.small(&base_panel.production_tooltip_text);
@@ -2146,7 +2151,9 @@ impl SmacApp {
 
             let response = ui.allocate_response(ui.available_size(), egui::Sense::hover());
             if response.hovered() {
-                let pos = response.hover_pos().unwrap();
+                let Some(pos) = response.hover_pos() else {
+                    return;
+                };
                 let (tile_x, tile_y) = self.screen_to_tile(pos);
                 if let Some(tile) = self.game.tile(tile_x, tile_y) {
                     let mut tooltip = format!("Tile: {}, {}", tile_x, tile_y);
@@ -2250,28 +2257,29 @@ impl SmacApp {
                         let (tx, ty) = self.screen_to_tile(hover_pos);
                         let path = self.game.unit_path_to(unit_id, tx, ty);
                         if !path.is_empty() {
-                            let mut points = Vec::new();
-                            let start_unit = self.game.unit(unit_id).unwrap();
-                            points.push(tile_centers[start_unit.y][start_unit.x]);
+                            if let Some(start_unit) = self.game.unit(unit_id) {
+                                let mut points = Vec::new();
+                                points.push(tile_centers[start_unit.y][start_unit.x]);
 
-                            for &(px, py) in &path {
-                                points.push(tile_centers[py][px]);
+                                for &(px, py) in &path {
+                                    points.push(tile_centers[py][px]);
+                                }
+
+                                ui.painter().add(egui::Shape::line(
+                                    points,
+                                    egui::Stroke::new(2.0, egui::Color32::from_rgb(100, 200, 255)),
+                                ));
+
+                                // Draw turn cost label at the end
+                                let cost = path.len(); // Simple estimate for now
+                                ui.painter().text(
+                                    tile_centers[ty][tx],
+                                    egui::Align2::LEFT_TOP,
+                                    format!("{} turns", (cost as f32 / 3.0).ceil()),
+                                    egui::FontId::proportional(12.0),
+                                    egui::Color32::WHITE,
+                                );
                             }
-
-                            ui.painter().add(egui::Shape::line(
-                                points,
-                                egui::Stroke::new(2.0, egui::Color32::from_rgb(100, 200, 255)),
-                            ));
-
-                            // Draw turn cost label at the end
-                            let cost = path.len(); // Simple estimate for now
-                            ui.painter().text(
-                                tile_centers[ty][tx],
-                                egui::Align2::LEFT_TOP,
-                                format!("{} turns", (cost as f32 / 3.0).ceil()),
-                                egui::FontId::proportional(12.0),
-                                egui::Color32::WHITE,
-                            );
                         }
                     }
                 }
